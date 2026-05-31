@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — {{SHORT_NAME}}</title>
+  <link rel="icon" href="/icons/favicon.ico" sizes="48x48 32x32 16x16" />
+  <link rel="icon" type="image/png" sizes="96x96" href="/icons/favicon-96.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+  <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+  <meta name="theme-color" content="#4dbd6a" />
+  <meta name="apple-mobile-web-app-title" content="{{SHORT_NAME}}" />
+  <meta name="author" content="zo0p.dev" />
+  <meta name="generator" content="Foyer" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200;300&family=Josefin+Sans:ital,wght@0,100;0,200;0,300;1,100&family=Inter:ital,wght@0,200;0,300;0,400;1,200&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Space+Grotesk:wght@300;400;500&family=Raleway:ital,wght@0,200;0,300;0,400;1,200&family=Poppins:ital,wght@0,200;0,300;1,200&family=DM+Sans:ital,opsz,wght@0,9..40,200;0,9..40,300;1,9..40,300&family=Lato:ital,wght@0,300;0,400;1,300&family=Montserrat:ital,wght@0,200;0,300;0,400;1,200&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/marked@13/marked.min.js"></script>
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+
+<div id="toast-shelf"></div>
+<div id="update-notice" style="pointer-events:none;"></div>
+
+<div id="admin-loading">
+  <img src="/icons/favicon.svg" width="36" height="36" style="border-radius:8px;" alt="" />
+  <div class="adm-load-bar"></div>
+</div>
+<script>
+  // Safety net: if scripts error out, never leave the user stuck on the loader.
+  setTimeout(function () {
+    var ld = document.getElementById('admin-loading');
+    var appUp = document.querySelector('.app.visible');
+    var loginUp = document.querySelector('.login-screen.show');
+    if (ld && !appUp && !loginUp) {
+      ld.remove();
+      var ls = document.getElementById('loginScreen');
+      if (ls) ls.classList.add('show');
+    }
+  }, 6000);
+</script>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-glow"></div>
+  <div class="login-box">
+    <div class="login-logo">
+      <img src="/icons/favicon.svg" width="40" height="40" style="border-radius:9px;" alt="" />
+    </div>
+    <p class="login-title">Admin</p>
+    <p class="login-sub">{{NAME}}</p>
+
+    <div class="login-oauth-note">
+      <p>Admins &amp; owners — sign in with your account.</p>
+      <button type="button" id="oauthSignInBtn" class="btn btn-primary btn-sm" style="width:100%;box-sizing:border-box;">Sign in with OAuth</button>
+      <p class="err" id="oauthErr" style="display:none;margin-top:.6rem;">Your account doesn't have admin access.</p>
+    </div>
+
+    <div id="loginMagicWrap" style="display:none;">
+      <div class="login-divider"><span>or email a link</span></div>
+      <form id="loginMagicForm">
+        <div class="field">
+          <input type="email" id="loginMagicEmail" autocomplete="email" inputmode="email" placeholder="admin@email.com" required />
+        </div>
+        <p class="err" id="loginMagicErr" style="display:none;"></p>
+        <p id="loginMagicSent" style="display:none;font-size:.62rem;font-weight:200;letter-spacing:.06em;line-height:1.7;color:rgba(77,189,106,.75);margin:.2rem 0 .4rem;">Check your inbox — we sent a sign-in link. Open it on this device.</p>
+        <button type="submit" id="loginMagicBtn" class="btn btn-sm" style="width:100%;box-sizing:border-box;">Email me a link</button>
+      </form>
+    </div>
+
+    <div class="login-divider"><span>or use password</span></div>
+
+    <form id="loginForm">
+      <div class="field">
+        <label for="pw">Admin Password</label>
+        <input type="password" id="pw" autocomplete="current-password" required />
+      </div>
+      <p class="err" id="loginErr" style="display:none">Incorrect password.</p>
+      <button type="submit" class="btn btn-primary" style="width:100%;margin-top:.4rem">Enter</button>
+    </form>
+    <a href="https://zo0p.dev" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:.4rem;margin-top:1.6rem;font-size:.54rem;font-weight:200;letter-spacing:.22em;text-transform:uppercase;color:rgba(var(--muted-rgb),.5);text-decoration:none;">made with <svg viewBox="0 0 44 50" width="11" height="13" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.85;"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg><span style="font-weight:300;letter-spacing:.14em;color:var(--white);">Foyer</span></a>
+  </div>
+</div>
+
+<div class="app" id="app">
+  <nav class="app-nav">
+    <img class="app-nav-logo" src="/icons/favicon.svg" alt="" />
+    <span class="app-nav-title">Admin</span>
+    <button class="tab-btn active" data-tab="builder">Page Builder</button>
+    <button class="tab-btn" data-tab="images">Images</button>
+    <button class="tab-btn" data-tab="files">Files</button>
+    <button class="tab-btn" data-tab="settings">Settings</button>
+    <button class="tab-btn" data-tab="tutorials">Tutorials</button>
+    <button class="tab-btn" data-tab="reviews">Reviews</button>
+    <button class="tab-btn" data-tab="analytics">Analytics <span class="vis-badge" id="visBadge"></span></button>
+    <div class="nav-spacer"></div>
+    <a href="/" class="site-link" target="_blank">View site ↗</a>
+    <button class="btn btn-sm" id="logoutBtn" style="margin-left:.5rem">Log out</button>
+  </nav>
+
+  
+  
+  <div class="section" id="sec-images">
+    <div class="img-wrap">
+      <p class="img-heading">Images</p>
+      <p class="img-sub">Upload, name, and manage images — reference them in the page builder</p>
+      <div class="img-upload-area">
+        <div class="img-upload-zone">
+          <input type="file" id="imgTabFileInput" accept="image/*" multiple />
+          <p class="img-upload-label">Click or drag to upload<br><span style="opacity:.5;font-size:.9em;">Auto-compressed · JPEG · Max 1200px</span></p>
+        </div>
+        <div class="img-name-col">
+          <label>Name for next upload</label>
+          <input type="text" id="imgUploadName" placeholder="e.g. profile-photo" />
+          <p style="font-size:.58rem;color:var(--muted);line-height:1.6;">Used as a friendly reference. You can also rename images after uploading.</p>
+        </div>
+      </div>
+      <div id="imgTabGallery" class="img-gallery"></div>
+    </div>
+  </div>
+
+  
+  <div class="section" id="sec-files">
+    <div class="img-wrap">
+      <p class="img-heading">Files</p>
+      <p class="img-sub">Upload files to share — use the copied URL in any CTA or Links section</p>
+      <div class="img-upload-area">
+        <div class="img-upload-zone">
+          <input type="file" id="fileTabInput" multiple />
+          <p class="img-upload-label">Click or drag to upload<br><span style="opacity:.5;font-size:.9em;">PDF, zip, doc — max ~1.5 MB per file</span></p>
+        </div>
+      </div>
+      <div id="fileList" class="file-list"></div>
+    </div>
+  </div>
+
+  <div class="section" id="sec-settings">
+    <div class="settings-wrap">
+      <p class="settings-heading">Site Settings</p>
+      <p class="settings-sub">Sign-in gate appearance</p>
+      <div class="settings-group">
+        <p class="settings-group-title">Identity</p>
+        <div class="field"><label>Site Name <span style="opacity:.5">(used as gate logo)</span></label><input type="text" id="sName" placeholder="{{NAME}}" /></div>
+      </div>
+      <div class="settings-group">
+        <p class="settings-group-title">Gate</p>
+        <p style="font-weight:100;font-size:.66rem;color:var(--muted);line-height:1.8;margin-bottom:1.2rem;">Set <code style="font-size:.8em;background:var(--panel);padding:.1em .35em;border:1px solid var(--border)">GOOGLE_CLIENT_ID</code> in <code style="font-size:.8em;background:var(--panel);padding:.1em .35em;border:1px solid var(--border)">wrangler.toml</code> to enable Google sign-in.</p>
+        <div class="field"><label>Title <span style="opacity:.5">(inside card — defaults to site name)</span></label><input type="text" id="sGateTitle" placeholder="{{NAME}}" /></div>
+        <div class="field"><label>Title Font</label>
+          <select id="sGateTitleFont" style="background:var(--panel);border:1px solid var(--border);color:var(--white);font-size:.82rem;padding:.6rem .75rem;outline:none;width:100%;">
+            <option value="">Josefin Sans (default)</option>
+            <option value="Unbounded">Unbounded</option>
+            <option value="Playfair Display">Playfair Display</option>
+            <option value="Space Grotesk">Space Grotesk</option>
+            <option value="Raleway">Raleway</option>
+            <option value="Poppins">Poppins</option>
+            <option value="DM Sans">DM Sans</option>
+            <option value="Lato">Lato</option>
+            <option value="Montserrat">Montserrat</option>
+            <option value="Inter">Inter</option>
+          </select>
+        </div>
+        <div class="field"><label>Subtitle — while verifi is showing</label><input type="text" id="sGateSub" placeholder="Sign in to continue" /></div>
+        <div class="field"><label>Subtitle — after passing verifi <span style="opacity:.5">(shown when sign-in buttons appear)</span></label><input type="text" id="sGateSubUnlocked" placeholder="Choose how to sign in" /></div>
+        <div class="field"><label>Subtitle Font</label>
+          <select id="sGateSubFont" style="background:var(--panel);border:1px solid var(--border);color:var(--white);font-size:.82rem;padding:.6rem .75rem;outline:none;width:100%;">
+            <option value="">Josefin Sans (default)</option>
+            <option value="Unbounded">Unbounded</option>
+            <option value="Playfair Display">Playfair Display</option>
+            <option value="Space Grotesk">Space Grotesk</option>
+            <option value="Raleway">Raleway</option>
+            <option value="Poppins">Poppins</option>
+            <option value="DM Sans">DM Sans</option>
+            <option value="Lato">Lato</option>
+            <option value="Montserrat">Montserrat</option>
+            <option value="Inter">Inter</option>
+          </select>
+        </div>
+        <div class="field"><label>Button Text</label><input type="text" id="sGateBtn" placeholder="Continue with Google" /></div>
+        <div class="field-row">
+          <div class="field"><label>Background Color</label><input type="text" id="sGateBg" placeholder="#020a03" /></div>
+          <div class="field"><label>Accent Color</label><input type="text" id="sGateAccent" placeholder="#4dbd6a" /></div>
+        </div>
+      </div>
+      <div class="settings-group">
+        <p class="settings-group-title">Navigation</p>
+        <div class="field"><label>Brand / Logo Text <span style="opacity:.5">(left side)</span></label><input type="text" id="sNavTitle" placeholder="{{NAME}}" /></div>
+        <div class="field-row">
+          <div class="field"><label>Style</label>
+            <select id="sNavStyle" style="background:var(--panel);border:1px solid var(--border);color:var(--white);font-size:.82rem;padding:.6rem .75rem;outline:none;width:100%;">
+              <option value="blurred">Blurred glass</option>
+              <option value="solid">Solid dark</option>
+              <option value="transparent">Transparent</option>
+            </select>
+          </div>
+          <div class="field"><label>Alignment</label>
+            <select id="sNavAlign" style="background:var(--panel);border:1px solid var(--border);color:var(--white);font-size:.82rem;padding:.6rem .75rem;outline:none;width:100%;">
+              <option value="left">Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:1.2rem;">
+          <p style="font-size:.54rem;letter-spacing:.28em;text-transform:uppercase;color:rgba(77,189,106,.4);font-weight:100;margin-bottom:.8rem;">Page Visibility &amp; Order</p>
+          <p style="font-size:.62rem;font-weight:100;color:var(--muted);line-height:1.7;margin-bottom:.75rem;">Drag to reorder. Toggle to show/hide from nav.</p>
+          <div id="navPageList" style="display:flex;flex-direction:column;gap:.3rem;"></div>
+        </div>
+        <div style="margin-top:1.4rem;">
+          <p style="font-size:.54rem;letter-spacing:.28em;text-transform:uppercase;color:rgba(77,189,106,.4);font-weight:100;margin-bottom:.8rem;">Custom External Links</p>
+          <div id="navCustomLinks" style="display:flex;flex-direction:column;gap:.35rem;margin-bottom:.6rem;"></div>
+          <button class="btn btn-xs" id="navAddCustomLink">+ Add Link</button>
+        </div>
+      </div>
+      <div class="settings-group">
+        <p class="settings-group-title">Sign-in Methods</p>
+        <p style="font-weight:100;font-size:.66rem;color:var(--muted);line-height:1.8;margin-bottom:1.2rem;">Toggle which providers visitors can use to sign in. Unchecking a provider hides its button and blocks the API endpoint.</p>
+        <div class="field"><label style="display:flex;align-items:center;gap:.75rem;cursor:pointer;"><input type="checkbox" id="sAuthGoogle" checked /> Google</label></div>
+        <div class="field"><label style="display:flex;align-items:center;gap:.75rem;cursor:pointer;"><input type="checkbox" id="sAuthGithub" checked /> GitHub</label></div>
+        <div class="field"><label style="display:flex;align-items:center;gap:.75rem;cursor:pointer;"><input type="checkbox" id="sAuthDiscord" checked /> Discord</label></div>
+        <div class="field"><label style="display:flex;align-items:center;gap:.75rem;cursor:pointer;"><input type="checkbox" id="sAuthMagic" checked /> Email (magic link)</label><p style="font-weight:100;font-size:.6rem;color:var(--muted);margin:.3rem 0 0 1.85rem;">Requires a RESEND_API_KEY secret. If unset, the button stays hidden regardless of this toggle.</p></div>
+      </div>
+      <div class="settings-group">
+        <p class="settings-group-title">Site Status</p>
+        <div class="field"><label style="display:flex;align-items:center;gap:.75rem;cursor:pointer;"><input type="checkbox" id="sSiteOffline" /> Take site offline</label></div>
+        <p style="font-weight:100;font-size:.66rem;color:var(--muted);line-height:1.8;margin-top:.5rem;">When checked, visitors see an offline message instead of the sign-in gate. The admin panel is unaffected.</p>
+      </div>
+      <div class="settings-group">
+        <p class="settings-group-title">Site Color Theme</p>
+        <p style="font-weight:100;font-size:.66rem;color:var(--muted);line-height:1.8;margin-bottom:1.2rem;">Applies to the gate, nav bar, and auth wall. Page-level colors are set in the Page Builder.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.2rem;" id="themePresets">
+          <button class="btn btn-sm" data-theme='{"theme_bg":"#020a03","theme_accent":"#4dbd6a","theme_text":"#c8e6aa"}'>Deep Ocean</button>
+          <button class="btn btn-sm" data-theme='{"theme_bg":"#080510","theme_accent":"#9b5de5","theme_text":"#d4c0f5"}'>Midnight Purple</button>
+          <button class="btn btn-sm" data-theme='{"theme_bg":"#040c06","theme_accent":"#4caf70","theme_text":"#b8e6c4"}'>Forest Dark</button>
+          <button class="btn btn-sm" data-theme='{"theme_bg":"#0d0805","theme_accent":"#e07b4d","theme_text":"#f5d0b8"}'>Ember</button>
+          <button class="btn btn-sm" data-theme='{"theme_bg":"#080808","theme_accent":"#aaaaaa","theme_text":"#e0e0e0"}'>Monochrome</button>
+          <button class="btn btn-sm" data-theme='{"theme_bg":"#05050d","theme_accent":"#e05d85","theme_text":"#f5c0d0"}'>Rose Night</button>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Background</label><input type="color" id="sThemeBg" value="#020a03" style="height:38px;padding:.2rem;" /></div>
+          <div class="field"><label>Accent</label><input type="color" id="sThemeAccent" value="#4dbd6a" style="height:38px;padding:.2rem;" /></div>
+          <div class="field"><label>Text</label><input type="color" id="sThemeText" value="#c8e6aa" style="height:38px;padding:.2rem;" /></div>
+        </div>
+      </div>
+      <div class="settings-actions" style="flex-wrap:wrap;gap:.6rem;">
+        <button class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
+        <div class="spinner" id="settingsSpinner"></div>
+        <span class="save-status" id="settingsStatus"></span>
+        <div style="flex:1;"></div>
+        <button class="btn btn-sm" id="pushUiUpdateBtn" title="Forces all visitors to reload and pick up new content">Push UI Update ↑</button>
+      </div>
+
+      <div class="settings-group" style="margin-top:2.5rem;">
+        <p class="settings-group-title">Email Blocklist</p>
+        <p style="font-weight:100;font-size:.66rem;color:var(--muted);line-height:1.8;margin-bottom:1.2rem;">Blocked emails cannot sign in via any provider. Banning a user with "Block email permanently" adds them here automatically.</p>
+        <div style="display:flex;gap:.5rem;margin-bottom:1.2rem;">
+          <input type="email" id="blocklistEmailInput" placeholder="email@example.com" style="flex:1;background:var(--panel);border:1px solid var(--border);color:var(--white);font-weight:300;font-size:.82rem;padding:.6rem .85rem;outline:none;font-family:inherit;" />
+          <button class="btn btn-sm" id="blocklistAddBtn">Block</button>
+        </div>
+        <div id="blocklistItems" style="display:flex;flex-direction:column;gap:.4rem;"></div>
+      </div>
+    </div>
+  </div>
+
+  
+  <div class="img-picker-overlay" id="imgPickerOverlay">
+    <div class="img-picker-box">
+      <div class="img-picker-head">
+        <span class="img-picker-title">Pick an image</span>
+        <label style="display:flex;align-items:center;gap:.5rem;font-weight:200;font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--green);cursor:pointer;border:1px solid rgba(77,189,106,.25);padding:.3rem .75rem;">
+          <input type="file" id="imgFileInput" accept="image/*" multiple style="display:none;" />
+          + Upload
+        </label>
+        <button class="img-picker-close" id="imgPickerClose">✕</button>
+      </div>
+      <div class="img-picker-grid" id="imgPickerGrid"></div>
+    </div>
+  </div>
+
+  
+  <div class="file-picker-overlay" id="filePickerOverlay">
+    <div class="file-picker-box">
+      <div class="file-picker-head">
+        <span class="img-picker-title">Pick a file</span>
+        <button class="img-picker-close" id="filePickerClose">✕</button>
+      </div>
+      <div class="file-picker-list" id="filePickerList"></div>
+    </div>
+  </div>
+
+  
+  <div class="section" id="sec-tutorials" style="flex-direction:column;overflow:hidden;">
+    <div style="display:flex;height:100%;overflow:hidden;">
+      
+      <div id="tutList" style="width:260px;flex-shrink:0;border-right:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;overflow:hidden;">
+        <div style="padding:.8rem .9rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+          <span style="font-size:.52rem;letter-spacing:.3em;text-transform:uppercase;color:var(--muted);font-weight:100;">Tutorials</span>
+          <button class="btn btn-xs" id="tutNewBtn">+ New</button>
+        </div>
+        <div id="tutListItems" style="flex:1;overflow-y:auto;padding:.4rem;"></div>
+      </div>
+      
+      <div id="tutEditor" style="flex:1;overflow-y:auto;padding:2rem;display:flex;flex-direction:column;gap:1.2rem;">
+        <p style="font-weight:100;font-size:.68rem;color:var(--muted);margin:auto;text-align:center;">Select a tutorial or create a new one.</p>
+      </div>
+    </div>
+  </div>
+
+  
+  <div class="section" id="sec-reviews" style="flex-direction:column;overflow:hidden;">
+    <div style="display:flex;height:100%;overflow:hidden;">
+      <div id="revList" style="width:260px;flex-shrink:0;border-right:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;overflow:hidden;">
+        <div style="padding:.8rem .9rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+          <span style="font-size:.52rem;letter-spacing:.3em;text-transform:uppercase;color:var(--muted);font-weight:100;">Reviews</span>
+          <button class="btn btn-xs" id="revNewBtn">+ New</button>
+        </div>
+        <div id="revListItems" style="flex:1;overflow-y:auto;padding:.4rem;"></div>
+      </div>
+      <div id="revEditor" style="flex:1;overflow-y:auto;padding:2rem;display:flex;flex-direction:column;gap:1.2rem;">
+        <p style="font-weight:100;font-size:.68rem;color:var(--muted);margin:auto;text-align:center;">Select a review or create a new one.</p>
+      </div>
+    </div>
+  </div>
+
+  
+  <div class="section" id="sec-analytics">
+    <div class="an-wrap">
+      <p class="an-heading">Analytics</p>
+      <p class="an-sub">Page views &amp; visitor intelligence</p>
+
+      <div class="stat-cards">
+        <div class="stat-card"><div class="stat-n" id="anTotal">—</div><div class="stat-l">Total Views</div></div>
+        <div class="stat-card"><div class="stat-n" id="anToday">—</div><div class="stat-l">Today</div></div>
+        <div class="stat-card"><div class="stat-n" id="anWeek">—</div><div class="stat-l">This Week</div></div>
+        <div class="stat-card"><div class="stat-n" id="anIPs">—</div><div class="stat-l">Unique IPs</div></div>
+        <div class="stat-card"><div class="stat-n" id="anCountriesN">—</div><div class="stat-l">Countries</div></div>
+      </div>
+
+      <p class="an-section-label">Recent Activity</p>
+      <div class="an-feed" id="anFeed"></div>
+
+      <p class="an-section-label">Breakdowns</p>
+      <div class="an-breakdowns" id="anBreakdowns"></div>
+
+      <p class="an-section-label">Signed-in Visitors</p>
+      <div id="vList"></div>
+    </div>
+  </div>
+
+  
+  <div class="section bld-sec active" id="sec-builder" style="position:relative;">
+    <div class="mob-bld-bar" id="mobBldBar" style="display:none;">
+      <button class="mob-bld-pages-btn" id="mobPagesBtn">☰ Pages</button>
+      <span class="mob-bld-title" id="mobBldTitle">—</span>
+      <div style="display:flex;gap:.4rem;">
+        <button class="btn btn-xs" id="mobPreviewBtn">↗</button>
+        <button class="btn btn-primary btn-xs" id="mobPublishBtn">Publish</button>
+      </div>
+    </div>
+    <div class="bld-loading" id="bldLoading"><div class="bld-loading-inner"><div class="bld-loading-spin"></div><p class="bld-loading-label">Loading pages</p></div></div>
+    <div class="bld-topbar">
+      <div class="bld-tc">BG <input type="color" id="bldBg" value="#020a03" /></div>
+      <div class="bld-tc">Accent <input type="color" id="bldAccent" value="#4dbd6a" /></div>
+      <div class="bld-tc">Text <input type="color" id="bldText" value="#f0f7f1" /></div>
+      <div class="bld-tc">Font
+        <select id="bldFont">
+          <option value="Josefin Sans">Josefin Sans</option>
+          <option value="Unbounded">Unbounded</option>
+          <option value="Inter">Inter</option>
+          <option value="Playfair Display">Playfair Display</option>
+          <option value="Space Grotesk">Space Grotesk</option>
+          <option value="Raleway">Raleway</option>
+          <option value="Poppins">Poppins</option>
+          <option value="DM Sans">DM Sans</option>
+          <option value="Lato">Lato</option>
+          <option value="Montserrat">Montserrat</option>
+          <option value="Georgia">Georgia</option>
+          <option value="Courier New">Courier New</option>
+        </select>
+      </div>
+      <span class="bld-autosave" id="bldAutosave"><span class="bld-autosave-dot"></span><span id="bldAutosaveText">Saved</span></span>
+      <div class="bld-vsep"></div>
+      <button class="btn btn-xs" id="bldPreview">Preview ↗</button>
+      <button class="btn btn-primary btn-xs" id="bldPublish">Publish</button>
+      <div class="spinner" id="bldSpinner"></div>
+      <span class="save-status" id="bldStatus"></span>
+    </div>
+    <div class="bld-workspace">
+      
+      <div class="bld-pages">
+        <div class="bld-pages-hd">
+          <span class="bld-pages-label">Pages</span>
+          <button class="btn btn-xs" id="bldAddPageBtn">+ Page</button>
+        </div>
+        <div class="bld-page-list" id="bldPageList"></div>
+        <div class="bld-new-page-form" id="bldNewPageForm" style="display:none">
+          <input type="text" id="bldNPTitle" placeholder="Page title" />
+          <input type="text" id="bldNPSlug" placeholder="/slug" />
+          <p class="bld-npf-hint">Slug = URL path e.g. /about</p>
+          <div style="display:flex;gap:.35rem">
+            <button class="btn btn-primary btn-xs" style="flex:1" id="bldNPCreate">Create</button>
+            <button class="btn btn-xs" id="bldNPCancel">Cancel</button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bld-canvas-col" id="bldCanvasCol">
+        <div class="bld-browser">
+          <div class="bld-chrome">
+            <div class="bld-chrome-dots"><span></span><span></span><span></span></div>
+            <div class="bld-chrome-url" id="bldChromeUrl">lanson.pages.dev</div>
+          </div>
+          <div class="bld-canvas" id="bldCanvas">
+            <div class="bld-canvas-empty">Select or create a page, then add sections below</div>
+          </div>
+        </div>
+        <div class="bld-add-sec">
+          <p class="bld-add-title">Add a section</p>
+          <div class="bld-blocks" id="bldBlocks">
+            <button class="bld-blk" data-type="hero"><div class="bld-blk-ico"><div class="bl bl-b"></div><div class="bl bl-s"></div></div>Hero</button>
+            <button class="bld-blk" data-type="bio"><div class="bld-blk-ico"><div class="bl"></div><div class="bl"></div><div class="bl bl-h"></div></div>Bio</button>
+            <button class="bld-blk" data-type="links"><div class="bld-blk-ico"><div class="bl bl-c"></div><div class="bl bl-c"></div></div>Links</button>
+            <button class="bld-blk" data-type="link"><div class="bld-blk-ico"><div class="bl-btn" style="border-color:rgba(77,189,106,.4);">↗</div></div>Link</button>
+            <button class="bld-blk" data-type="contact"><div class="bld-blk-ico"><div class="bl-r"><div class="bl-d"></div><div class="bl"></div></div><div class="bl-r"><div class="bl-d"></div><div class="bl"></div></div></div>Contact</button>
+            <button class="bld-blk" data-type="social"><div class="bld-blk-ico"><div style="display:flex;gap:4px"><div class="bl-c" style="width:30%"></div><div class="bl-c" style="width:30%"></div><div class="bl-c" style="width:30%"></div></div></div>Social</button>
+            <button class="bld-blk" data-type="cta"><div class="bld-blk-ico"><div class="bl bl-h"></div><div class="bl-btn"></div></div>CTA</button>
+            <button class="bld-blk" data-type="quote"><div class="bld-blk-ico bl-ql"><div class="bl"></div><div class="bl bl-h"></div></div>Quote</button>
+            <button class="bld-blk" data-type="heading"><div class="bld-blk-ico"><div class="bl bl-b"></div></div>Heading</button>
+            <button class="bld-blk" data-type="text"><div class="bld-blk-ico"><div class="bl"></div><div class="bl"></div><div class="bl bl-h"></div></div>Text</button>
+            <button class="bld-blk" data-type="image"><div class="bld-blk-ico"><div class="bl-sq"></div></div>Image</button>
+            <button class="bld-blk" data-type="gallery"><div class="bld-blk-ico"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;width:36px;"><div class="bl-sq" style="width:100%;height:18px;"></div><div class="bl-sq" style="width:100%;height:18px;"></div><div class="bl-sq" style="width:100%;height:18px;"></div></div></div>Gallery</button>
+            <button class="bld-blk" data-type="imgtext"><div class="bld-blk-ico"><div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;width:30px;align-items:center;"><div class="bl-sq" style="width:100%;height:20px;"></div><div><div class="bl" style="width:100%;margin-bottom:3px;"></div><div class="bl" style="width:80%;margin-bottom:3px;"></div><div class="bl" style="width:60%;"></div></div></div></div>Img + Text</button>
+            <button class="bld-blk" data-type="stats"><div class="bld-blk-ico"><div style="display:flex;gap:6px"><div style="text-align:center"><div class="bl-num">42</div><div class="bl" style="width:24px"></div></div><div style="text-align:center"><div class="bl-num">7K</div><div class="bl" style="width:24px"></div></div></div></div>Stats</button>
+            <button class="bld-blk" data-type="cards"><div class="bld-blk-ico"><div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;width:28px;"><div class="bl-sq" style="width:100%;height:11px;"></div><div class="bl-sq" style="width:100%;height:11px;"></div><div class="bl-sq" style="width:100%;height:11px;"></div><div class="bl-sq" style="width:100%;height:11px;"></div></div></div>Cards</button>
+            <button class="bld-blk" data-type="group"><div class="bld-blk-ico"><div style="width:76%;border:1px solid rgba(77,189,106,.28);"><div style="height:7px;border-bottom:1px solid rgba(77,189,106,.18);display:flex;align-items:center;padding:0 3px;gap:2px;"><div style="width:4px;height:4px;border-radius:50%;background:rgba(77,189,106,.35);"></div><div style="flex:1;height:1px;background:rgba(77,189,106,.2);"></div></div><div style="padding:2px 3px;display:flex;flex-direction:column;gap:2px;"><div class="bl" style="width:90%;"></div><div class="bl" style="width:70%;"></div></div></div></div>Collapsible</button>
+            <button class="bld-blk" data-type="accordion"><div class="bld-blk-ico"><div style="width:74%;display:flex;flex-direction:column;gap:3px;"><div style="height:3px;background:rgba(77,189,106,.32);border-radius:1px;"></div><div style="height:2px;background:rgba(77,189,106,.12);"></div><div style="height:3px;background:rgba(77,189,106,.32);border-radius:1px;margin-top:2px;"></div><div style="height:2px;background:rgba(77,189,106,.12);"></div></div></div>Accordion</button>
+            <button class="bld-blk" data-type="carousel"><div class="bld-blk-ico"><div style="display:flex;align-items:center;gap:3px;"><div style="font-size:.75rem;color:rgba(77,189,106,.38);">‹</div><div class="bl-sq" style="width:38px;height:20px;"></div><div style="font-size:.75rem;color:rgba(77,189,106,.38);">›</div></div></div>Carousel</button>
+            <button class="bld-blk" data-type="fileprev"><div class="bld-blk-ico"><div style="width:52px;height:24px;border:1px solid rgba(77,189,106,.3);display:flex;align-items:center;justify-content:center;"><span style="font-size:.65rem;color:rgba(77,189,106,.5);">PDF</span></div></div>File Preview</button>
+            <button class="bld-blk" data-type="filedown"><div class="bld-blk-ico"><div class="bl-btn" style="border-color:rgba(77,189,106,.4);font-size:.6rem;">↓</div></div>File Download</button>
+            <button class="bld-blk" data-type="tutorials"><div class="bld-blk-ico"><div style="width:52px;height:24px;border:1px solid rgba(77,189,106,.3);display:flex;align-items:center;justify-content:center;"><span style="font-size:.6rem;color:rgba(77,189,106,.5);">TUTS</span></div></div>Tutorials</button>
+            <button class="bld-blk" data-type="reviews"><div class="bld-blk-ico"><div style="width:52px;height:24px;border:1px solid rgba(77,189,106,.3);display:flex;align-items:center;justify-content:center;"><span style="font-size:.7rem;color:rgba(77,189,106,.5);">★★★</span></div></div>Reviews</button>
+            <button class="bld-blk" data-type="divider"><div class="bld-blk-ico"><div class="bl-rule"></div></div>Divider</button>
+            <button class="bld-blk" data-type="spacer"><div class="bld-blk-ico"><div style="height:14px;border-left:1px dashed rgba(77,189,106,.25);border-right:1px dashed rgba(77,189,106,.25);width:30px;"></div></div>Spacer</button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bld-editor" id="bldEditor">
+        <p class="bld-editor-hint">Hover a section and click <strong>Edit</strong> to change its content.</p>
+      </div>
+    </div>
+  </div>
+
+  <nav class="mob-nav" id="mobNav">
+    <button class="mob-tab active" data-tab="builder">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Builder
+    </button>
+    <button class="mob-tab" data-tab="images">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+      Images
+    </button>
+    <button class="mob-tab" data-tab="files">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Files
+    </button>
+    <button class="mob-tab" data-tab="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings
+    </button>
+    <button class="mob-tab" data-tab="tutorials">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      Tutorials
+    </button>
+    <button class="mob-tab" data-tab="reviews">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 21 12 16.5 5.5 21 7.5 13.5 2 9 9 9"/></svg>
+      Reviews
+    </button>
+    <button class="mob-tab" data-tab="analytics">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Analytics <span class="mob-badge" id="mobBadge"></span>
+    </button>
+  </nav>
+</div>
+
+
+<div class="mob-drawer-backdrop" id="mobDrawerBackdrop"></div>
+<div class="mob-drawer" id="mobDrawer">
+  <div class="mob-drawer-head">
+    <span>Pages</span>
+    <button id="mobDrawerClose">✕</button>
+  </div>
+  <div id="mobDrawerPageList"></div>
+  <div style="padding:.75rem;">
+    <button class="btn btn-xs" style="width:100%" id="mobAddPageBtn">+ New Page</button>
+  </div>
+</div>
+
+
+<div class="mob-sheet-backdrop" id="mobSheetBackdrop"></div>
+<div class="mob-sheet" id="mobSheet">
+  <div class="mob-sheet-handle"></div>
+  <div class="mob-sheet-head" id="mobSheetHead"></div>
+  <div class="mob-sheet-body" id="mobSheetBody"></div>
+</div>
+
+<script src="js/utils.js" defer></script>
+<script src="js/builder.js" defer></script>
+<script src="js/analytics.js" defer></script>
+<script src="js/tutorials.js" defer></script>
+<script src="js/reviews.js" defer></script>
+<script src="js/mobile.js" defer></script>
+<script src="js/main.js" defer></script>
+</body>
+</html>

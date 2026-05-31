@@ -1,0 +1,20 @@
+{
+  "name": "Max-Emanuel Burzer",
+  "shortName": "Burzer",
+  "domain": "burzer.org",
+  "themeColor": "#4da8e0",
+  "bgColor": "#030810",
+  "accentBright": "#5bc8ff",
+  "textColor": "#c8e6fa",
+  "mutedRgb": "190,215,240",
+  "verifiSite": "d05e0424fa624139",
+  "tagline": "",
+  "description": "Max-Emanuel Burzer — tutorials, reviews, and guides. Sign in to explore the latest posts.",
+  "keywords": "Max-Emanuel Burzer, tutorials, reviews, guides",
+  "cloudflare": {
+    "accountId": "e260d5177448ffcb908c331e64b932e7",
+    "project": "burzer",
+    "d1Name": "burzer-site",
+    "d1Id": "b44b485b-ad71-4418-a971-f52f50f3f191"
+  }
+}

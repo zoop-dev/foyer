@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 230 56" fill="none">
+  <g stroke="#e8edf2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 47 V25 a16 16 0 0 1 32 0 V47"/>
+    <path d="M16 47 V29 a6 6 0 0 1 12 0 V47"/>
+  </g>
+  <text x="56" y="40" font-family="'Josefin Sans','Segoe UI',sans-serif" font-size="34" font-weight="300" letter-spacing="2" fill="#e8edf2">foyer</text>
+</svg>

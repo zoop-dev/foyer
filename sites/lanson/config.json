@@ -1,0 +1,20 @@
+{
+  "name": "Zachary Lanson",
+  "shortName": "Lanson",
+  "domain": "lanson.org",
+  "themeColor": "#4dbd6a",
+  "bgColor": "#020a03",
+  "accentBright": "#39ff14",
+  "textColor": "#c8e6aa",
+  "mutedRgb": "180,230,190",
+  "verifiSite": "d05e0424fa624139",
+  "tagline": "Tutorials, reviews, and guides",
+  "description": "Zachary Lanson — tutorials, reviews, and guides. Sign in to explore the latest posts.",
+  "keywords": "Zachary Lanson, tutorials, reviews, guides, deals",
+  "cloudflare": {
+    "accountId": "9e35de18c01b92479f813834c91e4b23",
+    "project": "lanson",
+    "d1Name": "lanson",
+    "d1Id": "832a3d76-08bd-43f8-a78b-8553ee05c457"
+  }
+}

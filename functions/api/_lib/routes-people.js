@@ -1,0 +1,252 @@
+
+export async function handlePeople(ctx) {
+  const { route, method, request, env, headers, respond, compressJson, decompressJson, CREATE_SESSIONS, CREATE_BANNED_EMAILS, CREATE_PAGES, authed, visitorAuthed, _adminRole } = ctx;
+
+  if (route === 'visitors' && method === 'GET') {
+    if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    const { results } = await env.DB.prepare(
+      'SELECT id, email, name, picture, visit_count, is_banned, role, first_seen, last_seen FROM visitors ORDER BY last_seen DESC'
+    ).all();
+
+    return respond({ visitors: results, caller_role: _adminRole || '' });
+  }
+
+  const roleChange = route.match(/^visitors\/(\d+)\/(promote|demote)$/);
+  if (roleChange && method === 'POST') {
+    if (_adminRole !== 'owner') return respond({ error: 'owner_only' }, 403);
+    const id = parseInt(roleChange[1]);
+    const newRole = roleChange[2] === 'promote' ? 'admin' : '';
+
+    const target = await env.DB.prepare('SELECT role FROM visitors WHERE id = ?').bind(id).first();
+    if (target?.role === 'owner') return respond({ error: 'cannot_modify_owner' }, 403);
+    await env.DB.prepare('UPDATE visitors SET role = ? WHERE id = ?').bind(newRole, id).run();
+    return respond({ ok: true, role: newRole });
+  }
+
+  if (route === 'banned-emails' && method === 'GET') {
+    if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    await env.DB.prepare(CREATE_BANNED_EMAILS).run();
+    const { results } = await env.DB.prepare(
+      'SELECT email, banned_at FROM banned_emails ORDER BY banned_at DESC'
+    ).all();
+    return respond(results);
+  }
+
+  if (route === 'banned-emails' && method === 'POST') {
+    if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    await env.DB.prepare(CREATE_BANNED_EMAILS).run();
+    const { email } = await request.json().catch(() => ({}));
+    if (!email?.trim()) return respond({ error: 'email required' }, 400);
+    const addr = email.trim().toLowerCase();
+    await env.DB.prepare('INSERT OR IGNORE INTO banned_emails (email) VALUES (?)').bind(addr).run();
+
+    await env.DB.prepare(
+      "UPDATE visitors SET is_banned = 1, google_sub = 'banned:' || google_sub WHERE email = ? AND google_sub NOT LIKE 'banned:%'"
+    ).bind(addr).run();
+    return respond({ ok: true });
+  }
+
+  const bannedEmailDel = route.match(/^banned-emails\/(.+)$/);
+  if (bannedEmailDel && method === 'DELETE') {
+    if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    await env.DB.prepare(CREATE_BANNED_EMAILS).run();
+    const addr = decodeURIComponent(bannedEmailDel[1]).toLowerCase();
+    await env.DB.prepare('DELETE FROM banned_emails WHERE email = ?').bind(addr).run();
+
+    await env.DB.prepare(
+      "UPDATE visitors SET is_banned = 0, google_sub = SUBSTR(google_sub, 8) WHERE email = ? AND google_sub LIKE 'banned:%'"
+    ).bind(addr).run();
+    return respond({ ok: true });
+  }
+
+  const visitorBan = route.match(/^visitors\/(\d+)\/(ban|unban)$/);
+  if (visitorBan && method === 'POST') {
+    if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    const id = parseInt(visitorBan[1]);
+    const banning = visitorBan[2] === 'ban';
+
+    const { scope = 'one' } = banning ? (await request.json().catch(() => ({}))) : {};
+
+    if (banning) {
+
+      await env.DB.prepare(
+        "UPDATE visitors SET is_banned = 1, google_sub = 'banned:' || google_sub WHERE id = ? AND google_sub NOT LIKE 'banned:%'"
+      ).bind(id).run();
+
+      if (scope === 'email' || scope === 'email_block') {
+
+        const v = await env.DB.prepare('SELECT email FROM visitors WHERE id = ?').bind(id).first();
+        if (v?.email) {
+
+          await env.DB.prepare(
+            "UPDATE visitors SET is_banned = 1, google_sub = 'banned:' || google_sub WHERE email = ? AND id != ? AND google_sub NOT LIKE 'banned:%'"
+          ).bind(v.email, id).run();
+
+          if (scope === 'email_block') {
+
+            await env.DB.prepare(CREATE_BANNED_EMAILS).run();
+            await env.DB.prepare(
+              'INSERT OR IGNORE INTO banned_emails (email) VALUES (?)'
+            ).bind(v.email).run();
+          }
+        }
+      }
+    } else {
+
+      await env.DB.prepare(
+        "UPDATE visitors SET is_banned = 0, google_sub = SUBSTR(google_sub, 8) WHERE id = ? AND google_sub LIKE 'banned:%'"
+      ).bind(id).run();
+
+      await env.DB.prepare(CREATE_BANNED_EMAILS).run();
+      const v = await env.DB.prepare('SELECT email FROM visitors WHERE id = ?').bind(id).first();
+      if (v?.email) {
+        await env.DB.prepare('DELETE FROM banned_emails WHERE email = ?').bind(v.email).run();
+
+        await env.DB.prepare(
+          "UPDATE visitors SET is_banned = 0, google_sub = SUBSTR(google_sub, 8) WHERE email = ? AND google_sub LIKE 'banned:%'"
+        ).bind(v.email).run();
+      }
+    }
+    return respond({ ok: true, banned: banning });
+  }
+
+  const visitorAnalytics = route.match(/^analytics\/visitor\/(\d+)$/);
+  if (visitorAnalytics && method === 'GET') {
+    if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    const visId = parseInt(visitorAnalytics[1]);
+    await env.DB.prepare(CREATE_SESSIONS).run();
+    const { results: sessions } = await env.DB.prepare(
+      'SELECT token FROM sessions WHERE visitor_id = ?'
+    ).bind(visId).all();
+    if (!sessions.length) return respond({ views: [], no_sessions: true });
+    const tokens = sessions.map(s => s.token);
+    const ph = tokens.map(() => '?').join(',');
+    await env.DB.prepare(`CREATE TABLE IF NOT EXISTS page_views (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, sess TEXT NOT NULL DEFAULT '',
+      path TEXT NOT NULL DEFAULT '/', referrer TEXT NOT NULL DEFAULT '',
+      ip TEXT NOT NULL DEFAULT '', country TEXT NOT NULL DEFAULT '',
+      city TEXT NOT NULL DEFAULT '', region TEXT NOT NULL DEFAULT '',
+      postal TEXT NOT NULL DEFAULT '', lat REAL, lon REAL,
+      tz TEXT NOT NULL DEFAULT '', asn TEXT NOT NULL DEFAULT '',
+      isp TEXT NOT NULL DEFAULT '', colo TEXT NOT NULL DEFAULT '',
+      continent TEXT NOT NULL DEFAULT '', is_eu INTEGER NOT NULL DEFAULT 0,
+      ua TEXT NOT NULL DEFAULT '', screen TEXT NOT NULL DEFAULT '',
+      lang TEXT NOT NULL DEFAULT '', http TEXT NOT NULL DEFAULT '',
+      tls TEXT NOT NULL DEFAULT '', viewed_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`).run();
+    const { results: views } = await env.DB.prepare(
+      `SELECT * FROM page_views WHERE sess IN (${ph}) ORDER BY viewed_at DESC LIMIT 200`
+    ).bind(...tokens).all();
+    return respond({ views, session_count: sessions.length });
+  }
+
+  const CREATE_PAGE_VIEWS = `CREATE TABLE IF NOT EXISTS page_views (
+    id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    sess      TEXT NOT NULL DEFAULT '',
+    path      TEXT NOT NULL DEFAULT '/',
+    referrer  TEXT NOT NULL DEFAULT '',
+    ip        TEXT NOT NULL DEFAULT '',
+    country   TEXT NOT NULL DEFAULT '',
+    city      TEXT NOT NULL DEFAULT '',
+    region    TEXT NOT NULL DEFAULT '',
+    postal    TEXT NOT NULL DEFAULT '',
+    lat       REAL,
+    lon       REAL,
+    tz        TEXT NOT NULL DEFAULT '',
+    asn       TEXT NOT NULL DEFAULT '',
+    isp       TEXT NOT NULL DEFAULT '',
+    colo      TEXT NOT NULL DEFAULT '',
+    continent TEXT NOT NULL DEFAULT '',
+    is_eu     INTEGER NOT NULL DEFAULT 0,
+    ua        TEXT NOT NULL DEFAULT '',
+    screen    TEXT NOT NULL DEFAULT '',
+    lang      TEXT NOT NULL DEFAULT '',
+    http      TEXT NOT NULL DEFAULT '',
+    tls       TEXT NOT NULL DEFAULT '',
+    viewed_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`;
+
+  if (route === 'analytics/ping' && method === 'POST') {
+    await env.DB.prepare(CREATE_PAGE_VIEWS).run();
+    const cf = request.cf || {};
+    const ip = request.headers.get('CF-Connecting-IP') || '';
+    const ua = request.headers.get('User-Agent') || '';
+    const b  = await request.json().catch(() => ({}));
+    await env.DB.prepare(
+      `INSERT INTO page_views (sess,path,referrer,ip,country,city,region,postal,lat,lon,tz,asn,isp,colo,continent,is_eu,ua,screen,lang,http,tls)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+    ).bind(
+      b.session  || '',
+      b.path     || '/',
+      b.referrer || '',
+      ip,
+      cf.country         || '',
+      cf.city            || '',
+      cf.region          || '',
+      cf.postalCode      || '',
+      cf.latitude        ?? null,
+      cf.longitude       ?? null,
+      cf.timezone        || '',
+      String(cf.asn      || ''),
+      cf.asOrganization  || '',
+      cf.colo            || '',
+      cf.continent       || '',
+      cf.isEUCountry     ? 1 : 0,
+      ua,
+      b.screen || '',
+      b.lang   || '',
+      cf.httpProtocol || '',
+      cf.tlsVersion   || ''
+    ).run();
+    return respond({ ok: true });
+  }
+
+  if (route === 'analytics' && method === 'GET') {
+    if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    await env.DB.prepare(CREATE_PAGE_VIEWS).run();
+    const [total, today, week, uIPs, uCountries,
+           topPaths, topCountries, topCities, topISPs,
+           topASNs, topTZ, topScreens, topLang,
+           topColo, topTLS, recent, visitors] = await Promise.all([
+      env.DB.prepare("SELECT COUNT(*) n FROM page_views").first(),
+      env.DB.prepare("SELECT COUNT(*) n FROM page_views WHERE viewed_at >= datetime('now','-1 day')").first(),
+      env.DB.prepare("SELECT COUNT(*) n FROM page_views WHERE viewed_at >= datetime('now','-7 days')").first(),
+      env.DB.prepare("SELECT COUNT(DISTINCT ip) n FROM page_views WHERE ip != ''").first(),
+      env.DB.prepare("SELECT COUNT(DISTINCT country) n FROM page_views WHERE country != ''").first(),
+      env.DB.prepare("SELECT path, COUNT(*) n FROM page_views GROUP BY path ORDER BY n DESC LIMIT 12").all(),
+      env.DB.prepare("SELECT country, COUNT(*) n FROM page_views WHERE country != '' GROUP BY country ORDER BY n DESC LIMIT 15").all(),
+      env.DB.prepare("SELECT city, region, country, COUNT(*) n FROM page_views WHERE city != '' GROUP BY city,country ORDER BY n DESC LIMIT 10").all(),
+      env.DB.prepare("SELECT isp, asn, COUNT(*) n FROM page_views WHERE isp != '' GROUP BY isp ORDER BY n DESC LIMIT 10").all(),
+      env.DB.prepare("SELECT asn, isp, COUNT(*) n FROM page_views WHERE asn != '' GROUP BY asn ORDER BY n DESC LIMIT 10").all(),
+      env.DB.prepare("SELECT tz, COUNT(*) n FROM page_views WHERE tz != '' GROUP BY tz ORDER BY n DESC LIMIT 10").all(),
+      env.DB.prepare("SELECT screen, COUNT(*) n FROM page_views WHERE screen != '' GROUP BY screen ORDER BY n DESC LIMIT 10").all(),
+      env.DB.prepare("SELECT lang, COUNT(*) n FROM page_views WHERE lang != '' GROUP BY lang ORDER BY n DESC LIMIT 10").all(),
+      env.DB.prepare("SELECT colo, COUNT(*) n FROM page_views WHERE colo != '' GROUP BY colo ORDER BY n DESC LIMIT 10").all(),
+      env.DB.prepare("SELECT tls, COUNT(*) n FROM page_views WHERE tls != '' GROUP BY tls ORDER BY n DESC LIMIT 6").all(),
+      env.DB.prepare("SELECT * FROM page_views ORDER BY viewed_at DESC LIMIT 100").all(),
+      env.DB.prepare("SELECT id,email,name,picture,visit_count,is_banned,role,first_seen,last_seen FROM visitors ORDER BY last_seen DESC").all(),
+    ]);
+    return respond({
+      caller_role: _adminRole || '',
+      total:    total?.n    || 0,
+      today:    today?.n    || 0,
+      week:     week?.n     || 0,
+      unique_ips:       uIPs?.n       || 0,
+      unique_countries: uCountries?.n || 0,
+      top_paths:     topPaths.results     || [],
+      top_countries: topCountries.results || [],
+      top_cities:    topCities.results    || [],
+      top_isps:      topISPs.results      || [],
+      top_asns:      topASNs.results      || [],
+      top_tz:        topTZ.results        || [],
+      top_screens:   topScreens.results   || [],
+      top_lang:      topLang.results      || [],
+      top_colo:      topColo.results      || [],
+      top_tls:       topTLS.results       || [],
+      recent:   recent.results   || [],
+      visitors: visitors.results || [],
+    });
+  }
+
+  return null;
+}

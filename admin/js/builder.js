@@ -1,0 +1,1187 @@
+function bE(s)   { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+marked.use({ breaks: true, gfm: true });
+const md = s => marked.parse(String(s||''));
+function bA(s)   { return String(s||'').replace(/"/g,'&quot;'); }
+function bRgb(hex, a) {
+  const h=(hex||'#000000').replace('#','');
+  const r=parseInt(h.slice(0,2),16)||0, g=parseInt(h.slice(2,4),16)||0, b=parseInt(h.slice(4,6),16)||0;
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function bRender(s, theme) {
+  const { accent='#4dbd6a', text='#f0f7f1', font='Josefin Sans', bg='#020a03' } = theme;
+  const ff = `font-family:'${font}',sans-serif;`;
+  const fc = `color:${text};`;
+
+  switch(s.type) {
+    case 'hero': {
+      const ta=`text-align:${s.align||'center'};`;
+      const sz=s.name_size==='sm'?'1.6rem':s.name_size==='md'?'2.2rem':s.name_size==='xl'?'clamp(3rem,10vw,5rem)':'clamp(1.9rem,8vw,3.2rem)';
+      const fw=s.weight||'300';
+      const ls=s.ls==='tight'?'-.03em':s.ls==='wide'?'.06em':'-.01em';
+      const p=s.pad==='sm'?'2rem 2rem 1.5rem':s.pad==='lg'?'7rem 2rem 6rem':'4rem 2rem 3rem';
+      const bgImg=s.bg_img?`background-image:url('${bA(s.bg_img)}');background-size:cover;background-position:center;position:relative;`:'';
+      const overlay=s.bg_img?`<div style="position:absolute;inset:0;background:rgba(0,0,0,${s.bg_overlay||'0.45'});"></div>`:'';
+      return `<div style="${ff}${fc}${bgImg}${ta}padding:${p};">${overlay}
+        <div style="position:relative;">
+        ${s.eyebrow?`<p style="font-size:.72rem;letter-spacing:.4em;text-transform:uppercase;color:${accent};margin-bottom:1rem;font-weight:200;">${bE(s.eyebrow)}</p>`:''}
+        <h1 style="font-size:${sz};font-weight:${fw};letter-spacing:${ls};margin:0 0 .5rem;line-height:1.08;">${bE(s.name||'Your Name')}</h1>
+        ${s.tagline?`<p style="font-size:.95rem;font-weight:200;font-style:italic;color:${bRgb(text,.52)};letter-spacing:.1em;margin-top:.3rem;">${bE(s.tagline)}</p>`:''}
+        </div></div>`;
+    }
+    case 'bio': {
+      const ta=`text-align:${s.align||'left'};`;
+      const mw=s.max_w==='narrow'?'360px':s.max_w==='wide'?'680px':s.max_w==='full'?'100%':'520px';
+      const mc=s.align==='center'?'margin:0 auto;':'';
+      const fs=s.fsize==='sm'?'.82rem':s.fsize==='lg'?'1.05rem':'.92rem';
+      const lh=s.lh==='compact'?'1.55':s.lh==='relaxed'?'2.3':'1.9';
+      const p=s.pad==='sm'?'1.2rem 2rem':s.pad==='lg'?'4.5rem 2rem':'2.5rem 2rem';
+      const pr=s.photo_radius==='circle'?'50%':s.photo_radius==='sm'?'4px':s.photo_radius==='lg'?'12px':'0';
+      const photoHtml=s.photo?`<img src="${bA(s.photo)}" alt="" style="width:${s.photo_size||'80px'};height:${s.photo_size||'80px'};object-fit:cover;border-radius:${pr};display:block;${s.align==='center'?'margin:0 auto 1.2rem;':'margin-bottom:1.2rem;'}" />`:'';
+      return `<div style="${ff}${fc}${ta}padding:${p};">
+        ${photoHtml}
+        ${s.heading?`<h2 style="font-size:1.35rem;font-weight:300;letter-spacing:.04em;margin-bottom:1rem;">${bE(s.heading)}</h2>`:''}
+        <div class="md-content" style="font-weight:200;font-size:${fs};line-height:${lh};color:${bRgb(text,.72)};max-width:${mw};${mc}">${md(s.body)}</div>
+      </div>`;
+    }
+    case 'links': {
+      const items=s.items||[];
+      const p=s.pad==='sm'?'1rem 2rem':s.pad==='lg'?'4rem 2rem':'2rem 2rem';
+      const ls=s.link_style||'card';
+      let inner;
+      const itTarget=it=>it.new_tab!=='no'?'target="_blank" rel="noopener"':'';
+      if (ls==='minimal') {
+        inner=items.map(it=>`<a href="${bA(it.u||'#')}" ${itTarget(it)} style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid ${bRgb(accent,.12)};padding:.75rem 0;text-decoration:none;"><span style="font-weight:300;font-size:.9rem;letter-spacing:.06em;color:${bRgb(text,.88)};">${bE(it.t||'Link')}</span>${it.d?`<span style="font-size:.62rem;color:${bRgb(accent,.42)};">${bE(it.d)}</span>`:''}</a>`).join('');
+      } else if (ls==='pill') {
+        inner=`<div style="display:flex;flex-direction:column;gap:.5rem;">${items.map(it=>`<a href="${bA(it.u||'#')}" ${itTarget(it)} style="display:block;border:1px solid ${bRgb(accent,.18)};background:${bRgb(accent,.04)};padding:.8rem 1.4rem;border-radius:40px;text-decoration:none;"><div style="font-weight:300;font-size:.9rem;letter-spacing:.06em;color:${bRgb(text,.88)};">${bE(it.t||'Link')}</div>${it.d?`<div style="font-size:.62rem;font-weight:200;color:${bRgb(accent,.42)};margin-top:.15rem;">${bE(it.d)}</div>`:''}</a>`).join('')}</div>`;
+      } else {
+        inner=`<div style="display:flex;flex-direction:column;gap:.52rem;">${items.map(it=>`<a href="${bA(it.u||'#')}" ${itTarget(it)} style="display:block;border:1px solid ${bRgb(accent,.15)};background:${bRgb(accent,.03)};padding:.85rem 1.2rem;text-decoration:none;"><div style="font-weight:300;font-size:.9rem;letter-spacing:.06em;color:${bRgb(text,.88)};">${bE(it.t||'Link')}</div>${it.d?`<div style="font-size:.62rem;font-weight:200;color:${bRgb(accent,.42)};margin-top:.18rem;">${bE(it.d)}</div>`:''}</a>`).join('')}</div>`;
+      }
+      return `<div style="${ff}${fc}padding:${p};">${inner}</div>`;
+    }
+    case 'contact': {
+      const rawItems=s.items||(s.email||s.phone?[...(s.email?[{label:'Email',val:s.email,href:`mailto:${s.email}`}]:[]),...(s.phone?[{label:'Phone',val:s.phone,href:`tel:${s.phone}`}]:[])]:[]);
+      const rows=rawItems.map(it=>[it.label||'',it.href||'',it.val||'']);
+      const ai=s.align==='left'?'flex-start':s.align==='right'?'flex-end':'center';
+      const p=s.pad==='sm'?'1.5rem 2rem':s.pad==='lg'?'4.5rem 2rem':'2.5rem 2rem';
+      const cst=s.cstyle||'normal';
+      let inner;
+      const subLine=(sub)=>sub?`<span style="display:block;font-size:.62rem;font-weight:200;letter-spacing:.06em;color:${bRgb(accent,.42)};margin-top:.12rem;">${bE(sub)}</span>`:'';
+      if (cst==='stacked') {
+        inner=rawItems.map(it=>`<div style="display:flex;flex-direction:column;gap:.2rem;"><span style="font-size:.55rem;letter-spacing:.3em;text-transform:uppercase;color:${bRgb(accent,.4)};font-weight:200;">${bE(it.label||'')}</span><span style="font-size:.95rem;font-weight:300;letter-spacing:.06em;color:${bRgb(text,.88)};">${bE(it.val||'')}</span>${subLine(it.sub)}</div>`).join('');
+      } else if (cst==='minimal') {
+        inner=rawItems.map(it=>`<div><a href="${bA(it.href||'')}" style="font-size:.95rem;font-weight:300;letter-spacing:.06em;color:${bRgb(text,.82)};text-decoration:none;">${bE(it.val||'')}</a>${subLine(it.sub)}</div>`).join('');
+      } else {
+        inner=rawItems.map(it=>`<div style="display:flex;align-items:baseline;gap:1rem;"><span style="font-size:.65rem;letter-spacing:.26em;text-transform:uppercase;color:${bRgb(accent,.38)};min-width:3rem;text-align:right;font-weight:200;">${bE(it.label||'')}</span><div><a href="${bA(it.href||'')}" style="font-size:.92rem;font-weight:300;letter-spacing:.06em;color:${bRgb(text,.85)};text-decoration:none;">${bE(it.val||'')}</a>${subLine(it.sub)}</div></div>`).join('');
+      }
+      return `<div style="${ff}${fc}padding:${p};text-align:${s.align||'center'};"><div style="display:flex;flex-direction:column;align-items:${ai};gap:.8rem;">${inner}</div></div>`;
+    }
+    case 'social': {
+      const items=s.items||[];
+      const jc=s.align==='left'?'flex-start':s.align==='right'?'flex-end':'center';
+      const p=s.pad==='sm'?'1rem 2rem':s.pad==='lg'?'4rem 2rem':'2rem 2rem';
+      const bs=s.btn_style||'outline';
+      const btnCss=bs==='solid'?`background:${accent};color:${bg};border:none;padding:.4rem .9rem;`:bs==='minimal'?`background:none;border:none;color:${accent};padding:.4rem .6rem;`:bs==='pill'?`background:none;border:1px solid ${bRgb(accent,.25)};color:${accent};border-radius:40px;padding:.4rem .9rem;`:`background:none;border:1px solid ${bRgb(accent,.22)};color:${accent};padding:.4rem .9rem;`;
+      return `<div style="${ff}${fc}padding:${p};text-align:${s.align||'center'};"><div style="display:flex;flex-wrap:wrap;gap:.6rem;justify-content:${jc};">${items.map(it=>`<a href="${bA(it.url||'#')}" target="_blank" rel="noopener" style="${btnCss}font-weight:200;font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;text-decoration:none;display:inline-block;">${bE(it.label||'Link')}</a>`).join('')}</div></div>`;
+    }
+    case 'cta': {
+      const ta=`text-align:${s.align||'center'};`;
+      const p=s.pad==='sm'?'1.5rem 2rem':s.pad==='lg'?'5.5rem 2rem':'3rem 2rem';
+      const bs=s.btn_style||'solid';
+      const bsz=s.btn_size==='sm'?'.5rem 1.3rem':s.btn_size==='lg'?'.9rem 2.8rem':'.7rem 2rem';
+      const btnCss=bs==='outline'?`background:transparent;border:1px solid ${accent};color:${accent};`:bs==='ghost'?`background:transparent;border:1px solid ${bRgb(text,.25)};color:${text};`:`background:${accent};border:1px solid ${accent};color:${bg};`;
+      return `<div style="${ff}${fc}${ta}padding:${p};">
+        ${s.text?`<p style="font-weight:200;font-size:1rem;letter-spacing:.06em;margin-bottom:1.4rem;color:${bRgb(text,.75)};">${bE(s.text)}</p>`:''}
+        <a href="${bA(s.button_url||'#')}" style="display:inline-block;font-weight:300;font-size:.78rem;letter-spacing:.25em;text-transform:uppercase;padding:${bsz};text-decoration:none;${btnCss}">${bE(s.button_label||'Get in touch')}</a>
+      </div>`;
+    }
+    case 'quote': {
+      const p=s.pad==='sm'?'1.5rem 2rem':s.pad==='lg'?'5rem 2rem':'3rem 2rem';
+      const v=s.variant||'border';
+      if (v==='centered') return `<div style="${ff}${fc}padding:${p};text-align:center;"><div style="max-width:480px;margin:0 auto;"><p style="font-size:2.5rem;font-weight:200;line-height:1;color:${bRgb(accent,.3)};margin-bottom:.5rem;">"</p><p style="font-size:1rem;font-weight:200;line-height:1.85;color:${bRgb(text,.75)};font-style:italic;">${bE(s.quote||'')}</p>${s.attribution?`<cite style="display:block;margin-top:.8rem;font-size:.67rem;font-weight:200;letter-spacing:.2em;text-transform:uppercase;color:${bRgb(accent,.45)};font-style:normal;">— ${bE(s.attribution)}</cite>`:''}</div></div>`;
+      if (v==='minimal') return `<div style="${ff}${fc}padding:${p};max-width:480px;margin:0 auto;"><p style="font-size:1rem;font-weight:200;line-height:1.85;color:${bRgb(text,.72)};font-style:italic;">${bE(s.quote||'')}</p>${s.attribution?`<cite style="display:block;margin-top:.6rem;font-size:.67rem;font-weight:200;letter-spacing:.2em;text-transform:uppercase;color:${bRgb(accent,.38)};font-style:normal;">— ${bE(s.attribution)}</cite>`:''}</div>`;
+      return `<div style="${ff}${fc}padding:${p};text-align:center;"><blockquote style="border-left:2px solid ${bRgb(accent,.4)};padding:1rem 1.5rem;text-align:left;max-width:440px;margin:0 auto;"><p style="font-size:1rem;font-weight:200;font-style:italic;line-height:1.85;color:${bRgb(text,.75)};">"${bE(s.quote||'Your quote')}"</p>${s.attribution?`<cite style="display:block;margin-top:.7rem;font-size:.67rem;font-weight:200;letter-spacing:.2em;text-transform:uppercase;color:${bRgb(accent,.45)};font-style:normal;">— ${bE(s.attribution)}</cite>`:''}</blockquote></div>`;
+    }
+    case 'heading': {
+      const sz=s.size==='xl'?'2.4rem':s.size==='sm'?'1rem':'1.5rem';
+      const fw=s.weight||'300';
+      const ls=s.ls==='tight'?'-.02em':s.ls==='wide'?'.15em':s.ls==='ultra'?'.35em':'.04em';
+      const p=s.pad==='sm'?'1.2rem 2rem .4rem':s.pad==='lg'?'4.5rem 2rem 1.5rem':'2.5rem 2rem .8rem';
+      return `<div style="${ff}${fc}padding:${p};text-align:${s.align||'left'};"><h2 style="font-size:${sz};font-weight:${fw};letter-spacing:${ls};margin:0;">${bE(s.text||'Heading')}</h2></div>`;
+    }
+    case 'text': {
+      const ta=`text-align:${s.align||'left'};`;
+      const fs=s.fsize==='sm'?'.8rem':s.fsize==='lg'?'1.05rem':'.92rem';
+      const lh=s.lh==='compact'?'1.55':s.lh==='relaxed'?'2.3':'1.9';
+      const mw=s.max_w==='narrow'?'360px':s.max_w==='wide'?'680px':s.max_w==='full'?'100%':'520px';
+      const mc=s.align==='center'?'margin:0 auto;':'';
+      const p=s.pad==='sm'?'.8rem 2rem':s.pad==='lg'?'3rem 2rem':'1.4rem 2rem';
+      return `<div style="${ff}${fc}${ta}padding:${p};"><div class="md-content" style="font-weight:200;font-size:${fs};line-height:${lh};color:${bRgb(text,.72)};max-width:${mw};${mc}">${md(s.text)}</div></div>`;
+    }
+    case 'image': {
+      const ta=`text-align:${s.align||'center'};`;
+      const mw=s.size==='sm'?'280px':s.size==='md'?'420px':'100%';
+      const r=s.radius==='sm'?'4px':s.radius==='lg'?'12px':s.radius==='circle'?'999px':'0';
+      const p=s.pad==='sm'?'1rem 2rem':s.pad==='lg'?'4rem 2rem':'2rem 2rem';
+      return `<div style="${ff}${fc}${ta}padding:${p};">${s.url?`<img src="${bA(s.url)}" alt="${bA(s.caption||'')}" style="max-width:${mw};width:100%;height:auto;display:inline-block;border-radius:${r};" />`:`<div style="display:inline-block;width:100%;max-width:${mw};background:${bRgb(accent,.06)};border:1px dashed ${bRgb(accent,.2)};padding:3rem 2rem;font-size:.68rem;letter-spacing:.2em;color:${bRgb(accent,.3)};border-radius:${r};">Image URL</div>`}${s.caption?`<p style="margin-top:.55rem;font-size:.62rem;font-weight:200;letter-spacing:.14em;color:${bRgb(text,.38)};">${bE(s.caption)}</p>`:''}</div>`;
+    }
+    case 'stats': {
+      const items=s.items||[];
+      const p=s.pad==='sm'?'1.5rem 2rem':s.pad==='lg'?'4.5rem 2rem':'2.5rem 2rem';
+      const cols=s.cols==='2'?'repeat(2,1fr)':s.cols==='3'?'repeat(3,1fr)':s.cols==='4'?'repeat(4,1fr)':'';
+      const gs=cols?`display:grid;grid-template-columns:${cols};gap:2rem;`:'display:flex;flex-wrap:wrap;gap:2.5rem;justify-content:center;';
+      return `<div style="${ff}${fc}padding:${p};text-align:center;"><div style="${gs}">${items.map(it=>`<div><div style="font-size:clamp(2rem,6vw,3rem);font-weight:300;letter-spacing:-.02em;color:${accent};">${bE(it.number||'0')}</div><div style="font-size:.6rem;font-weight:200;letter-spacing:.3em;text-transform:uppercase;color:${bRgb(text,.5)};margin-top:.3rem;">${bE(it.label||'')}</div></div>`).join('')}</div></div>`;
+    }
+    case 'divider': {
+      const sp=s.spacing==='sm'?'.8rem':s.spacing==='lg'?'3rem':'1.8rem';
+      const dbg=s.style==='fade'?`linear-gradient(90deg,transparent,${bRgb(accent,.38)},transparent)`:bRgb(accent,.28);
+      const dw=s.style==='short'?'2rem':'100%';
+      return `<div style="padding:${sp} 2rem;"><div style="width:${dw};height:1px;margin:0 auto;background:${dbg};"></div></div>`;
+    }
+    case 'spacer': {
+      const sh=s.size==='sm'?'1rem':s.size==='lg'?'4rem':s.size==='xl'?'7rem':'2.5rem';
+      return `<div style="height:${sh};"></div>`;
+    }
+    case 'link': {
+      const ta=`text-align:${s.align||'center'};`;
+      const p=s.pad==='sm'?'1rem 2rem':s.pad==='lg'?'3.5rem 2rem':'2rem 2rem';
+      const sty=s.style||'pill';
+      const sz=s.size==='sm'?'.5rem 1.4rem':s.size==='lg'?'.9rem 2.8rem':'.7rem 2rem';
+      const target=s.new_tab!=='no'?'target="_blank" rel="noopener"':'';
+      let bc;
+      if (sty==='solid') bc=`background:${accent};color:${bg};border:none;`;
+      else if (sty==='ghost') bc=`background:transparent;border:1px solid ${bRgb(text,.25)};color:${text};`;
+      else if (sty==='underline') bc=`background:none;border:none;border-bottom:1px solid ${bRgb(accent,.5)};color:${accent};padding-bottom:.2rem;border-radius:0;`;
+      else if (sty==='badge') bc=`background:${bRgb(accent,.12)};border:1px solid ${bRgb(accent,.25)};color:${accent};`;
+      else bc=`background:none;border:1px solid ${bRgb(accent,.3)};color:${accent};border-radius:40px;`;
+      return `<div style="${ff}${fc}${ta}padding:${p};"><a href="${bA(s.url||'#')}" ${target} style="${bc}display:inline-block;font-weight:300;font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;padding:${sz};text-decoration:none;">${bE(s.label||'Visit →')}</a></div>`;
+    }
+    case 'cards': {
+      const items=s.items||[];
+      const p=s.pad==='sm'?'1rem 2rem':s.pad==='lg'?'4rem 2rem':'2rem 2rem';
+      const layout=s.layout||'grid-2';
+      const r=s.radius==='sm'?'4px':s.radius==='lg'?'12px':'0';
+      const cImg=(it,h='140px')=>it.img
+        ?`<img src="${bA(it.img)}" alt="" style="width:100%;height:${h};object-fit:cover;display:block;border-radius:${r};" />`
+        :`<div style="width:100%;height:${h};background:${bRgb(accent,.06)};border:1px dashed ${bRgb(accent,.15)};border-radius:${r};display:flex;align-items:center;justify-content:center;font-size:.52rem;letter-spacing:.15em;color:${bRgb(accent,.25)};">image</div>`;
+      const cText=(it)=>(it.title||it.body)?`<div style="padding:.65rem 0;">${it.title?`<div style="font-weight:300;font-size:.85rem;letter-spacing:.04em;color:${bRgb(text,.9)};margin-bottom:.25rem;">${bE(it.title)}</div>`:''} ${it.body?`<div style="font-weight:200;font-size:.76rem;line-height:1.7;color:${bRgb(text,.52)};">${bE(it.body)}</div>`:''}</div>`:' ';
+      const cOpen=(it,sty='')=>it.url?`<a href="${bA(it.url||'#')}" ${it.new_tab!=='no'?'target="_blank" rel="noopener"':''} style="${sty}display:block;text-decoration:none;">`:`<div style="${sty}">`;
+      const cClose=(it)=>it.url?'</a>':'</div>';
+      let inner;
+      if (layout==='grid-2') {
+        inner=`<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1.2rem;">${items.map(it=>`${cOpen(it)}${cImg(it)}${cText(it)}${cClose(it)}`).join('')}</div>`;
+      } else if (layout==='grid-3') {
+        inner=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;">${items.map(it=>`${cOpen(it)}${cImg(it,'110px')}${cText(it)}${cClose(it)}`).join('')}</div>`;
+      } else if (layout==='grid-4') {
+        inner=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.7rem;">${items.map(it=>`${cOpen(it)}${cImg(it,'80px')}${it.title?`<div style="font-weight:300;font-size:.7rem;letter-spacing:.04em;color:${bRgb(text,.85)};margin-top:.38rem;">${bE(it.title)}</div>`:' '}${cClose(it)}`).join('')}</div>`;
+      } else if (layout==='feature') {
+        const [first,...rest]=items;
+        inner=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">${first?`<div style="grid-row:1/span ${Math.max(2,rest.length)};">${cOpen(first)}${cImg(first,'100%')}${cText(first)}${cClose(first)}</div>`:''}${rest.map(it=>`<div>${cOpen(it)}${cImg(it,'110px')}${cText(it)}${cClose(it)}</div>`).join('')}</div>`;
+      } else if (layout==='horizontal') {
+        inner=items.map(it=>`${cOpen(it,`display:grid;grid-template-columns:2fr 3fr;gap:1.2rem;align-items:center;padding:.75rem;border:1px solid ${bRgb(accent,.09)};margin-bottom:.65rem;`)}${cImg(it,'100px')}<div>${it.title?`<div style="font-weight:300;font-size:.88rem;letter-spacing:.04em;color:${bRgb(text,.9)};margin-bottom:.28rem;">${bE(it.title)}</div>`:''} ${it.body?`<div style="font-weight:200;font-size:.76rem;line-height:1.7;color:${bRgb(text,.52)};">${bE(it.body)}</div>`:''}</div>${cClose(it)}`).join('');
+      } else {
+        inner=`<div style="display:flex;flex-direction:column;">${items.map(it=>`${cOpen(it,`display:flex;gap:.9rem;align-items:center;padding:.55rem 0;border-bottom:1px solid ${bRgb(accent,.07)};`)} <div style="flex-shrink:0;width:68px;height:50px;overflow:hidden;border-radius:${r};">${it.img?`<img src="${bA(it.img)}" alt="" style="width:100%;height:100%;object-fit:cover;" />`:`<div style="width:100%;height:100%;background:${bRgb(accent,.06)};border:1px dashed ${bRgb(accent,.12)};"></div>`}</div><div style="flex:1;min-width:0;">${it.title?`<div style="font-weight:300;font-size:.82rem;letter-spacing:.04em;color:${bRgb(text,.88)};margin-bottom:.15rem;">${bE(it.title)}</div>`:''} ${it.body?`<div style="font-weight:200;font-size:.7rem;line-height:1.6;color:${bRgb(text,.5)};">${bE(it.body)}</div>`:''}</div>${cClose(it)}`).join('')}</div>`;
+      }
+      return `<div style="${ff}${fc}padding:${p};">${inner}</div>`;
+    }
+    case 'gallery': {
+      const items=s.items||[];
+      const cols=s.cols==='2'?2:s.cols==='4'?4:s.cols==='masonry'?3:3;
+      const gap=s.gap==='sm'?'.3rem':s.gap==='lg'?'1rem':'.5rem';
+      const h=s.height==='sm'?'120px':s.height==='lg'?'280px':'180px';
+      const p=s.pad==='sm'?'1rem 2rem':s.pad==='lg'?'4rem 2rem':'2rem 2rem';
+      const r2=s.radius==='sm'?'4px':s.radius==='lg'?'12px':'0';
+      const inner=`<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:${gap};">${items.map(it=>{
+        const wrap=it.url?`<a href="${bA(it.url)}" target="_blank" rel="noopener" style="display:block;overflow:hidden;border-radius:${r2};">`:`<div style="overflow:hidden;border-radius:${r2};">`;
+        const close=it.url?'</a>':'</div>';
+        return `${wrap}${it.img?`<img src="${bA(it.img)}" alt="${bA(it.caption||'')}" style="width:100%;height:${h};object-fit:cover;display:block;transition:transform .3s;" />`:`<div style="width:100%;height:${h};background:${bRgb(accent,.06)};border:1px dashed ${bRgb(accent,.15)};"></div>`}${close}`;
+      }).join('')}</div>`;
+      return `<div style="${ff}${fc}padding:${p};">${inner}</div>`;
+    }
+    case 'imgtext': {
+      const p=s.pad==='sm'?'1.5rem 2rem':s.pad==='lg'?'5rem 2rem':'3rem 2rem';
+      const rev=s.reverse==='yes'?'direction:rtl;':'';
+      const r2=s.radius==='sm'?'4px':s.radius==='lg'?'12px':s.radius==='circle'?'50%':'0';
+      const imgW=s.img_w==='sm'?'35%':s.img_w==='lg'?'55%':'45%';
+      const imgH=s.img_h==='sm'?'200px':s.img_h==='lg'?'420px':'300px';
+      const imgHtml=s.img?`<img src="${bA(s.img)}" alt="" style="width:100%;height:${imgH};object-fit:cover;border-radius:${r2};display:block;" />`:`<div style="width:100%;height:${imgH};background:${bRgb(accent,.06)};border:1px dashed ${bRgb(accent,.15)};border-radius:${r2};"></div>`;
+      return `<div style="${ff}${fc}padding:${p};"><div style="display:grid;grid-template-columns:${imgW} 1fr;gap:2.5rem;align-items:center;${rev}">
+        <div style="direction:ltr;">${imgHtml}</div>
+        <div style="direction:ltr;">
+          ${s.eyebrow?`<p style="font-size:.6rem;letter-spacing:.38em;text-transform:uppercase;color:${accent};margin-bottom:.6rem;font-weight:200;">${bE(s.eyebrow)}</p>`:''}
+          ${s.heading?`<h2 style="font-size:clamp(1.2rem,3vw,1.8rem);font-weight:300;letter-spacing:.02em;margin-bottom:.8rem;line-height:1.15;">${bE(s.heading)}</h2>`:''}
+          ${s.body?`<p style="font-weight:200;font-size:.88rem;line-height:1.85;color:${bRgb(text,.68)};">${bE(s.body)}</p>`:''}
+          ${s.btn_label?`<a href="${bA(s.btn_url||'#')}" style="display:inline-block;margin-top:1.2rem;font-size:.68rem;font-weight:300;letter-spacing:.2em;text-transform:uppercase;color:${accent};border:1px solid ${bRgb(accent,.3)};padding:.55rem 1.4rem;text-decoration:none;">${bE(s.btn_label)}</a>`:''}
+        </div>
+      </div></div>`;
+    }
+    case 'group': {
+      const open=s.default_open!=='no'&&s.default_open!==false;
+      const inner=(s.sections||[]).map(cs=>bRender(cs,theme)).join('');
+      return `<details class="bld-group-details" ${open?'open':''}><summary class="bld-group-summary" style="color:${bRgb(text,.75)};font-family:'${theme.font}',sans-serif;">${bE(s.label||'Group')}<span style="font-size:.65rem;color:${bRgb(accent,.4)};">▾</span></summary><div class="bld-group-body">${inner||`<div class="bld-group-empty">Empty — add sections via editor</div>`}</div></details>`;
+    }
+    case 'accordion': {
+      const items=s.items||[];
+      const p=s.pad==='sm'?'1rem 2rem':s.pad==='lg'?'4rem 2rem':'2rem 2rem';
+      const bordered=s.style==='bordered';
+      const inner=items.map(it=>`<details style="border-bottom:1px solid ${bRgb(accent,.12)};${bordered?`border:1px solid ${bRgb(accent,.12)};margin-bottom:.5rem;`:''}">
+        <summary style="cursor:pointer;padding:.85rem ${bordered?'1rem':'0'};font-weight:300;font-size:.88rem;letter-spacing:.04em;color:${bRgb(text,.88)};list-style:none;display:flex;justify-content:space-between;align-items:center;">${bE(it.q||'Question')}<span style="font-size:.7rem;color:${bRgb(accent,.45)};">▼</span></summary>
+        <div class="md-content" style="padding:.5rem ${bordered?'1rem':'0'} 1rem;font-size:.82rem;font-weight:200;line-height:1.85;color:${bRgb(text,.62)};">${md(it.a)}</div>
+      </details>`).join('');
+      return `<div style="${ff}${fc}padding:${p};">${inner||`<div style="font-size:.65rem;letter-spacing:.2em;color:${bRgb(accent,.25)};text-align:center;padding:1rem;">Add accordion items in editor</div>`}</div>`;
+    }
+    case 'carousel': {
+      const items=s.items||[];
+      if (!items.length) return `<div style="${ff}${fc}padding:2rem;text-align:center;font-size:.65rem;letter-spacing:.2em;color:${bRgb(accent,.25)};">Add slides in the editor</div>`;
+      const h=s.height==='sm'?'200px':s.height==='lg'?'480px':'320px';
+      const r2=s.radius==='sm'?'4px':s.radius==='lg'?'12px':'0';
+      const p=s.pad==='sm'?'1rem 2rem':s.pad==='lg'?'4rem 2rem':'2rem 2rem';
+      const slides=items.map((it,i)=>`<div data-slide="${i}" style="display:${i===0?'block':'none'};">${it.img?`<img src="${bA(it.img)}" alt="${bA(it.caption||'')}" style="width:100%;height:${h};object-fit:cover;display:block;border-radius:${r2};" />`:`<div style="width:100%;height:${h};background:${bRgb(accent,.06)};border:1px dashed ${bRgb(accent,.15)};border-radius:${r2};"></div>`}${it.caption?`<p style="text-align:center;font-size:.62rem;color:${bRgb(text,.4)};margin-top:.4rem;font-weight:200;">${bE(it.caption)}</p>`:''}</div>`).join('');
+      return `<div style="${ff}${fc}padding:${p};"><div class="bld-carousel-wrap" data-carousel>${slides}${items.length>1?`<button class="bld-carousel-btn" data-prev style="left:.5rem;">‹</button><button class="bld-carousel-btn" data-next style="right:.5rem;">›</button><div class="bld-carousel-ctr" data-slide-ctr>1 / ${items.length}</div>`:''}</div></div>`;
+    }
+    case 'fileprev': {
+      const p=s.pad==='sm'?'1rem 2rem':s.pad==='lg'?'4rem 2rem':'2rem 2rem';
+      const h=s.height==='sm'?'300px':s.height==='lg'?'720px':s.height==='xl'?'90vh':'520px';
+      return `<div style="${ff}${fc}padding:${p};">${s.url?`<div style="border:1px solid ${bRgb(accent,.12)};overflow:hidden;height:${h};display:flex;align-items:center;justify-content:center;font-size:.65rem;letter-spacing:.18em;color:${bRgb(accent,.35)};">[ File preview: ${bE(s.url)} ]</div>`:`<div style="border:1px dashed ${bRgb(accent,.12)};height:${h};display:flex;align-items:center;justify-content:center;font-size:.58rem;letter-spacing:.22em;text-transform:uppercase;color:${bRgb(accent,.2)};">No file selected</div>`}</div>`;
+    }
+    case 'filedown': {
+      const p=s.pad==='sm'?'1.5rem 2rem':s.pad==='lg'?'5rem 2rem':'3rem 2rem';
+      const jc=s.align==='left'?'flex-start':s.align==='right'?'flex-end':'center';
+      const bs=s.btn_style||'solid';
+      const btnCss=bs==='outline'?`background:transparent;border:1px solid ${accent};color:${accent};`:bs==='ghost'?`background:transparent;border:1px solid ${bRgb(text,.25)};color:${text};`:`background:${accent};border:1px solid ${accent};color:${bg};`;
+      return `<div style="${ff}${fc}padding:${p};"><div style="display:flex;flex-direction:column;align-items:${jc};gap:.4rem;"><a href="${bA(s.url||'#')}" style="${btnCss}display:inline-block;font-weight:300;font-size:.75rem;letter-spacing:.22em;text-transform:uppercase;padding:.65rem 1.8rem;text-decoration:none;">↓ ${bE(s.label||'Download')}</a>${s.filename?`<span style="font-size:.58rem;font-weight:200;letter-spacing:.12em;color:${bRgb(text,.38)};">${bE(s.filename)}</span>`:''}</div></div>`;
+    }
+    case 'tutorials': {
+      const p=s.pad==='sm'?'1rem 2rem':s.pad==='lg'?'4rem 2rem':'2rem 2rem';
+      const ha=s.heading_align||'center';
+      const headingHtml=s.heading?`<div style="font-size:.82rem;font-weight:200;letter-spacing:.12em;text-transform:uppercase;color:${bRgb(accent,.7)};text-align:${ha};margin-bottom:1.2rem;">${bE(s.heading)}</div>`:'';
+      const maxNote=s.max_items&&s.max_items!=='0'?` · max ${s.max_items}`:'';
+      const styleNote=s.tut_style==='list'?'List':'Cards';
+      return `<div style="${ff}${fc}padding:${p};">${headingHtml}<div style="border:1px dashed ${bRgb(accent,.12)};padding:2rem;text-align:center;font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:${bRgb(accent,.32)};font-weight:100;">Tutorials — ${styleNote}${maxNote}</div></div>`;
+    }
+    case 'reviews': {
+      const p=s.pad==='sm'?'1rem 2rem':s.pad==='lg'?'4rem 2rem':'2rem 2rem';
+      const ha=s.heading_align||'center';
+      const headingHtml=s.heading?`<div style="font-size:.82rem;font-weight:200;letter-spacing:.12em;text-transform:uppercase;color:${bRgb(accent,.7)};text-align:${ha};margin-bottom:1.2rem;">${bE(s.heading)}</div>`:'';
+      const maxNote=s.max_items&&s.max_items!=='0'?` · max ${s.max_items}`:'';
+      const styleNote=s.rev_style==='list'?'List':'Cards';
+      return `<div style="${ff}${fc}padding:${p};">${headingHtml}<div style="border:1px dashed ${bRgb(accent,.12)};padding:2rem;text-align:center;font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:${bRgb(accent,.32)};font-weight:100;">Reviews — ${styleNote}${maxNote}</div></div>`;
+    }
+    default: return '';
+  }
+}
+
+function bDefault(type) {
+  const id = Math.random().toString(36).slice(2,9);
+  switch(type) {
+    case 'hero':    return { id, type, eyebrow:'', name:'Zachary Lanson', tagline:'', align:'center', name_size:'lg', weight:'300', ls:'normal', pad:'md' };
+    case 'bio':     return { id, type, heading:'About', body:'', align:'left', max_w:'normal', fsize:'md', lh:'normal', pad:'md' };
+    case 'links':   return { id, type, items:[{t:'',u:'https://',d:'',new_tab:'yes'}], link_style:'card', pad:'md' };
+    case 'contact': return { id, type, items:[{label:'Email',val:'',href:''},{label:'Phone',val:'',href:''}], align:'center', cstyle:'normal', pad:'md' };
+    case 'social':  return { id, type, items:[{label:'Instagram',url:'https://instagram.com/'},{label:'LinkedIn',url:'https://linkedin.com/'}], align:'center', btn_style:'outline', pad:'md' };
+    case 'cta':     return { id, type, text:'', button_label:'Get in touch', button_url:'', align:'center', btn_style:'solid', btn_size:'md', pad:'md' };
+    case 'quote':   return { id, type, quote:'', attribution:'', variant:'border', pad:'md' };
+    case 'heading': return { id, type, text:'Heading', size:'md', align:'left', weight:'300', ls:'normal', pad:'md' };
+    case 'text':    return { id, type, text:'', align:'left', fsize:'md', lh:'normal', max_w:'normal', pad:'md' };
+    case 'image':   return { id, type, url:'', caption:'', size:'full', align:'center', radius:'none', pad:'md' };
+    case 'stats':   return { id, type, items:[{number:'100+',label:'Projects'},{number:'10',label:'Years'}], cols:'auto', pad:'md' };
+    case 'divider': return { id, type, style:'fade', spacing:'md' };
+    case 'spacer':  return { id, type, size:'md' };
+    case 'link':    return { id, type, label:'Visit →', url:'', align:'center', style:'pill', size:'md', new_tab:'yes', pad:'md' };
+    case 'cards':   return { id, type, items:[{img:'',title:'Card Title',body:'',url:'',new_tab:'yes'},{img:'',title:'Card Title',body:'',url:'',new_tab:'yes'}], layout:'grid-2', radius:'none', pad:'md' };
+    case 'gallery': return { id, type, items:[{img:'',url:'',caption:''},{img:'',url:'',caption:''},{img:'',url:'',caption:''}], cols:'3', height:'md', gap:'sm', radius:'none', pad:'md' };
+    case 'imgtext':   return { id, type, img:'', reverse:'no', img_w:'md', img_h:'md', radius:'none', eyebrow:'', heading:'Heading', body:'', btn_label:'', btn_url:'', pad:'md' };
+    case 'group':     return { id, type, label:'Group', default_open:'yes', sections:[] };
+    case 'accordion': return { id, type, items:[{q:'Question one',a:'Answer one'},{q:'Question two',a:'Answer two'}], style:'minimal', pad:'md' };
+    case 'carousel':  return { id, type, items:[{img:'',caption:''},{img:'',caption:''}], height:'md', radius:'none', pad:'md' };
+    case 'fileprev':  return { id, type, url:'', height:'md', pad:'md' };
+    case 'filedown':  return { id, type, url:'', label:'Download', filename:'', align:'center', btn_style:'solid', pad:'md' };
+    case 'tutorials': return { id, type, tut_style:'cards', heading:'', heading_align:'center', max_items:'0', view_all_show:'yes', view_all_label:'View all →', pad:'md' };
+    case 'reviews': return { id, type, rev_style:'cards', heading:'', heading_align:'center', max_items:'0', view_all_show:'yes', view_all_label:'View all →', pad:'md' };
+  }
+}
+
+function bAlignRow(cur) {
+  return `<div class="bld-ef"><label>Alignment</label><div class="bld-align-row">
+    <button class="bld-ab${(!cur||cur==='left')?' act':''}" data-align="left">Left</button>
+    <button class="bld-ab${cur==='center'?' act':''}" data-align="center">Center</button>
+    <button class="bld-ab${cur==='right'?' act':''}" data-align="right">Right</button>
+  </div></div>`;
+}
+
+function bSel(name, cur, opts) {
+  return `<div class="bld-ef"><label>${name}</label><select data-f="${opts[0][2]}">${opts.map(([label,val,_,def])=>`<option value="${val}"${(cur===val||(def&&!cur))?' selected':''}>${label}</option>`).join('')}</select></div>`;
+}
+
+function bPadRow(cur) {
+  return `<div class="bld-ef"><label>Padding</label><select data-f="pad"><option value="sm"${cur==='sm'?' selected':''}>Compact</option><option value="md"${(!cur||cur==='md')?' selected':''}>Normal</option><option value="lg"${cur==='lg'?' selected':''}>Spacious</option></select></div>`;
+}
+
+function bEditorFields(s) {
+  const typeLabels={hero:'Hero',bio:'Bio',links:'Links',link:'Link',contact:'Contact',social:'Social',cta:'CTA',quote:'Quote',heading:'Heading',text:'Text',image:'Image',stats:'Stats',divider:'Divider',spacer:'Spacer',cards:'Cards',gallery:'Gallery',imgtext:'Image + Text',accordion:'Accordion',carousel:'Carousel',group:'Collapsible Group',fileprev:'File Preview',filedown:'File Download',tutorials:'Tutorials',reviews:'Reviews'};
+  let f='';
+
+  if (s.type==='hero') {
+    f=`<div class="bld-ef"><label>Name</label><input type="text" data-f="name" value="${bA(s.name)}" /></div>
+       <div class="bld-ef"><label>Eyebrow <span style="opacity:.5">(above name)</span></label><input type="text" data-f="eyebrow" value="${bA(s.eyebrow)}" /></div>
+       <div class="bld-ef"><label>Tagline</label><input type="text" data-f="tagline" value="${bA(s.tagline)}" /></div>
+       <div class="bld-ef"><label>Background Image <span style="opacity:.5">(optional)</span></label><div style="display:flex;gap:.4rem;"><input type="url" data-f="bg_img" value="${bA(s.bg_img||'')}" style="flex:1;" /><button class="btn btn-sm bld-img-pick" data-target-f="bg_img">Pick</button></div></div>
+       <div class="bld-ef"><label>Image Overlay Opacity <span style="opacity:.5">(0–1)</span></label><input type="text" data-f="bg_overlay" value="${bA(s.bg_overlay||'0.45')}" /></div>
+       ${bAlignRow(s.align)}
+       <div class="bld-ef"><label>Name Size</label><select data-f="name_size"><option value="sm"${s.name_size==='sm'?' selected':''}>Small</option><option value="md"${s.name_size==='md'?' selected':''}>Medium</option><option value="lg"${(!s.name_size||s.name_size==='lg')?' selected':''}>Large</option><option value="xl"${s.name_size==='xl'?' selected':''}>X-Large</option></select></div>
+       <div class="bld-ef"><label>Font Weight</label><select data-f="weight"><option value="200"${s.weight==='200'?' selected':''}>Thin</option><option value="300"${(!s.weight||s.weight==='300')?' selected':''}>Light</option><option value="400"${s.weight==='400'?' selected':''}>Regular</option></select></div>
+       <div class="bld-ef"><label>Letter Spacing</label><select data-f="ls"><option value="tight"${s.ls==='tight'?' selected':''}>Tight</option><option value="normal"${(!s.ls||s.ls==='normal')?' selected':''}>Normal</option><option value="wide"${s.ls==='wide'?' selected':''}>Wide</option></select></div>
+       ${bPadRow(s.pad)}`;
+  } else if (s.type==='bio') {
+    f=`<div class="bld-ef"><label>Photo <span style="opacity:.5">(optional)</span></label><div style="display:flex;gap:.4rem;"><input type="url" data-f="photo" value="${bA(s.photo||'')}" style="flex:1;" /><button class="btn btn-sm bld-img-pick" data-target-f="photo">Pick</button></div></div>
+       <div class="bld-ef"><label>Photo Size</label><input type="text" data-f="photo_size" value="${bA(s.photo_size||'80px')}" placeholder="80px" /></div>
+       <div class="bld-ef"><label>Photo Shape</label><select data-f="photo_radius"><option value="circle"${s.photo_radius==='circle'?' selected':''}>Circle</option><option value="none"${(!s.photo_radius||s.photo_radius==='none')?' selected':''}>Square</option><option value="sm"${s.photo_radius==='sm'?' selected':''}>Rounded</option><option value="lg"${s.photo_radius==='lg'?' selected':''}>Round</option></select></div>
+       <div class="bld-ef"><label>Heading <span style="opacity:.5">(optional)</span></label><input type="text" data-f="heading" value="${bA(s.heading)}" /></div>
+       <div class="bld-ef"><label>Text <span style="opacity:.45">(Markdown)</span></label><textarea data-f="body" rows="6">${bE(s.body)}</textarea></div>
+       ${bAlignRow(s.align)}
+       <div class="bld-ef"><label>Max Width</label><select data-f="max_w"><option value="narrow"${s.max_w==='narrow'?' selected':''}>Narrow</option><option value="normal"${(!s.max_w||s.max_w==='normal')?' selected':''}>Normal</option><option value="wide"${s.max_w==='wide'?' selected':''}>Wide</option><option value="full"${s.max_w==='full'?' selected':''}>Full</option></select></div>
+       <div class="bld-ef"><label>Font Size</label><select data-f="fsize"><option value="sm"${s.fsize==='sm'?' selected':''}>Small</option><option value="md"${(!s.fsize||s.fsize==='md')?' selected':''}>Medium</option><option value="lg"${s.fsize==='lg'?' selected':''}>Large</option></select></div>
+       <div class="bld-ef"><label>Line Height</label><select data-f="lh"><option value="compact"${s.lh==='compact'?' selected':''}>Compact</option><option value="normal"${(!s.lh||s.lh==='normal')?' selected':''}>Normal</option><option value="relaxed"${s.lh==='relaxed'?' selected':''}>Relaxed</option></select></div>
+       ${bPadRow(s.pad)}`;
+  } else if (s.type==='links') {
+    const items=s.items||[];
+    f=`<div id="bLI">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-lrm="${i}">✕</button><div class="bld-ef"><label>Title</label><input type="text" data-li="${i}" data-lf="t" value="${bA(it.t)}" /></div><div class="bld-ef"><label>URL</label><input type="url" data-li="${i}" data-lf="u" value="${bA(it.u)}" /></div><div class="bld-ef"><label>Description</label><input type="text" data-li="${i}" data-lf="d" value="${bA(it.d)}" /></div><div class="bld-ef"><label>Open in new tab</label><select data-li="${i}" data-lf="new_tab"><option value="yes"${it.new_tab!=='no'?' selected':''}>Yes</option><option value="no"${it.new_tab==='no'?' selected':''}>No</option></select></div></div>`).join('')}</div>
+      <button class="bld-add-li" id="bAddLi">+ Add link</button>
+      <div class="bld-ef"><label>Link Style</label><select data-f="link_style"><option value="card"${(!s.link_style||s.link_style==='card')?' selected':''}>Card</option><option value="minimal"${s.link_style==='minimal'?' selected':''}>Minimal</option><option value="pill"${s.link_style==='pill'?' selected':''}>Pill</option></select></div>
+      ${bPadRow(s.pad)}`;
+  } else if (s.type==='contact') {
+    if (!s.items) {
+      s.items=[];
+      if (s.email) s.items.push({label:'Email',val:s.email,href:`mailto:${s.email}`});
+      if (s.phone) s.items.push({label:'Phone',val:s.phone,href:`tel:${s.phone}`});
+      if (!s.items.length) s.items.push({label:'',val:'',href:''});
+    }
+    f=`<div id="bCTI">${s.items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-ctrm="${i}">✕</button><div class="bld-ef"><label>Label</label><input type="text" data-cti="${i}" data-ctf="label" value="${bA(it.label)}" placeholder="Email" /></div><div class="bld-ef"><label>Value</label><input type="text" data-cti="${i}" data-ctf="val" value="${bA(it.val)}" placeholder="max@example.com" /></div><div class="bld-ef"><label>Subline <span style="opacity:.45">(optional)</span></label><input type="text" data-cti="${i}" data-ctf="sub" value="${bA(it.sub)}" placeholder="e.g. Call Preferred" /></div><div class="bld-ef"><label>Link <span style="opacity:.45">(optional)</span></label><input type="text" data-cti="${i}" data-ctf="href" value="${bA(it.href)}" placeholder="mailto:max@example.com" /></div></div>`).join('')}</div>
+      <button class="bld-add-li" id="bAddCti">+ Add row</button>
+      ${bAlignRow(s.align)}
+      <div class="bld-ef"><label>Style</label><select data-f="cstyle"><option value="normal"${(!s.cstyle||s.cstyle==='normal')?' selected':''}>Normal</option><option value="stacked"${s.cstyle==='stacked'?' selected':''}>Stacked</option><option value="minimal"${s.cstyle==='minimal'?' selected':''}>Minimal</option></select></div>
+      ${bPadRow(s.pad)}`;
+  } else if (s.type==='social') {
+    const items=s.items||[];
+    f=`<div id="bSI">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-srm="${i}">✕</button><div class="bld-ef"><label>Label</label><input type="text" data-si="${i}" data-sf="label" value="${bA(it.label)}" /></div><div class="bld-ef"><label>URL</label><input type="url" data-si="${i}" data-sf="url" value="${bA(it.url)}" /></div></div>`).join('')}</div>
+      <button class="bld-add-li" id="bAddSi">+ Add social</button>
+      ${bAlignRow(s.align)}
+      <div class="bld-ef"><label>Button Style</label><select data-f="btn_style"><option value="outline"${(!s.btn_style||s.btn_style==='outline')?' selected':''}>Outline</option><option value="solid"${s.btn_style==='solid'?' selected':''}>Solid</option><option value="minimal"${s.btn_style==='minimal'?' selected':''}>Minimal</option><option value="pill"${s.btn_style==='pill'?' selected':''}>Pill</option></select></div>
+      ${bPadRow(s.pad)}`;
+  } else if (s.type==='cta') {
+    f=`<div class="bld-ef"><label>Text above button <span style="opacity:.5">(optional)</span></label><input type="text" data-f="text" value="${bA(s.text)}" /></div>
+       <div class="bld-ef"><label>Button label</label><input type="text" data-f="button_label" value="${bA(s.button_label)}" /></div>
+       <div class="bld-ef"><label>Button URL</label><input type="url" data-f="button_url" value="${bA(s.button_url)}" /></div>
+       ${bAlignRow(s.align)}
+       <div class="bld-ef"><label>Button Style</label><select data-f="btn_style"><option value="solid"${(!s.btn_style||s.btn_style==='solid')?' selected':''}>Solid</option><option value="outline"${s.btn_style==='outline'?' selected':''}>Outline</option><option value="ghost"${s.btn_style==='ghost'?' selected':''}>Ghost</option></select></div>
+       <div class="bld-ef"><label>Button Size</label><select data-f="btn_size"><option value="sm"${s.btn_size==='sm'?' selected':''}>Small</option><option value="md"${(!s.btn_size||s.btn_size==='md')?' selected':''}>Medium</option><option value="lg"${s.btn_size==='lg'?' selected':''}>Large</option></select></div>
+       ${bPadRow(s.pad)}`;
+  } else if (s.type==='quote') {
+    f=`<div class="bld-ef"><label>Quote</label><textarea data-f="quote" rows="4">${bE(s.quote)}</textarea></div>
+       <div class="bld-ef"><label>Attribution</label><input type="text" data-f="attribution" value="${bA(s.attribution)}" /></div>
+       <div class="bld-ef"><label>Style</label><select data-f="variant"><option value="border"${(!s.variant||s.variant==='border')?' selected':''}>Border left</option><option value="centered"${s.variant==='centered'?' selected':''}>Centered</option><option value="minimal"${s.variant==='minimal'?' selected':''}>Minimal</option></select></div>
+       ${bPadRow(s.pad)}`;
+  } else if (s.type==='heading') {
+    f=`<div class="bld-ef"><label>Text</label><input type="text" data-f="text" value="${bA(s.text)}" /></div>
+       <div class="bld-ef"><label>Size</label><select data-f="size"><option value="sm"${s.size==='sm'?' selected':''}>Small</option><option value="md"${(!s.size||s.size==='md')?' selected':''}>Medium</option><option value="xl"${s.size==='xl'?' selected':''}>Large</option></select></div>
+       ${bAlignRow(s.align)}
+       <div class="bld-ef"><label>Font Weight</label><select data-f="weight"><option value="100"${s.weight==='100'?' selected':''}>Hairline</option><option value="200"${s.weight==='200'?' selected':''}>Thin</option><option value="300"${(!s.weight||s.weight==='300')?' selected':''}>Light</option><option value="400"${s.weight==='400'?' selected':''}>Regular</option></select></div>
+       <div class="bld-ef"><label>Letter Spacing</label><select data-f="ls"><option value="tight"${s.ls==='tight'?' selected':''}>Tight</option><option value="normal"${(!s.ls||s.ls==='normal')?' selected':''}>Normal</option><option value="wide"${s.ls==='wide'?' selected':''}>Wide</option><option value="ultra"${s.ls==='ultra'?' selected':''}>Ultra wide</option></select></div>
+       ${bPadRow(s.pad)}`;
+  } else if (s.type==='text') {
+    f=`<div class="bld-ef"><label>Text <span style="opacity:.45">(Markdown)</span></label><textarea data-f="text" rows="7">${bE(s.text)}</textarea></div>
+       ${bAlignRow(s.align)}
+       <div class="bld-ef"><label>Font Size</label><select data-f="fsize"><option value="sm"${s.fsize==='sm'?' selected':''}>Small</option><option value="md"${(!s.fsize||s.fsize==='md')?' selected':''}>Medium</option><option value="lg"${s.fsize==='lg'?' selected':''}>Large</option></select></div>
+       <div class="bld-ef"><label>Line Height</label><select data-f="lh"><option value="compact"${s.lh==='compact'?' selected':''}>Compact</option><option value="normal"${(!s.lh||s.lh==='normal')?' selected':''}>Normal</option><option value="relaxed"${s.lh==='relaxed'?' selected':''}>Relaxed</option></select></div>
+       <div class="bld-ef"><label>Max Width</label><select data-f="max_w"><option value="narrow"${s.max_w==='narrow'?' selected':''}>Narrow</option><option value="normal"${(!s.max_w||s.max_w==='normal')?' selected':''}>Normal</option><option value="wide"${s.max_w==='wide'?' selected':''}>Wide</option><option value="full"${s.max_w==='full'?' selected':''}>Full</option></select></div>
+       ${bPadRow(s.pad)}`;
+  } else if (s.type==='image') {
+    f=`<div class="bld-ef"><label>Image</label><div style="display:flex;gap:.4rem;"><input type="url" data-f="url" value="${bA(s.url)}" style="flex:1;" /><button class="btn btn-sm bld-img-pick" data-target-f="url">Pick</button></div></div>
+       <div class="bld-ef"><label>Caption <span style="opacity:.5">(optional)</span></label><input type="text" data-f="caption" value="${bA(s.caption)}" /></div>
+       <div class="bld-ef"><label>Size</label><select data-f="size"><option value="sm"${s.size==='sm'?' selected':''}>Small</option><option value="md"${s.size==='md'?' selected':''}>Medium</option><option value="full"${(!s.size||s.size==='full')?' selected':''}>Full width</option></select></div>
+       ${bAlignRow(s.align)}
+       <div class="bld-ef"><label>Border Radius</label><select data-f="radius"><option value="none"${(!s.radius||s.radius==='none')?' selected':''}>None</option><option value="sm"${s.radius==='sm'?' selected':''}>Small</option><option value="lg"${s.radius==='lg'?' selected':''}>Large</option><option value="circle"${s.radius==='circle'?' selected':''}>Circle</option></select></div>
+       ${bPadRow(s.pad)}`;
+  } else if (s.type==='stats') {
+    const items=s.items||[];
+    f=`<div id="bSTI">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-strm="${i}">✕</button><div class="bld-ef"><label>Number / value</label><input type="text" data-sti="${i}" data-stf="number" value="${bA(it.number)}" /></div><div class="bld-ef"><label>Label</label><input type="text" data-sti="${i}" data-stf="label" value="${bA(it.label)}" /></div></div>`).join('')}</div>
+      <button class="bld-add-li" id="bAddSti">+ Add stat</button>
+      <div class="bld-ef"><label>Columns</label><select data-f="cols"><option value="auto"${(!s.cols||s.cols==='auto')?' selected':''}>Auto</option><option value="2"${s.cols==='2'?' selected':''}>2 columns</option><option value="3"${s.cols==='3'?' selected':''}>3 columns</option><option value="4"${s.cols==='4'?' selected':''}>4 columns</option></select></div>
+      ${bPadRow(s.pad)}`;
+  } else if (s.type==='divider') {
+    f=`<div class="bld-ef"><label>Style</label><select data-f="style"><option value="fade"${s.style==='fade'?' selected':''}>Fade</option><option value="full"${s.style==='full'?' selected':''}>Full line</option><option value="short"${s.style==='short'?' selected':''}>Short</option></select></div>
+       <div class="bld-ef"><label>Spacing</label><select data-f="spacing"><option value="sm"${s.spacing==='sm'?' selected':''}>Compact</option><option value="md"${(!s.spacing||s.spacing==='md')?' selected':''}>Normal</option><option value="lg"${s.spacing==='lg'?' selected':''}>Spacious</option></select></div>`;
+  } else if (s.type==='spacer') {
+    f=`<div class="bld-ef"><label>Height</label><select data-f="size"><option value="sm"${s.size==='sm'?' selected':''}>Small</option><option value="md"${(!s.size||s.size==='md')?' selected':''}>Medium</option><option value="lg"${s.size==='lg'?' selected':''}>Large</option><option value="xl"${s.size==='xl'?' selected':''}>X-Large</option></select></div>`;
+  } else if (s.type==='cards') {
+    const items=s.items||[];
+    f=`<div id="bCI">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button>
+      <div class="bld-ef"><label>Image</label><div style="display:flex;gap:.4rem;"><input type="url" data-ci="${i}" data-cf="img" value="${bA(it.img||'')}" style="flex:1;" /><button class="btn btn-sm bld-img-pick" data-target-ci="${i}" data-target-cf="img">Pick</button></div></div>
+      <div class="bld-ef"><label>Title</label><input type="text" data-ci="${i}" data-cf="title" value="${bA(it.title||'')}" /></div>
+      <div class="bld-ef"><label>Body</label><textarea data-ci="${i}" data-cf="body" rows="2">${bE(it.body||'')}</textarea></div>
+      <div class="bld-ef"><label>Link URL <span style="opacity:.5">(optional)</span></label><input type="url" data-ci="${i}" data-cf="url" value="${bA(it.url||'')}" /></div>
+      <div class="bld-ef"><label>Open in new tab</label><select data-ci="${i}" data-cf="new_tab"><option value="yes"${it.new_tab!=='no'?' selected':''}>Yes</option><option value="no"${it.new_tab==='no'?' selected':''}>No</option></select></div>
+    </div>`).join('')}</div>
+    <button class="bld-add-li" id="bAddCi">+ Add card</button>
+    <div class="bld-ef"><label>Layout</label><select data-f="layout"><option value="grid-2"${(!s.layout||s.layout==='grid-2')?' selected':''}>2 columns</option><option value="grid-3"${s.layout==='grid-3'?' selected':''}>3 columns</option><option value="grid-4"${s.layout==='grid-4'?' selected':''}>4 columns</option><option value="feature"${s.layout==='feature'?' selected':''}>Feature (large + small)</option><option value="horizontal"${s.layout==='horizontal'?' selected':''}>Horizontal rows</option><option value="list"${s.layout==='list'?' selected':''}>Compact list</option></select></div>
+    <div class="bld-ef"><label>Image Radius</label><select data-f="radius"><option value="none"${(!s.radius||s.radius==='none')?' selected':''}>None</option><option value="sm"${s.radius==='sm'?' selected':''}>Small</option><option value="lg"${s.radius==='lg'?' selected':''}>Large</option></select></div>
+    ${bPadRow(s.pad)}`;
+  } else if (s.type==='gallery') {
+    const items=s.items||[];
+    f=`<div id="bGALI">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-galrm="${i}">✕</button>
+      <div class="bld-ef"><label>Image</label><div style="display:flex;gap:.4rem;"><input type="url" data-gi="${i}" data-gf="img" value="${bA(it.img||'')}" style="flex:1;" /><button class="btn btn-sm bld-img-pick" data-target-gi="${i}" data-target-gf="img">Pick</button></div></div>
+      <div class="bld-ef"><label>Link URL <span style="opacity:.5">(optional)</span></label><input type="url" data-gi="${i}" data-gf="url" value="${bA(it.url||'')}" /></div>
+      <div class="bld-ef"><label>Caption</label><input type="text" data-gi="${i}" data-gf="caption" value="${bA(it.caption||'')}" /></div>
+    </div>`).join('')}</div>
+    <button class="bld-add-li" id="bAddGal">+ Add image</button>
+    <div class="bld-ef"><label>Columns</label><select data-f="cols"><option value="2"${s.cols==='2'?' selected':''}>2</option><option value="3"${(!s.cols||s.cols==='3')?' selected':''}>3</option><option value="4"${s.cols==='4'?' selected':''}>4</option></select></div>
+    <div class="bld-ef"><label>Image Height</label><select data-f="height"><option value="sm"${s.height==='sm'?' selected':''}>Small</option><option value="md"${(!s.height||s.height==='md')?' selected':''}>Medium</option><option value="lg"${s.height==='lg'?' selected':''}>Large</option></select></div>
+    <div class="bld-ef"><label>Gap</label><select data-f="gap"><option value="none"${s.gap==='none'?' selected':''}>None</option><option value="sm"${(!s.gap||s.gap==='sm')?' selected':''}>Small</option><option value="lg"${s.gap==='lg'?' selected':''}>Large</option></select></div>
+    <div class="bld-ef"><label>Border Radius</label><select data-f="radius"><option value="none"${(!s.radius||s.radius==='none')?' selected':''}>None</option><option value="sm"${s.radius==='sm'?' selected':''}>Small</option><option value="lg"${s.radius==='lg'?' selected':''}>Large</option></select></div>
+    ${bPadRow(s.pad)}`;
+  } else if (s.type==='imgtext') {
+    f=`<div class="bld-ef"><label>Image</label><div style="display:flex;gap:.4rem;"><input type="url" data-f="img" value="${bA(s.img||'')}" style="flex:1;" /><button class="btn btn-sm bld-img-pick" data-target-f="img">Pick</button></div></div>
+       <div class="bld-ef"><label>Image Side</label><select data-f="reverse"><option value="no"${(!s.reverse||s.reverse==='no')?' selected':''}>Left</option><option value="yes"${s.reverse==='yes'?' selected':''}>Right</option></select></div>
+       <div class="bld-ef"><label>Image Width</label><select data-f="img_w"><option value="sm"${s.img_w==='sm'?' selected':''}>Narrow</option><option value="md"${(!s.img_w||s.img_w==='md')?' selected':''}>Medium</option><option value="lg"${s.img_w==='lg'?' selected':''}>Wide</option></select></div>
+       <div class="bld-ef"><label>Image Height</label><select data-f="img_h"><option value="sm"${s.img_h==='sm'?' selected':''}>Short</option><option value="md"${(!s.img_h||s.img_h==='md')?' selected':''}>Medium</option><option value="lg"${s.img_h==='lg'?' selected':''}>Tall</option></select></div>
+       <div class="bld-ef"><label>Image Radius</label><select data-f="radius"><option value="none"${(!s.radius||s.radius==='none')?' selected':''}>None</option><option value="sm"${s.radius==='sm'?' selected':''}>Small</option><option value="lg"${s.radius==='lg'?' selected':''}>Large</option><option value="circle"${s.radius==='circle'?' selected':''}>Circle</option></select></div>
+       <div class="bld-ef"><label>Eyebrow <span style="opacity:.5">(optional)</span></label><input type="text" data-f="eyebrow" value="${bA(s.eyebrow||'')}" /></div>
+       <div class="bld-ef"><label>Heading</label><input type="text" data-f="heading" value="${bA(s.heading||'')}" /></div>
+       <div class="bld-ef"><label>Body</label><textarea data-f="body" rows="5">${bE(s.body||'')}</textarea></div>
+       <div class="bld-ef"><label>Button Label <span style="opacity:.5">(optional)</span></label><input type="text" data-f="btn_label" value="${bA(s.btn_label||'')}" /></div>
+       <div class="bld-ef"><label>Button URL</label><input type="url" data-f="btn_url" value="${bA(s.btn_url||'')}" /></div>
+       ${bPadRow(s.pad)}`;
+  } else if (s.type==='link') {
+    f=`<div class="bld-ef"><label>Label</label><input type="text" data-f="label" value="${bA(s.label||'Visit →')}" /></div>
+       <div class="bld-ef"><label>URL</label><input type="url" data-f="url" value="${bA(s.url)}" /></div>
+       ${bAlignRow(s.align)}
+       <div class="bld-ef"><label>Style</label><select data-f="style"><option value="pill"${(!s.style||s.style==='pill')?' selected':''}>Pill</option><option value="solid"${s.style==='solid'?' selected':''}>Solid</option><option value="ghost"${s.style==='ghost'?' selected':''}>Ghost</option><option value="underline"${s.style==='underline'?' selected':''}>Underline</option><option value="badge"${s.style==='badge'?' selected':''}>Badge</option></select></div>
+       <div class="bld-ef"><label>Size</label><select data-f="size"><option value="sm"${s.size==='sm'?' selected':''}>Small</option><option value="md"${(!s.size||s.size==='md')?' selected':''}>Medium</option><option value="lg"${s.size==='lg'?' selected':''}>Large</option></select></div>
+       <div class="bld-ef"><label>Open in new tab</label><select data-f="new_tab"><option value="yes"${s.new_tab!=='no'?' selected':''}>Yes</option><option value="no"${s.new_tab==='no'?' selected':''}>No</option></select></div>
+       ${bPadRow(s.pad)}`;
+  } else if (s.type==='group') {
+    const children=s.sections||[];
+    const tOpts=Object.entries(typeLabels).filter(([t])=>t!=='group').map(([t,l])=>`<option value="${t}">${l}</option>`).join('');
+    f=`<div class="bld-ef"><label>Label</label><input type="text" data-f="label" value="${bA(s.label||'Group')}" /></div>
+    <div class="bld-ef"><label>Default State</label><select data-f="default_open"><option value="yes"${s.default_open!=='no'?' selected':''}>Open</option><option value="no"${s.default_open==='no'?' selected':''}>Closed</option></select></div>
+    <div class="bld-sep"></div>
+    <div style="font-size:.52rem;letter-spacing:.3em;text-transform:uppercase;color:rgba(77,189,106,.35);margin:.6rem 0 .4rem;">Sections inside (${children.length})</div>
+    <div id="bGrpList">${children.map((c,i)=>`<div class="bld-li-item" style="display:flex;align-items:center;justify-content:space-between;gap:.4rem;">
+      <span style="font-size:.72rem;font-weight:200;color:var(--white);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${typeLabels[c.type]||c.type}${c.name||c.label||c.heading||c.text?` — <span style="opacity:.55">${bE((c.name||c.label||c.heading||c.text||'').slice(0,22))}</span>`:''}</span>
+      <button class="btn btn-xs" data-grpedit="${i}">Edit</button>
+      <button class="bld-li-rm" data-grprm="${i}" style="position:static;margin:0;">✕</button>
+    </div>`).join('')}</div>
+    <div style="display:flex;gap:.4rem;margin-top:.5rem;">
+      <select id="bGrpAddType" style="flex:1;background:var(--panel);border:1px solid var(--border);color:var(--white);font-size:.72rem;padding:.3rem .45rem;outline:none;">${tOpts}</select>
+      <button class="btn btn-xs" id="bGrpAddSec">+ Add</button>
+    </div>`;
+  } else if (s.type==='accordion') {
+    const items=s.items||[];
+    f=`<div id="bACRI">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-acrrm="${i}">✕</button>
+      <div class="bld-ef"><label>Question</label><input type="text" data-acri="${i}" data-acrf="q" value="${bA(it.q||'')}" /></div>
+      <div class="bld-ef"><label>Answer <span style="opacity:.45">(Markdown)</span></label><textarea data-acri="${i}" data-acrf="a" rows="3">${bE(it.a||'')}</textarea></div>
+    </div>`).join('')}</div>
+    <button class="bld-add-li" id="bAddAcr">+ Add item</button>
+    <div class="bld-ef"><label>Style</label><select data-f="style"><option value="minimal"${(!s.style||s.style==='minimal')?' selected':''}>Minimal</option><option value="bordered"${s.style==='bordered'?' selected':''}>Bordered cards</option></select></div>
+    ${bPadRow(s.pad)}`;
+  } else if (s.type==='carousel') {
+    const items=s.items||[];
+    f=`<div id="bCRI">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crrm="${i}">✕</button>
+      <div class="bld-ef"><label>Image</label><div style="display:flex;gap:.4rem;"><input type="url" data-cri="${i}" data-crf="img" value="${bA(it.img||'')}" style="flex:1;" /><button class="btn btn-sm bld-img-pick" data-target-cri="${i}" data-target-crf="img">Pick</button></div></div>
+      <div class="bld-ef"><label>Caption</label><input type="text" data-cri="${i}" data-crf="caption" value="${bA(it.caption||'')}" /></div>
+    </div>`).join('')}</div>
+    <button class="bld-add-li" id="bAddCr">+ Add slide</button>
+    <div class="bld-ef"><label>Height</label><select data-f="height"><option value="sm"${s.height==='sm'?' selected':''}>Short</option><option value="md"${(!s.height||s.height==='md')?' selected':''}>Medium</option><option value="lg"${s.height==='lg'?' selected':''}>Tall</option></select></div>
+    <div class="bld-ef"><label>Border Radius</label><select data-f="radius"><option value="none"${(!s.radius||s.radius==='none')?' selected':''}>None</option><option value="sm"${s.radius==='sm'?' selected':''}>Small</option><option value="lg"${s.radius==='lg'?' selected':''}>Large</option></select></div>
+    ${bPadRow(s.pad)}`;
+  } else if (s.type==='fileprev') {
+    f=`<div class="bld-ef"><label>File URL</label><div style="display:flex;gap:.4rem;"><input type="text" data-f="url" value="${bA(s.url)}" placeholder="/api/files/1" style="flex:1;" /><button class="btn btn-xs" id="bFilePrevPick">Browse</button></div></div>
+    <div class="bld-ef"><label>Height</label><select data-f="height"><option value="sm"${s.height==='sm'?' selected':''}>Short (300px)</option><option value="md"${(!s.height||s.height==='md')?' selected':''}>Medium (520px)</option><option value="lg"${s.height==='lg'?' selected':''}>Tall (720px)</option><option value="xl"${s.height==='xl'?' selected':''}>Full (90vh)</option></select></div>
+    ${bPadRow(s.pad)}`;
+  } else if (s.type==='filedown') {
+    f=`<div class="bld-ef"><label>File URL</label><div style="display:flex;gap:.4rem;"><input type="text" data-f="url" value="${bA(s.url)}" placeholder="/api/files/1" style="flex:1;" /><button class="btn btn-xs" id="bFileDownPick">Browse</button></div></div>
+    <div class="bld-ef"><label>Button label</label><input type="text" data-f="label" value="${bA(s.label||'Download')}" /></div>
+    <div class="bld-ef"><label>File name <span style="opacity:.45">(shown below button, optional)</span></label><input type="text" data-f="filename" value="${bA(s.filename)}" placeholder="document.pdf" /></div>
+    ${bAlignRow(s.align)}
+    <div class="bld-ef"><label>Button Style</label><select data-f="btn_style"><option value="solid"${(!s.btn_style||s.btn_style==='solid')?' selected':''}>Solid</option><option value="outline"${s.btn_style==='outline'?' selected':''}>Outline</option><option value="ghost"${s.btn_style==='ghost'?' selected':''}>Ghost</option></select></div>
+    ${bPadRow(s.pad)}`;
+  } else if (s.type==='tutorials') {
+    f=`<div class="bld-ef"><label>Heading <span style="opacity:.45">(optional)</span></label><input type="text" data-f="heading" value="${bA(s.heading||'')}" placeholder="My Tutorials" /></div>
+    <div class="bld-ef"><label>Heading Alignment</label><div class="bld-align-row">
+      <button class="bld-ab${(!s.heading_align||s.heading_align==='left')?' act':''}" data-align-f="heading_align" data-align="left">Left</button>
+      <button class="bld-ab${s.heading_align==='center'?' act':''}" data-align-f="heading_align" data-align="center">Center</button>
+      <button class="bld-ab${s.heading_align==='right'?' act':''}" data-align-f="heading_align" data-align="right">Right</button>
+    </div></div>
+    <div class="bld-ef"><label>Style</label><select data-f="tut_style">
+      <option value="cards"${(!s.tut_style||s.tut_style==='cards')?' selected':''}>Cards</option>
+      <option value="list"${s.tut_style==='list'?' selected':''}>List</option>
+    </select></div>
+    <div class="bld-ef"><label>Max items <span style="opacity:.45">(0 = all)</span></label><input type="number" data-f="max_items" value="${bA(s.max_items||'0')}" min="0" step="1" /></div>
+    <div class="bld-ef"><label>"View all" link <span style="opacity:.45">(→ /tutorials/all)</span></label><select data-f="view_all_show">
+      <option value="yes"${s.view_all_show!==false&&s.view_all_show!=='no'?' selected':''}>Show</option>
+      <option value="no"${s.view_all_show===false||s.view_all_show==='no'?' selected':''}>Hide</option>
+    </select></div>
+    <div class="bld-ef"><label>View All Label</label><input type="text" data-f="view_all_label" value="${bA(s.view_all_label||'View all →')}" /></div>
+    ${bPadRow(s.pad)}`;
+  } else if (s.type==='reviews') {
+    f=`<div class="bld-ef"><label>Heading <span style="opacity:.45">(optional)</span></label><input type="text" data-f="heading" value="${bA(s.heading||'')}" placeholder="Reviews" /></div>
+    <div class="bld-ef"><label>Heading Alignment</label><div class="bld-align-row">
+      <button class="bld-ab${(!s.heading_align||s.heading_align==='left')?' act':''}" data-align-f="heading_align" data-align="left">Left</button>
+      <button class="bld-ab${s.heading_align==='center'?' act':''}" data-align-f="heading_align" data-align="center">Center</button>
+      <button class="bld-ab${s.heading_align==='right'?' act':''}" data-align-f="heading_align" data-align="right">Right</button>
+    </div></div>
+    <div class="bld-ef"><label>Style</label><select data-f="rev_style">
+      <option value="cards"${(!s.rev_style||s.rev_style==='cards')?' selected':''}>Cards</option>
+      <option value="list"${s.rev_style==='list'?' selected':''}>List</option>
+    </select></div>
+    <div class="bld-ef"><label>Max items <span style="opacity:.45">(0 = all)</span></label><input type="number" data-f="max_items" value="${bA(s.max_items||'0')}" min="0" step="1" /></div>
+    <div class="bld-ef"><label>"View all" link <span style="opacity:.45">(→ /reviews/all)</span></label><select data-f="view_all_show">
+      <option value="yes"${s.view_all_show!==false&&s.view_all_show!=='no'?' selected':''}>Show</option>
+      <option value="no"${s.view_all_show===false||s.view_all_show==='no'?' selected':''}>Hide</option>
+    </select></div>
+    <div class="bld-ef"><label>View All Label</label><input type="text" data-f="view_all_label" value="${bA(s.view_all_label||'View all →')}" /></div>
+    ${bPadRow(s.pad)}`;
+  }
+
+  if (!['divider','spacer'].includes(s.type)) {
+    f += `<div class="bld-sep" style="margin:.4rem 0;"></div>
+    <div class="bld-ef"><label>Column Width <span style="opacity:.45">(for side-by-side rows)</span></label>
+    <select data-f="width">
+      <option value="full"${(!s.width||s.width==='full')?' selected':''}>Full width</option>
+      <option value="half"${s.width==='half'?' selected':''}>Half — pair with next</option>
+      <option value="third"${s.width==='third'?' selected':''}>One-third — group of 3</option>
+    </select></div>`;
+  }
+  return { html: f, label: typeLabels[s.type]||s.type };
+}
+
+function bBindEditor(panel, s, onUpdate) {
+
+  panel.querySelectorAll('[data-f]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      s[inp.dataset.f]=inp.value;
+      if (inp.dataset.f==='width') { bldDrawCanvas(); } else { onUpdate(s); }
+    });
+  });
+
+  panel.querySelectorAll('[data-align]:not([data-align-f])').forEach(btn => {
+    btn.addEventListener('click', () => {
+      panel.querySelectorAll('[data-align]:not([data-align-f])').forEach(b=>b.classList.remove('act'));
+      btn.classList.add('act'); s.align=btn.dataset.align; onUpdate(s);
+    });
+  });
+
+  panel.querySelectorAll('[data-align-f]').forEach(btn => {
+    const field = btn.dataset.alignF;
+    btn.addEventListener('click', () => {
+      panel.querySelectorAll(`[data-align-f="${field}"]`).forEach(b=>b.classList.remove('act'));
+      btn.classList.add('act'); s[field]=btn.dataset.align; onUpdate(s);
+    });
+  });
+
+  panel.querySelectorAll('[data-li][data-lf]').forEach(inp => {
+    const ev = inp.tagName==='SELECT' ? 'change' : 'input';
+    inp.addEventListener(ev, () => { s.items[+inp.dataset.li][inp.dataset.lf]=inp.value; onUpdate(s); });
+  });
+  panel.querySelectorAll('[data-lrm]').forEach(btn => {
+    btn.addEventListener('click', () => { s.items.splice(+btn.dataset.lrm,1); onUpdate(s,'re-editor'); });
+  });
+  const addLi=panel.querySelector('#bAddLi');
+  if (addLi) addLi.addEventListener('click', () => { s.items.push({t:'',u:'https://',d:''}); onUpdate(s,'re-editor'); });
+
+  panel.querySelectorAll('[data-si][data-sf]').forEach(inp => {
+    inp.addEventListener('input', () => { s.items[+inp.dataset.si][inp.dataset.sf]=inp.value; onUpdate(s); });
+  });
+  panel.querySelectorAll('[data-srm]').forEach(btn => {
+    btn.addEventListener('click', () => { s.items.splice(+btn.dataset.srm,1); onUpdate(s,'re-editor'); });
+  });
+  const addSi=panel.querySelector('#bAddSi');
+  if (addSi) addSi.addEventListener('click', () => { s.items.push({label:'',url:'https://'}); onUpdate(s,'re-editor'); });
+
+  panel.querySelectorAll('[data-sti][data-stf]').forEach(inp => {
+    inp.addEventListener('input', () => { s.items[+inp.dataset.sti][inp.dataset.stf]=inp.value; onUpdate(s); });
+  });
+  panel.querySelectorAll('[data-strm]').forEach(btn => {
+    btn.addEventListener('click', () => { s.items.splice(+btn.dataset.strm,1); onUpdate(s,'re-editor'); });
+  });
+  const addSti=panel.querySelector('#bAddSti');
+  if (addSti) addSti.addEventListener('click', () => { s.items.push({number:'',label:''}); onUpdate(s,'re-editor'); });
+
+  panel.querySelectorAll('[data-ci][data-cf]').forEach(inp => {
+    const ev=inp.tagName==='SELECT'?'change':'input';
+    inp.addEventListener(ev, () => { s.items[+inp.dataset.ci][inp.dataset.cf]=inp.value; onUpdate(s); });
+  });
+  panel.querySelectorAll('[data-crm]').forEach(btn => {
+    btn.addEventListener('click', () => { s.items.splice(+btn.dataset.crm,1); onUpdate(s,'re-editor'); });
+  });
+  const addCi=panel.querySelector('#bAddCi');
+  if (addCi) addCi.addEventListener('click', () => { s.items.push({img:'',title:'',body:'',url:'',new_tab:'yes'}); onUpdate(s,'re-editor'); });
+
+  panel.querySelectorAll('[data-cti][data-ctf]').forEach(inp => {
+    inp.addEventListener('input', () => { if (!s.items) s.items=[]; const i=+inp.dataset.cti; if (!s.items[i]) s.items[i]={label:'',val:'',href:''}; s.items[i][inp.dataset.ctf]=inp.value; onUpdate(s); });
+  });
+  panel.querySelectorAll('[data-ctrm]').forEach(btn => {
+    btn.addEventListener('click', () => { s.items.splice(+btn.dataset.ctrm,1); onUpdate(s,'re-editor'); });
+  });
+  const addCti=panel.querySelector('#bAddCti');
+  if (addCti) addCti.addEventListener('click', () => { if (!s.items) s.items=[]; s.items.push({label:'',val:'',href:'',sub:''}); onUpdate(s,'re-editor'); });
+
+  panel.querySelector('#bFilePrevPick')?.addEventListener('click', () => openFilePicker(url => { s.url=url; const inp=panel.querySelector('[data-f="url"]'); if(inp){inp.value=url;} onUpdate(s); }));
+  panel.querySelector('#bFileDownPick')?.addEventListener('click', () => openFilePicker(url => { s.url=url; const inp=panel.querySelector('[data-f="url"]'); if(inp){inp.value=url;} onUpdate(s); }));
+
+  panel.querySelectorAll('[data-gi][data-gf]').forEach(inp => {
+    const ev=inp.tagName==='SELECT'?'change':'input';
+    inp.addEventListener(ev, () => { s.items[+inp.dataset.gi][inp.dataset.gf]=inp.value; onUpdate(s); });
+  });
+  panel.querySelectorAll('[data-galrm]').forEach(btn => {
+    btn.addEventListener('click', () => { s.items.splice(+btn.dataset.galrm,1); onUpdate(s,'re-editor'); });
+  });
+  const addGal=panel.querySelector('#bAddGal');
+  if (addGal) addGal.addEventListener('click', () => { s.items.push({img:'',url:'',caption:''}); onUpdate(s,'re-editor'); });
+
+  panel.querySelectorAll('[data-target-gi][data-target-gf]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      openImgPicker(url => {
+        const inp = panel.querySelector(`[data-gi="${btn.dataset.targetGi}"][data-gf="${btn.dataset.targetGf}"]`);
+        if (inp) { inp.value = url; inp.dispatchEvent(new Event('input')); }
+      });
+    });
+  });
+
+  panel.querySelectorAll('[data-acri][data-acrf]').forEach(inp => {
+    const ev=inp.tagName==='TEXTAREA'?'input':inp.tagName==='SELECT'?'change':'input';
+    inp.addEventListener(ev, () => { s.items[+inp.dataset.acri][inp.dataset.acrf]=inp.value; onUpdate(s); });
+  });
+  panel.querySelectorAll('[data-acrrm]').forEach(btn => {
+    btn.addEventListener('click', () => { s.items.splice(+btn.dataset.acrrm,1); onUpdate(s,'re-editor'); });
+  });
+  const addAcr=panel.querySelector('#bAddAcr');
+  if (addAcr) addAcr.addEventListener('click', () => { s.items.push({q:'',a:''}); onUpdate(s,'re-editor'); });
+
+  panel.querySelectorAll('[data-grprm]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!s.sections) s.sections=[];
+      s.sections.splice(+btn.dataset.grprm,1);
+      onUpdate(s,'re-editor');
+    });
+  });
+  panel.querySelectorAll('[data-grpedit]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const child=s.sections?.[+btn.dataset.grpedit]; if (!child) return;
+      bldParentId=s.id; bldSel=child.id; bldDrawEditor();
+    });
+  });
+  const addGrpSec=panel.querySelector('#bGrpAddSec');
+  if (addGrpSec) addGrpSec.addEventListener('click', () => {
+    const type=panel.querySelector('#bGrpAddType')?.value; if (!type) return;
+    if (!s.sections) s.sections=[];
+    s.sections.push(bDefault(type));
+    onUpdate(s,'re-editor');
+  });
+
+  panel.querySelectorAll('[data-cri][data-crf]').forEach(inp => {
+    const ev=inp.tagName==='SELECT'?'change':'input';
+    inp.addEventListener(ev, () => { s.items[+inp.dataset.cri][inp.dataset.crf]=inp.value; onUpdate(s); });
+  });
+  panel.querySelectorAll('[data-crrm]').forEach(btn => {
+    btn.addEventListener('click', () => { s.items.splice(+btn.dataset.crrm,1); onUpdate(s,'re-editor'); });
+  });
+  const addCr=panel.querySelector('#bAddCr');
+  if (addCr) addCr.addEventListener('click', () => { s.items.push({img:'',caption:''}); onUpdate(s,'re-editor'); });
+
+  panel.querySelectorAll('[data-target-cri][data-target-crf]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      openImgPicker(url => {
+        const inp = panel.querySelector(`[data-cri="${btn.dataset.targetCri}"][data-crf="${btn.dataset.targetCrf}"]`);
+        if (inp) { inp.value = url; inp.dispatchEvent(new Event('input')); }
+      });
+    });
+  });
+
+  panel.querySelectorAll('.bld-img-pick').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetF  = btn.dataset.targetF;
+      const targetCi = btn.dataset.targetCi;
+      const targetCf = btn.dataset.targetCf;
+      openImgPicker(url => {
+        if (targetF) {
+          const inp = panel.querySelector(`[data-f="${targetF}"]`);
+          if (inp) { inp.value = url; inp.dispatchEvent(new Event('input')); }
+        } else if (targetCi !== undefined && targetCf) {
+          const inp = panel.querySelector(`[data-ci="${targetCi}"][data-cf="${targetCf}"]`);
+          if (inp) { inp.value = url; inp.dispatchEvent(new Event('input')); }
+        }
+      });
+    });
+  });
+}
+
+function bSetupDnD(canvasEl, sections, onDone) {
+  canvasEl.querySelectorAll('.bld-sw').forEach(sw=>{
+    sw.addEventListener('dragstart',e=>{
+      bDragId=sw.dataset.sid; bDragNew=null;
+      e.dataTransfer.effectAllowed='move';
+      setTimeout(()=>sw.classList.add('dragging'),0);
+    });
+    sw.addEventListener('dragend',()=>{
+      sw.classList.remove('dragging');
+      canvasEl.querySelectorAll('.bld-sw').forEach(s=>s.classList.remove('drag-above','drag-below'));
+      bDragId=null;
+    });
+    sw.addEventListener('dragover',e=>{
+      if (!bDragId&&!bDragNew) return;
+      if (bDragId===sw.dataset.sid) return;
+      e.preventDefault();
+      const r=sw.getBoundingClientRect();
+      const relX=(e.clientX-r.left)/r.width;
+      const relY=(e.clientY-r.top)/r.height;
+      const sideDrop=relX<0.28||relX>0.72;
+      canvasEl.querySelectorAll('.bld-sw').forEach(s=>s.classList.remove('drag-above','drag-below','drag-left','drag-right'));
+      if (sideDrop) {
+        sw.classList.add(relX<0.5?'drag-left':'drag-right');
+      } else {
+        sw.classList.add(relY<0.5?'drag-above':'drag-below');
+      }
+    });
+    sw.addEventListener('dragleave',()=>sw.classList.remove('drag-above','drag-below','drag-left','drag-right'));
+    sw.addEventListener('drop',e=>{
+      e.preventDefault(); e.stopPropagation();
+      const r=sw.getBoundingClientRect();
+      const relX=(e.clientX-r.left)/r.width;
+      const relY=(e.clientY-r.top)/r.height;
+      const sideDrop=relX<0.28||relX>0.72;
+      sw.classList.remove('drag-above','drag-below','drag-left','drag-right');
+      const toIdx=sections.findIndex(s=>s.id===sw.dataset.sid);
+      const targetSec=sections[toIdx];
+      let ns;
+      if (bDragNew) {
+        ns=bDefault(bDragNew); bDragNew=null;
+      } else if (bDragId&&bDragId!==sw.dataset.sid) {
+        const fromIdx=sections.findIndex(s=>s.id===bDragId); if (fromIdx<0) return;
+        [ns]=sections.splice(fromIdx,1); bDragId=null;
+      } else return;
+      if (sideDrop) {
+
+        ns.width='half';
+        if (targetSec) targetSec.width='half';
+        const ins=sections.findIndex(s=>s.id===sw.dataset.sid);
+        sections.splice(relX<0.5?ins:ins+1,0,ns);
+      } else {
+        const before=relY<0.5;
+        const ins=sections.findIndex(s=>s.id===sw.dataset.sid);
+        sections.splice(before?ins:ins+1,0,ns);
+      }
+      onDone(ns.id);
+    });
+  });
+  canvasEl.addEventListener('dragover',e=>{
+    if ((!bDragNew&&!bDragId)||e.target.closest('.bld-sw')) return;
+    e.preventDefault(); canvasEl.classList.add('drag-target');
+  });
+  canvasEl.addEventListener('dragleave',e=>{
+    if (!e.relatedTarget||!canvasEl.contains(e.relatedTarget)) canvasEl.classList.remove('drag-target');
+  });
+  canvasEl.addEventListener('drop',e=>{
+    if (e.target.closest('.bld-sw')) return;
+    e.preventDefault(); canvasEl.classList.remove('drag-target');
+    if (bDragNew) {
+      const ns=bDefault(bDragNew); bDragNew=null;
+      sections.push(ns); onDone(ns.id);
+    }
+  });
+}
+
+function bSetupBlockDrag(blocksEl) {
+  blocksEl.querySelectorAll('.bld-blk').forEach(btn=>{
+    btn.setAttribute('draggable','true');
+    btn.addEventListener('dragstart',e=>{ bDragNew=btn.dataset.type; bDragId=null; e.dataTransfer.effectAllowed='copy'; });
+    btn.addEventListener('dragend',()=>{ bDragNew=null; });
+  });
+}
+
+function groupRows(sections) {
+  const rows = [];
+  let batch = [], batchW = null;
+  for (const s of sections) {
+    const w = s.width || 'full';
+    if (w === 'full') {
+      if (batch.length) { rows.push(batch); batch = []; batchW = null; }
+      rows.push([s]);
+    } else {
+      const max = w === 'third' ? 3 : 2;
+      if (batchW && batchW !== w) { rows.push(batch); batch = []; }
+      batch.push(s); batchW = w;
+      if (batch.length >= max) { rows.push(batch); batch = []; batchW = null; }
+    }
+  }
+  if (batch.length) rows.push(batch);
+  return rows;
+}
+
+function initCarousels(root) {
+  root.querySelectorAll('[data-carousel]').forEach(el => {
+    const items = Array.from(el.querySelectorAll('[data-slide]'));
+    if (!items.length) return;
+    let cur = 0;
+    function show(n) {
+      cur = (n + items.length) % items.length;
+      items.forEach((it, i) => { it.style.display = i === cur ? '' : 'none'; });
+      const ctr = el.querySelector('[data-slide-ctr]');
+      if (ctr) ctr.textContent = `${cur+1} / ${items.length}`;
+    }
+    el.querySelector('[data-prev]')?.addEventListener('click', e => { e.stopPropagation(); show(cur - 1); });
+    el.querySelector('[data-next]')?.addEventListener('click', e => { e.stopPropagation(); show(cur + 1); });
+    show(0);
+  });
+}
+
+let bldPages=[], bldPageId=null, bldState={bg:'#020a03',accent:'#4dbd6a',text:'#f0f7f1',font:'Josefin Sans',sections:[]}, bldSel=null, bldParentId=null, bldBooted=false;
+
+
+
+function bldDraftKey(id) { return 'foyer_draft_' + id; }
+let _lastDraftJson = '';
+let _autosaveT = null;
+function bldSetAutosave(mode) {
+  const wrap = document.getElementById('bldAutosave'), txt = document.getElementById('bldAutosaveText');
+  if (!wrap || !txt) return;
+  wrap.classList.remove('saving', 'unsaved');
+  if (mode === 'saving') { wrap.classList.add('saving'); txt.textContent = 'Saving…'; }
+  else if (mode === 'unsaved') { wrap.classList.add('unsaved'); txt.textContent = 'Unsaved'; }
+  else { txt.textContent = 'Saved'; }
+}
+function bldSaveDraft() {
+  if (!bldPageId) return;
+  const json = JSON.stringify(bldState);
+  if (json === _lastDraftJson) return;   // nothing changed since last save
+  _lastDraftJson = json;
+  bldSetAutosave('saving');
+  try { _ls.setItem(bldDraftKey(bldPageId), JSON.stringify({ state: bldState, ts: Date.now() })); } catch {}
+  bldDrawPages();   // refresh unsaved (!) badges
+  clearTimeout(_autosaveT);
+  _autosaveT = setTimeout(() => bldSetAutosave('saved'), 500);
+}
+function bldClearDraft(id) {
+  try { _ls.removeItem(bldDraftKey(id)); } catch {}
+  if (id === bldPageId) { _lastDraftJson = JSON.stringify(bldState); bldSetAutosave('saved'); }
+}
+
+function bldPageUnsaved(p) {
+  try {
+    const raw = _ls.getItem(bldDraftKey(p.id));
+    if (!raw) return false;
+    return JSON.stringify(JSON.parse(raw).state) !== (p.page_json || '');
+  } catch { return false; }
+}
+
+setInterval(bldSaveDraft, 4000);
+
+window.addEventListener('beforeunload', bldSaveDraft);
+
+function bldFindSection(id) {
+  for (const s of bldState.sections) {
+    if (s.id===id) return {sec:s,parent:null};
+    if (s.type==='group') { const c=(s.sections||[]).find(x=>x.id===id); if(c) return {sec:c,parent:s}; }
+  }
+  return {sec:null,parent:null};
+}
+
+function groupCanvasHtml(g) {
+  const open=g.default_open!=='no'&&g.default_open!==false;
+  const children=(g.sections||[]).map(c=>`<div class="bld-sw bld-gchild${bldSel===c.id?' sel':''}" data-sid="${c.id}">
+    <div class="bld-ov">
+      <button class="bld-ob" data-gc-edit="${c.id}" data-gc-grp="${g.id}">Edit</button>
+      <button class="bld-ob rm" data-gc-del="${c.id}" data-gc-grp="${g.id}">✕</button>
+    </div>
+    ${bRender(c,bldState)}
+  </div>`).join('');
+  return `<details class="bld-group-details" ${open?'open':''}><summary class="bld-group-summary" style="color:${bRgb(bldState.text||'#f0f7f1',.75)};font-family:'${bldState.font||'Josefin Sans'}',sans-serif;">${bE(g.label||'Group')}<span style="font-size:.65rem;color:${bRgb(bldState.accent||'#4dbd6a',.4)};">▾</span></summary><div class="bld-group-body">${children||`<div class="bld-group-empty">Empty — edit group to add sections</div>`}</div></details>`;
+}
+
+function bldThemeFromState() {
+  document.getElementById('bldBg').value=bldState.bg||'#020a03';
+  document.getElementById('bldAccent').value=bldState.accent||'#4dbd6a';
+  document.getElementById('bldText').value=bldState.text||'#f0f7f1';
+  document.getElementById('bldFont').value=bldState.font||'Josefin Sans';
+}
+
+function bldDrawPages() {
+  const list=document.getElementById('bldPageList');
+  list.innerHTML=bldPages.map(p=>`
+    <div class="bld-pi${bldPageId===p.id?' sel':''}" data-pid="${p.id}">
+      <div style="min-width:0;flex:1;">
+        <div class="bld-pi-t">${escHtml(p.title)}</div>
+        <div class="bld-pi-s">${escHtml(p.slug)}</div>
+      </div>
+      ${bldPageUnsaved(p)?`<span class="bld-pi-unsaved" data-discard="${p.id}" title="Discard unsaved changes">!</span>`:''}
+      ${p.slug!=='/'&&p.slug!=='__404__'?`<button class="bld-pi-del" data-pdel="${p.id}" title="Delete">✕</button>`:''}
+    </div>`).join('');
+  list.querySelectorAll('.bld-pi').forEach(el => el.addEventListener('click', e => {
+    if (e.target.closest('.bld-pi-del') || e.target.closest('[data-discard]')) return;
+    bldPickPage(+el.dataset.pid);
+  }));
+  list.querySelectorAll('[data-discard]').forEach(badge => badge.addEventListener('click', async e => {
+    e.stopPropagation();
+    const pid = +badge.dataset.discard;
+    if (!await dlg.confirm('Discard unsaved changes for this page? It will revert to the last published version.', { confirm: 'Discard', danger: true })) return;
+    bldClearDraft(pid);
+    if (pid === bldPageId) {
+
+      const p = bldPages.find(x => x.id === pid);
+      try { bldState = { bg:'#020a03',accent:'#4dbd6a',text:'#f0f7f1',font:'Josefin Sans',sections:[], ...JSON.parse(p.page_json||'{}') }; }
+      catch { bldState = { bg:'#020a03',accent:'#4dbd6a',text:'#f0f7f1',font:'Josefin Sans',sections:[] }; }
+      bldSel = null; bldParentId = null;
+      _lastDraftJson = JSON.stringify(bldState);
+      bldThemeFromState(); bldDrawCanvas(); bldDrawEditor();
+      bldSetAutosave('saved');
+    }
+    bldDrawPages();
+    toast('Draft discarded');
+  }));
+  list.querySelectorAll('[data-pdel]').forEach(btn => btn.addEventListener('click', async e => {
+    e.stopPropagation();
+    const p=bldPages.find(x=>x.id===+btn.dataset.pdel);
+    if (!p) return;
+    if (!await dlg.confirm(`Delete page "${p.title}"?`, { danger: true, confirm: 'Delete' })) return;
+    await fetch(`/api/pages/${p.id}`,{method:'DELETE',headers:authHeaders()});
+    bldClearDraft(p.id);
+    bldPages=bldPages.filter(x=>x.id!==p.id);
+    if (bldPageId===p.id) { bldPageId=bldPages[0]?.id||null; if (bldPageId) bldPickPage(bldPageId); else bldDrawCanvas(); }
+    bldDrawPages();
+  }));
+}
+
+function bldPickPage(id) {
+  bldPageId=id; bldSel=null;
+  const p=bldPages.find(x=>x.id===id); if (!p) return;
+  try { bldState={bg:'#020a03',accent:'#4dbd6a',text:'#f0f7f1',font:'Josefin Sans',sections:[],...JSON.parse(p.page_json||'{}')}; }
+  catch(e) { bldState={bg:'#020a03',accent:'#4dbd6a',text:'#f0f7f1',font:'Josefin Sans',sections:[]}; }
+
+  try {
+    const raw = _ls.getItem(bldDraftKey(id));
+    if (raw) {
+      const draft = JSON.parse(raw);
+      const fresh = draft && draft.ts && (Date.now() - draft.ts < 24*3600*1000);
+      if (fresh && JSON.stringify(draft.state) !== (p.page_json || '')) {
+        bldState = draft.state;
+        setTimeout(() => toast('Restored unsaved draft (' + timeAgo(new Date(draft.ts).toISOString()) + ')'), 300);
+      } else if (!fresh) {
+        bldClearDraft(id);
+      }
+    }
+  } catch {}
+  bldThemeFromState();
+  _lastDraftJson = JSON.stringify(bldState);  // baseline so we don't spuriously re-save on open
+  bldSetAutosave('saved');
+  const slug=p.slug==='/'?'/':'/'+p.slug.replace(/^\//,'');
+  document.getElementById('bldChromeUrl').textContent='lanson.pages.dev'+slug;
+  bldDrawPages(); bldDrawCanvas(); bldDrawEditor();
+}
+
+function bldDrawCanvas() {
+  const el=document.getElementById('bldCanvas'); if (!el) return;
+  bldSaveDraft();   // persist on every canvas change
+  el.style.background=bldState.bg;
+  if (!bldState.sections||!bldState.sections.length) {
+    el.innerHTML=`<div class="bld-canvas-empty" style="color:${bRgb(bldState.accent||'#4dbd6a',.18)}">Add a section below to build this page</div>`;
+    return;
+  }
+  function swHtml(s) {
+    const wLabel=s.width==='half'?'½':s.width==='third'?'⅓':'Full';
+    const inner=s.type==='group'?groupCanvasHtml(s):bRender(s,bldState);
+    return `<div class="bld-sw${bldSel===s.id?' sel':''}" data-sid="${s.id}" draggable="true">
+      <div class="bld-ov">
+        <span class="bld-drag-handle" title="Drag to reorder">⠿</span>
+        <button class="bld-ob bld-w-tog" data-wtog="${s.id}" title="Change column width">${wLabel}</button>
+        <button class="bld-ob" data-edit="${s.id}">Edit</button>
+        <button class="bld-ob rm" data-del="${s.id}">✕</button>
+      </div>
+      ${inner}
+    </div>`;
+  }
+  const rows=groupRows(bldState.sections);
+  el.innerHTML=rows.map(row=>{
+    if (row.length===1) {
+      const s=row[0], w=s.width||'full';
+      if (w==='full') return swHtml(s);
+
+      const needed=w==='third'?3:2;
+      const slot=`<div style="flex:1;min-width:0;border:1px dashed rgba(77,189,106,.1);display:flex;align-items:center;justify-content:center;font-size:.5rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(77,189,106,.18);min-height:60px;">Drag section here</div>`;
+      return `<div style="display:flex;gap:.4rem;align-items:stretch;"><div style="flex:1;min-width:0;">${swHtml(s)}</div>${slot.repeat(needed-1)}</div>`;
+    }
+    return `<div style="display:flex;gap:.4rem;align-items:stretch;">${row.map(s=>`<div style="flex:1;min-width:0;">${swHtml(s)}</div>`).join('')}</div>`;
+  }).join('');
+  el.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();bldSel=b.dataset.edit;bldParentId=null;bldDrawCanvas();bldDrawEditor();}));
+  el.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',e=>{
+    e.stopPropagation();
+    bldState.sections=bldState.sections.filter(x=>x.id!==b.dataset.del);
+    if (bldSel===b.dataset.del){bldSel=null;bldParentId=null;}
+    bldDrawCanvas(); bldDrawEditor();
+  }));
+  el.querySelectorAll('[data-wtog]').forEach(b=>b.addEventListener('click',e=>{
+    e.stopPropagation();
+    const sec=bldState.sections.find(s=>s.id===b.dataset.wtog); if (!sec) return;
+    const cur=sec.width||'full';
+    sec.width=cur==='full'?'half':cur==='half'?'third':'full';
+    bldSel=sec.id; bldParentId=null; bldDrawCanvas(); bldDrawEditor();
+  }));
+
+  el.querySelectorAll('[data-gc-edit]').forEach(b=>b.addEventListener('click',e=>{
+    e.stopPropagation();
+    bldParentId=b.dataset.gcGrp; bldSel=b.dataset.gcEdit;
+    bldDrawCanvas(); bldDrawEditor();
+  }));
+  el.querySelectorAll('[data-gc-del]').forEach(b=>b.addEventListener('click',e=>{
+    e.stopPropagation();
+    const grp=bldState.sections.find(s=>s.id===b.dataset.gcGrp); if (!grp) return;
+    grp.sections=(grp.sections||[]).filter(c=>c.id!==b.dataset.gcDel);
+    if (bldSel===b.dataset.gcDel){bldSel=grp.id;bldParentId=null;}
+    bldDrawCanvas(); bldDrawEditor();
+  }));
+  bSetupDnD(el, bldState.sections, (newId)=>{bldSel=newId;bldParentId=null;bldDrawCanvas();bldDrawEditor();});
+  initCarousels(el);
+}
+
+function bldPatch(s) {
+  if (s.type==='group') { bldDrawCanvas(); return; }
+  const w=document.querySelector(`#bldCanvas .bld-sw[data-sid="${s.id}"]`); if (!w){bldDrawCanvas();return;}
+  const ov=w.querySelector('.bld-ov'); w.innerHTML=''; if(ov)w.appendChild(ov);
+  w.insertAdjacentHTML('beforeend',bRender(s,bldState));
+  initCarousels(w);
+}
+
+
+function bldDrawEditor() {
+  const panel=document.getElementById('bldEditor'); if (!panel) return;
+  if (!bldSel) {
+    if (bldPageId) {
+      panel.innerHTML=`<div class="bld-ep"><div class="bld-ep-head">Page <span class="bld-ep-type">Settings</span></div><div class="bld-ef"><label>Browser Tab Title</label><input type="text" id="pgTitle" value="${bA(bldState.page_title||'')}" placeholder="Defaults to page name" /></div><div class="bld-ef"><label>Meta Description</label><input type="text" id="pgSub" value="${bA(bldState.page_subtitle||'')}" /></div><div class="bld-ef"><label>Show in nav bar</label><select id="pgNav"><option value="yes"${bldState.show_in_nav!==false?' selected':''}>Yes — show in nav</option><option value="no"${bldState.show_in_nav===false?' selected':''}>No — hide from nav</option></select></div><div class="bld-sep" style="margin:.6rem 0;"></div><p style="font-weight:100;font-size:.62rem;letter-spacing:.06em;color:var(--muted);line-height:1.8;">Hover a section and click <strong style="color:rgba(77,189,106,.6);font-weight:300;">Edit</strong> to change its content.</p></div>`;
+      panel.querySelector('#pgTitle').addEventListener('input',e=>{bldState.page_title=e.target.value;bldSaveDraft();});
+      panel.querySelector('#pgSub').addEventListener('input',e=>{bldState.page_subtitle=e.target.value;bldSaveDraft();});
+      panel.querySelector('#pgNav').addEventListener('change',e=>{
+        bldState.show_in_nav=(e.target.value==='yes');
+        e.target.value = bldState.show_in_nav ? 'yes' : 'no';   // lock the visible value
+        bldSaveDraft();
+      });
+    } else {
+      panel.innerHTML='<p class="bld-editor-hint">Select or create a page to get started.</p>';
+    }
+    return;
+  }
+  let s, parentGroup=null;
+  if (bldParentId) {
+    parentGroup=bldState.sections.find(g=>g.id===bldParentId);
+    s=parentGroup?(parentGroup.sections||[]).find(c=>c.id===bldSel):null;
+  } else {
+    s=bldState.sections.find(x=>x.id===bldSel);
+  }
+  if (!s) return;
+  const {html,label}=bEditorFields(s);
+  const backBtn=parentGroup?`<button class="btn btn-xs" id="bEdBack" style="margin-bottom:.6rem;width:100%;">← Back to group</button>`:'';
+  panel.innerHTML=`<div class="bld-ep">${backBtn}<div class="bld-ep-head">${label} <span class="bld-ep-type">${parentGroup?'in Group':'Section'}</span></div>${html}</div>`;
+  if (parentGroup) {
+    panel.querySelector('#bEdBack')?.addEventListener('click',()=>{bldSel=parentGroup.id;bldParentId=null;bldDrawEditor();});
+  }
+  bBindEditor(panel, s, (sec, extra) => {
+    if (parentGroup) { bldDrawCanvas(); } else { bldPatch(sec); }
+    if (extra==='re-editor') bldDrawEditor();
+  });
+}
+
+async function bldBoot() {
+  if (bldBooted) return; bldBooted=true;
+
+  document.getElementById('bldBg').addEventListener('input',e=>{bldState.bg=e.target.value;bldDrawCanvas();});
+  document.getElementById('bldAccent').addEventListener('input',e=>{bldState.accent=e.target.value;bldDrawCanvas();if(bldSel)bldDrawEditor();});
+  document.getElementById('bldText').addEventListener('input',e=>{bldState.text=e.target.value;bldDrawCanvas();});
+  document.getElementById('bldFont').addEventListener('change',e=>{bldState.font=e.target.value;bldDrawCanvas();});
+
+  bSetupBlockDrag(document.getElementById('bldBlocks'));
+  document.getElementById('bldBlocks').querySelectorAll('.bld-blk').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      if (!bldPageId) { toast('Select or create a page first.', true); return; }
+      const sec=bDefault(btn.dataset.type); bldState.sections.push(sec); bldSel=sec.id;
+      bldDrawCanvas(); bldDrawEditor();
+      const col=document.getElementById('bldCanvasCol');
+      setTimeout(()=>col.scrollTo({top:col.scrollHeight,behavior:'smooth'}),60);
+    });
+  });
+
+  document.getElementById('bldAddPageBtn').addEventListener('click',()=>{
+    const f=document.getElementById('bldNewPageForm');
+    f.style.display=f.style.display==='none'?'':'none';
+  });
+  document.getElementById('bldNPCancel').addEventListener('click',()=>{
+    document.getElementById('bldNewPageForm').style.display='none';
+  });
+  document.getElementById('bldNPCreate').addEventListener('click',async()=>{
+    const title=document.getElementById('bldNPTitle').value.trim();
+    const rawSlug=document.getElementById('bldNPSlug').value.trim();
+    if (!title||!rawSlug) { toast('Title and slug are required.', true); return; }
+    const slug=rawSlug.startsWith('/')?rawSlug:'/'+rawSlug;
+    const initJson=JSON.stringify({bg:'#020a03',accent:'#4dbd6a',text:'#f0f7f1',font:'Josefin Sans',sections:[]});
+    const res=await fetch('/api/pages',{method:'POST',headers:{...authHeaders(),'Content-Type':'application/json'},body:JSON.stringify({title,slug,page_json:initJson})});
+    if (!res.ok) { const d=await res.json(); toast(d.error||'Error creating page.', true); return; }
+    const data=await res.json();
+    document.getElementById('bldNewPageForm').style.display='none';
+    document.getElementById('bldNPTitle').value=''; document.getElementById('bldNPSlug').value='';
+    bldPages.push({id:data.id,title,slug,page_json:initJson,is_published:1});
+    bldDrawPages(); bldPickPage(data.id);
+  });
+
+  document.getElementById('bldPreview').addEventListener('click',()=>{
+    const p=bldPages.find(x=>x.id===bldPageId); if (!p) return;
+    window.open(p.slug==='/'?'/':'/'+p.slug.replace(/^\//,''),'_blank');
+  });
+
+  document.getElementById('bldPublish').addEventListener('click',async()=>{
+    if (!bldPageId) { toast('No page selected.', true); return; }
+    const sp=document.getElementById('bldSpinner'),btn=document.getElementById('bldPublish');
+    sp.style.display='block'; btn.disabled=true;
+
+    const tasks = [];
+    const curP = bldPages.find(x=>x.id===bldPageId);
+    if (curP) tasks.push({ id:bldPageId, title:curP.title, json:JSON.stringify(bldState) });
+    for (const p of bldPages) {
+      if (p.id === bldPageId) continue;
+      try {
+        const raw = _ls.getItem(bldDraftKey(p.id));
+        if (raw) { const d = JSON.parse(raw); const j = JSON.stringify(d.state); if (j !== (p.page_json||'')) tasks.push({ id:p.id, title:p.title, json:j }); }
+      } catch {}
+    }
+
+    let ok = 0, fail = 0;
+    for (const t of tasks) {
+      const res = await fetch(`/api/pages/${t.id}`,{method:'PUT',headers:{...authHeaders(),'Content-Type':'application/json'},body:JSON.stringify({title:t.title,page_json:t.json})});
+      if (res.ok) { const idx=bldPages.findIndex(x=>x.id===t.id); if(idx>=0)bldPages[idx].page_json=t.json; bldClearDraft(t.id); ok++; }
+      else fail++;
+    }
+    sp.style.display='none'; btn.disabled=false;
+    bldDrawPages();
+    if (fail) toast(`Published ${ok}, ${fail} failed.`, true);
+    else toast(ok>1 ? `Published all ${ok} pages!` : 'Published!');
+  });
+
+}
+
+async function bldLoadPages() {
+  const loading=document.getElementById('bldLoading');
+  loading.style.display='flex';
+  const prevId=bldPageId;
+  const res=await fetch('/api/pages',{headers:authHeaders()});
+  if (res.ok) {
+    bldPages=await res.json();
+    if (!bldPages.find(p=>p.slug==='/')) {
+      const sRes=await fetch('/api/settings');
+      let existingJson='';
+      if (sRes.ok) { const s=await sRes.json(); existingJson=s.page_json||''; }
+      const initJson=existingJson||JSON.stringify({bg:'#020a03',accent:'#4dbd6a',text:'#f0f7f1',font:'Josefin Sans',sections:[]});
+      const cr=await fetch('/api/pages',{method:'POST',headers:{...authHeaders(),'Content-Type':'application/json'},body:JSON.stringify({title:'Home',slug:'/',page_json:initJson})});
+      if (cr.ok) { const d=await cr.json(); bldPages.unshift({id:d.id,title:'Home',slug:'/',page_json:initJson,is_published:1}); }
+    }
+  }
+  loading.style.display='none';
+  bldDrawPages();
+  const toSelect=prevId&&bldPages.find(p=>p.id===prevId)?prevId:bldPages[0]?.id||null;
+  if (toSelect) bldPickPage(toSelect);
+}

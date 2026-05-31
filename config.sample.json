@@ -1,0 +1,30 @@
+{
+  "// about":              "Copy this to sites/<your-site>/config.json and fill it in. One file per site; everything else (code) is shared.",
+
+  "name":                 "Your Site Name",
+  "// name":              "Public display + meta/title fallback (the live name can still be overridden in the admin panel / D1 site_settings).",
+
+  "shortName":            "YourSite",
+  "// shortName":         "PWA short_name + apple-mobile-web-app-title (home-screen label).",
+
+  "domain":               "yoursite.com",
+  "// domain":            "Bare domain, no protocol. Used for canonical/OG/Twitter URLs and the JS meta origin.",
+
+  "themeColor":           "#4dbd6a",
+  "// themeColor":        "Browser UI theme color + PWA theme_color. The in-site palette is set separately in the admin panel (D1 theme_* settings).",
+
+  "verifiSite":           "your-verifi-site-id",
+  "// verifiSite":        "The data-site id for the verifi bot-check embed (verifi.zo0p.dev). Use your own per site.",
+
+  "tagline":              "What this site is about",
+  "description":          "One-line meta description for search/social.",
+  "keywords":             "comma, separated, keywords",
+
+  "cloudflare": {
+    "accountId":          "your-cloudflare-account-id",
+    "project":            "your-pages-project-name",
+    "d1Name":             "your-d1-database-name",
+    "d1Id":               "your-d1-database-uuid"
+  },
+  "// cloudflare":        "Used by deploy.js (Pages project + D1 target) and to generate wrangler.toml for local dev. SECRETS (OAuth client secrets, RESEND_API_KEY, ADMIN_PASSWORD) are NEVER stored here — set them as Cloudflare encrypted secrets per project. Public OAuth client IDs live in the project's env vars too."
+}
