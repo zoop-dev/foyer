@@ -38,6 +38,11 @@ export async function handlePeople(ctx) {
     const { email } = await request.json().catch(() => ({}));
     if (!email?.trim()) return respond({ error: 'email required' }, 400);
     const addr = email.trim().toLowerCase();
+
+    if (_adminRole !== 'owner') {
+      const ownerEmail = await env.DB.prepare("SELECT 1 FROM visitors WHERE email = ? AND role = 'owner'").bind(addr).first();
+      if (ownerEmail) return respond({ error: 'cannot_ban_owner' }, 403);
+    }
     await env.DB.prepare('INSERT OR IGNORE INTO banned_emails (email) VALUES (?)').bind(addr).run();
 
     await env.DB.prepare(
@@ -92,6 +97,11 @@ export async function handlePeople(ctx) {
 
     if (banning) {
 
+      const target = await env.DB.prepare('SELECT role FROM visitors WHERE id = ?').bind(id).first();
+      if (target?.role === 'owner' && _adminRole !== 'owner') return respond({ error: 'cannot_ban_owner' }, 403);
+
+      const ownerGuard = _adminRole === 'owner' ? '' : " AND role != 'owner'";
+
       await env.DB.prepare(
         "UPDATE visitors SET is_banned = 1, google_sub = 'banned:' || google_sub WHERE id = ? AND google_sub NOT LIKE 'banned:%'"
       ).bind(id).run();
@@ -102,7 +112,7 @@ export async function handlePeople(ctx) {
         if (v?.email) {
 
           await env.DB.prepare(
-            "UPDATE visitors SET is_banned = 1, google_sub = 'banned:' || google_sub WHERE email = ? AND id != ? AND google_sub NOT LIKE 'banned:%'"
+            "UPDATE visitors SET is_banned = 1, google_sub = 'banned:' || google_sub WHERE email = ? AND id != ? AND google_sub NOT LIKE 'banned:%'" + ownerGuard
           ).bind(v.email, id).run();
 
           if (scope === 'email_block') {
