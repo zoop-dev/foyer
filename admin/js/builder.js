@@ -9,11 +9,20 @@ function bRgb(hex, a) {
 }
 
 function bRender(s, theme) {
-  const { accent='#4dbd6a', text='#f0f7f1', font='Josefin Sans', bg='#020a03' } = theme;
+  const { accent=__SITE__.accent, text=__SITE__.text, font='Josefin Sans', bg=__SITE__.bg } = theme;
   const ff = `font-family:'${font}',sans-serif;`;
   const fc = `color:${text};`;
 
   switch(s.type) {
+    case 'collection': {
+      const items=s.items||[];
+      const p=s.pad==='sm'?'1rem 2rem':s.pad==='lg'?'4rem 2rem':'2rem 2rem';
+      const cols=s.layout==='grid-2'?2:s.layout==='grid-4'?4:3;
+      const forSale=items.filter(it=>it.for_sale==='yes').length;
+      const countLine=s.show_count!=='no'?`${items.length} item${items.length===1?'':'s'}${forSale?` · ${forSale} for sale`:''}`:'';
+      const cards=items.map(it=>`<div style="border:1px solid ${bRgb(accent,.12)};background:${bRgb(accent,.03)};position:relative;">${it.for_sale==='yes'?`<div style="position:absolute;top:.5rem;right:.5rem;background:${accent};color:${bg};font-size:.5rem;font-weight:400;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .5rem;">For sale${it.price?` · ${bE(it.price)}`:''}</div>`:''}${it.img?`<img src="${bA(it.img)}" alt="" style="width:100%;height:130px;object-fit:cover;display:block;" />`:`<div style="width:100%;height:130px;background:${bRgb(accent,.06)};border:1px dashed ${bRgb(accent,.15)};"></div>`}<div style="padding:.6rem .8rem;"><div style="font-weight:300;font-size:.82rem;color:${bRgb(text,.9)};">${bE(it.name||'')}</div>${it.note?`<div style="font-weight:200;font-size:.68rem;line-height:1.6;color:${bRgb(text,.5)};margin-top:.2rem;">${bE(it.note)}</div>`:''}</div></div>`).join('');
+      return `<div style="${ff}${fc}padding:${p};">${s.heading?`<div style="font-weight:300;font-size:1.05rem;letter-spacing:.02em;margin-bottom:.3rem;">${bE(s.heading)}</div>`:''}${countLine?`<div style="font-size:.65rem;font-weight:200;letter-spacing:.1em;text-transform:uppercase;color:${bRgb(accent,.6)};margin-bottom:1.2rem;">${countLine}</div>`:''}<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:1rem;">${cards}</div></div>`;
+    }
     case 'hero': {
       const ta=`text-align:${s.align||'center'};`;
       const sz=s.name_size==='sm'?'1.6rem':s.name_size==='md'?'2.2rem':s.name_size==='xl'?'clamp(3rem,10vw,5rem)':'clamp(1.9rem,8vw,3.2rem)';
@@ -289,6 +298,7 @@ function bDefault(type) {
     case 'spacer':  return { id, type, size:'md' };
     case 'link':    return { id, type, label:'Visit →', url:'', align:'center', style:'pill', size:'md', new_tab:'yes', pad:'md' };
     case 'cards':   return { id, type, items:[{img:'',title:'Card Title',body:'',url:'',new_tab:'yes'},{img:'',title:'Card Title',body:'',url:'',new_tab:'yes'}], layout:'grid-2', radius:'none', pad:'md' };
+    case 'collection': return { id, type, heading:'My Collection', show_count:'yes', layout:'grid-3', items:[{img:'',name:'Item one',note:'',for_sale:'no',price:''},{img:'',name:'Item two',note:'',for_sale:'no',price:''}], pad:'md' };
     case 'gallery': return { id, type, items:[{img:'',url:'',caption:''},{img:'',url:'',caption:''},{img:'',url:'',caption:''}], cols:'3', height:'md', gap:'sm', radius:'none', pad:'md' };
     case 'imgtext':   return { id, type, img:'', reverse:'no', img_w:'md', img_h:'md', radius:'none', eyebrow:'', heading:'Heading', body:'', btn_label:'', btn_url:'', pad:'md' };
     case 'group':     return { id, type, label:'Group', default_open:'yes', sections:[] };
@@ -318,7 +328,7 @@ function bPadRow(cur) {
 }
 
 function bEditorFields(s) {
-  const typeLabels={hero:'Hero',bio:'Bio',links:'Links',link:'Link',contact:'Contact',social:'Social',cta:'CTA',quote:'Quote',heading:'Heading',text:'Text',image:'Image',stats:'Stats',divider:'Divider',spacer:'Spacer',cards:'Cards',gallery:'Gallery',imgtext:'Image + Text',accordion:'Accordion',carousel:'Carousel',group:'Collapsible Group',fileprev:'File Preview',filedown:'File Download',tutorials:'Tutorials',reviews:'Reviews'};
+  const typeLabels={hero:'Hero',bio:'Bio',links:'Links',link:'Link',contact:'Contact',social:'Social',cta:'CTA',quote:'Quote',heading:'Heading',text:'Text',image:'Image',stats:'Stats',divider:'Divider',spacer:'Spacer',cards:'Cards',collection:'Collection',gallery:'Gallery',imgtext:'Image + Text',accordion:'Accordion',carousel:'Carousel',group:'Collapsible Group',fileprev:'File Preview',filedown:'File Download',tutorials:'Tutorials',reviews:'Reviews'};
   let f='';
 
   if (s.type==='hero') {
@@ -413,6 +423,20 @@ function bEditorFields(s) {
        <div class="bld-ef"><label>Spacing</label><select data-f="spacing"><option value="sm"${s.spacing==='sm'?' selected':''}>Compact</option><option value="md"${(!s.spacing||s.spacing==='md')?' selected':''}>Normal</option><option value="lg"${s.spacing==='lg'?' selected':''}>Spacious</option></select></div>`;
   } else if (s.type==='spacer') {
     f=`<div class="bld-ef"><label>Height</label><select data-f="size"><option value="sm"${s.size==='sm'?' selected':''}>Small</option><option value="md"${(!s.size||s.size==='md')?' selected':''}>Medium</option><option value="lg"${s.size==='lg'?' selected':''}>Large</option><option value="xl"${s.size==='xl'?' selected':''}>X-Large</option></select></div>`;
+  } else if (s.type==='collection') {
+    const items=s.items||[];
+    f=`<div class="bld-ef"><label>Heading</label><input type="text" data-f="heading" value="${bA(s.heading||'')}" /></div>
+       <div class="bld-ef"><label>Show count line</label><select data-f="show_count"><option value="yes"${s.show_count!=='no'?' selected':''}>Yes</option><option value="no"${s.show_count==='no'?' selected':''}>No</option></select></div>
+       <div id="bCOLI">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button>
+      <div class="bld-ef"><label>Image</label><div style="display:flex;gap:.4rem;"><input type="url" data-ci="${i}" data-cf="img" value="${bA(it.img||'')}" style="flex:1;" /><button class="btn btn-sm bld-img-pick" data-target-ci="${i}" data-target-cf="img">Pick</button></div></div>
+      <div class="bld-ef"><label>Name</label><input type="text" data-ci="${i}" data-cf="name" value="${bA(it.name||'')}" /></div>
+      <div class="bld-ef"><label>Note <span style="opacity:.5">(optional)</span></label><textarea data-ci="${i}" data-cf="note" rows="2">${bE(it.note||'')}</textarea></div>
+      <div class="bld-ef"><label>For sale</label><select data-ci="${i}" data-cf="for_sale"><option value="no"${it.for_sale!=='yes'?' selected':''}>No</option><option value="yes"${it.for_sale==='yes'?' selected':''}>Yes</option></select></div>
+      <div class="bld-ef"><label>Price <span style="opacity:.5">(if for sale)</span></label><input type="text" data-ci="${i}" data-cf="price" value="${bA(it.price||'')}" placeholder="$200" /></div>
+    </div>`).join('')}</div>
+    <button class="bld-add-li" id="bAddColl">+ Add item</button>
+    <div class="bld-ef"><label>Layout</label><select data-f="layout"><option value="grid-2"${s.layout==='grid-2'?' selected':''}>2 columns</option><option value="grid-3"${(!s.layout||s.layout==='grid-3')?' selected':''}>3 columns</option><option value="grid-4"${s.layout==='grid-4'?' selected':''}>4 columns</option></select></div>
+    ${bPadRow(s.pad)}`;
   } else if (s.type==='cards') {
     const items=s.items||[];
     f=`<div id="bCI">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button>
@@ -550,7 +574,9 @@ function bEditorFields(s) {
       <option value="full"${(!s.width||s.width==='full')?' selected':''}>Full width</option>
       <option value="half"${s.width==='half'?' selected':''}>Half — pair with next</option>
       <option value="third"${s.width==='third'?' selected':''}>One-third — group of 3</option>
-    </select></div>`;
+    </select></div>
+    <div class="bld-ef"><label>Anchor ID <span style="opacity:.45">(optional — link to it with #id)</span></label>
+    <input type="text" data-f="anchor" value="${bA(s.anchor||'')}" placeholder="e.g. about" /></div>`;
   }
   return { html: f, label: typeLabels[s.type]||s.type };
 }
@@ -616,6 +642,8 @@ function bBindEditor(panel, s, onUpdate) {
   });
   const addCi=panel.querySelector('#bAddCi');
   if (addCi) addCi.addEventListener('click', () => { s.items.push({img:'',title:'',body:'',url:'',new_tab:'yes'}); onUpdate(s,'re-editor'); });
+  const addColl=panel.querySelector('#bAddColl');
+  if (addColl) addColl.addEventListener('click', () => { s.items.push({img:'',name:'',note:'',for_sale:'no',price:''}); onUpdate(s,'re-editor'); });
 
   panel.querySelectorAll('[data-cti][data-ctf]').forEach(inp => {
     inp.addEventListener('input', () => { if (!s.items) s.items=[]; const i=+inp.dataset.cti; if (!s.items[i]) s.items[i]={label:'',val:'',href:''}; s.items[i][inp.dataset.ctf]=inp.value; onUpdate(s); });
@@ -835,7 +863,7 @@ function initCarousels(root) {
   });
 }
 
-let bldPages=[], bldPageId=null, bldState={bg:'#020a03',accent:'#4dbd6a',text:'#f0f7f1',font:'Josefin Sans',sections:[]}, bldSel=null, bldParentId=null, bldBooted=false;
+let bldPages=[], bldPageId=null, bldState={bg:__SITE__.bg,accent:__SITE__.accent,text:__SITE__.text,font:'Josefin Sans',sections:[]}, bldSel=null, bldParentId=null, bldBooted=false;
 
 
 
@@ -895,14 +923,39 @@ function groupCanvasHtml(g) {
     </div>
     ${bRender(c,bldState)}
   </div>`).join('');
-  return `<details class="bld-group-details" ${open?'open':''}><summary class="bld-group-summary" style="color:${bRgb(bldState.text||'#f0f7f1',.75)};font-family:'${bldState.font||'Josefin Sans'}',sans-serif;">${bE(g.label||'Group')}<span style="font-size:.65rem;color:${bRgb(bldState.accent||'#4dbd6a',.4)};">▾</span></summary><div class="bld-group-body">${children||`<div class="bld-group-empty">Empty — edit group to add sections</div>`}</div></details>`;
+  return `<details class="bld-group-details" ${open?'open':''}><summary class="bld-group-summary" style="color:${bRgb(bldState.text||__SITE__.text,.75)};font-family:'${bldState.font||'Josefin Sans'}',sans-serif;">${bE(g.label||'Group')}<span style="font-size:.65rem;color:${bRgb(bldState.accent||__SITE__.accent,.4)};">▾</span></summary><div class="bld-group-body">${children||`<div class="bld-group-empty">Empty — edit group to add sections</div>`}</div></details>`;
 }
 
 function bldThemeFromState() {
-  document.getElementById('bldBg').value=bldState.bg||'#020a03';
-  document.getElementById('bldAccent').value=bldState.accent||'#4dbd6a';
-  document.getElementById('bldText').value=bldState.text||'#f0f7f1';
+  document.getElementById('bldBg').value=bldState.bg||__SITE__.bg;
+  document.getElementById('bldAccent').value=bldState.accent||__SITE__.accent;
+  document.getElementById('bldText').value=bldState.text||__SITE__.text;
   document.getElementById('bldFont').value=bldState.font||'Josefin Sans';
+  bldBgControls();
+}
+
+function bldBgControls() {
+  const style = bldState.bg_style || 'solid';
+  document.getElementById('bldBgStyle').value = style;
+  document.getElementById('bldBgColor2').value = bldState.bg_color2 || '#0a1f12';
+  document.getElementById('bldBgAngle').value = bldState.bg_angle || '135';
+  document.getElementById('bldBgImage').value = bldState.bg_image || '';
+  document.getElementById('bldBgOverlay').value = bldState.bg_overlay || '0.4';
+  document.getElementById('bldBgAnim').checked = !!bldState.bg_anim;
+  const show = (id, on) => document.getElementById(id).style.display = on ? '' : 'none';
+  show('bldBgColor2Wrap', style==='gradient');
+  show('bldBgAngleWrap',  style==='gradient');
+  show('bldBgImageWrap',  style==='image');
+  show('bldBgOverlayWrap',style==='image');
+  show('bldBgAnimWrap',   style==='gradient'||style==='aurora');
+}
+
+function bldBgCss() {
+  const s = bldState, bg = s.bg||__SITE__.bg, ac = s.accent||__SITE__.accent;
+  if (s.bg_style==='gradient') return `linear-gradient(${s.bg_angle||135}deg, ${bg}, ${s.bg_color2||ac})`;
+  if (s.bg_style==='aurora') return `radial-gradient(40% 50% at 20% 25%, ${bRgb(ac,.18)}, transparent 60%), radial-gradient(45% 55% at 80% 30%, ${bRgb(ac,.14)}, transparent 60%), ${bg}`;
+  if (s.bg_style==='image' && s.bg_image) return `linear-gradient(rgba(0,0,0,${s.bg_overlay||.4}),rgba(0,0,0,${s.bg_overlay||.4})), url('${String(s.bg_image).replace(/'/g,'%27')}') center/cover no-repeat`;
+  return bg;
 }
 
 function bldDrawPages() {
@@ -928,8 +981,8 @@ function bldDrawPages() {
     if (pid === bldPageId) {
 
       const p = bldPages.find(x => x.id === pid);
-      try { bldState = { bg:'#020a03',accent:'#4dbd6a',text:'#f0f7f1',font:'Josefin Sans',sections:[], ...JSON.parse(p.page_json||'{}') }; }
-      catch { bldState = { bg:'#020a03',accent:'#4dbd6a',text:'#f0f7f1',font:'Josefin Sans',sections:[] }; }
+      try { bldState = { bg:__SITE__.bg,accent:__SITE__.accent,text:__SITE__.text,font:'Josefin Sans',sections:[], ...JSON.parse(p.page_json||'{}') }; }
+      catch { bldState = { bg:__SITE__.bg,accent:__SITE__.accent,text:__SITE__.text,font:'Josefin Sans',sections:[] }; }
       bldSel = null; bldParentId = null;
       _lastDraftJson = JSON.stringify(bldState);
       bldThemeFromState(); bldDrawCanvas(); bldDrawEditor();
@@ -954,8 +1007,8 @@ function bldDrawPages() {
 function bldPickPage(id) {
   bldPageId=id; bldSel=null;
   const p=bldPages.find(x=>x.id===id); if (!p) return;
-  try { bldState={bg:'#020a03',accent:'#4dbd6a',text:'#f0f7f1',font:'Josefin Sans',sections:[],...JSON.parse(p.page_json||'{}')}; }
-  catch(e) { bldState={bg:'#020a03',accent:'#4dbd6a',text:'#f0f7f1',font:'Josefin Sans',sections:[]}; }
+  try { bldState={bg:__SITE__.bg,accent:__SITE__.accent,text:__SITE__.text,font:'Josefin Sans',sections:[],...JSON.parse(p.page_json||'{}')}; }
+  catch(e) { bldState={bg:__SITE__.bg,accent:__SITE__.accent,text:__SITE__.text,font:'Josefin Sans',sections:[]}; }
 
   try {
     const raw = _ls.getItem(bldDraftKey(id));
@@ -981,9 +1034,9 @@ function bldPickPage(id) {
 function bldDrawCanvas() {
   const el=document.getElementById('bldCanvas'); if (!el) return;
   bldSaveDraft();   // persist on every canvas change
-  el.style.background=bldState.bg;
+  el.style.background=bldBgCss();
   if (!bldState.sections||!bldState.sections.length) {
-    el.innerHTML=`<div class="bld-canvas-empty" style="color:${bRgb(bldState.accent||'#4dbd6a',.18)}">Add a section below to build this page</div>`;
+    el.innerHTML=`<div class="bld-canvas-empty" style="color:${bRgb(bldState.accent||__SITE__.accent,.18)}">Add a section below to build this page</div>`;
     return;
   }
   function swHtml(s) {
@@ -1006,7 +1059,7 @@ function bldDrawCanvas() {
       if (w==='full') return swHtml(s);
 
       const needed=w==='third'?3:2;
-      const slot=`<div style="flex:1;min-width:0;border:1px dashed rgba(77,189,106,.1);display:flex;align-items:center;justify-content:center;font-size:.5rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(77,189,106,.18);min-height:60px;">Drag section here</div>`;
+      const slot=`<div style="flex:1;min-width:0;border:1px dashed rgba(var(--accent-rgb),.1);display:flex;align-items:center;justify-content:center;font-size:.5rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(var(--accent-rgb),.18);min-height:60px;">Drag section here</div>`;
       return `<div style="display:flex;gap:.4rem;align-items:stretch;"><div style="flex:1;min-width:0;">${swHtml(s)}</div>${slot.repeat(needed-1)}</div>`;
     }
     return `<div style="display:flex;gap:.4rem;align-items:stretch;">${row.map(s=>`<div style="flex:1;min-width:0;">${swHtml(s)}</div>`).join('')}</div>`;
@@ -1096,6 +1149,13 @@ async function bldBoot() {
   document.getElementById('bldText').addEventListener('input',e=>{bldState.text=e.target.value;bldDrawCanvas();});
   document.getElementById('bldFont').addEventListener('change',e=>{bldState.font=e.target.value;bldDrawCanvas();});
 
+  document.getElementById('bldBgStyle').addEventListener('change',e=>{bldState.bg_style=e.target.value;bldBgControls();bldDrawCanvas();});
+  document.getElementById('bldBgColor2').addEventListener('input',e=>{bldState.bg_color2=e.target.value;bldDrawCanvas();});
+  document.getElementById('bldBgAngle').addEventListener('input',e=>{bldState.bg_angle=e.target.value;bldDrawCanvas();});
+  document.getElementById('bldBgImage').addEventListener('input',e=>{bldState.bg_image=e.target.value;bldDrawCanvas();});
+  document.getElementById('bldBgOverlay').addEventListener('input',e=>{bldState.bg_overlay=e.target.value;bldDrawCanvas();});
+  document.getElementById('bldBgAnim').addEventListener('change',e=>{bldState.bg_anim=e.target.checked;bldDrawCanvas();});
+
   bSetupBlockDrag(document.getElementById('bldBlocks'));
   document.getElementById('bldBlocks').querySelectorAll('.bld-blk').forEach(btn=>{
     btn.addEventListener('click',()=>{
@@ -1119,7 +1179,7 @@ async function bldBoot() {
     const rawSlug=document.getElementById('bldNPSlug').value.trim();
     if (!title||!rawSlug) { toast('Title and slug are required.', true); return; }
     const slug=rawSlug.startsWith('/')?rawSlug:'/'+rawSlug;
-    const initJson=JSON.stringify({bg:'#020a03',accent:'#4dbd6a',text:'#f0f7f1',font:'Josefin Sans',sections:[]});
+    const initJson=JSON.stringify({bg:__SITE__.bg,accent:__SITE__.accent,text:__SITE__.text,font:'Josefin Sans',sections:[]});
     const res=await fetch('/api/pages',{method:'POST',headers:{...authHeaders(),'Content-Type':'application/json'},body:JSON.stringify({title,slug,page_json:initJson})});
     if (!res.ok) { const d=await res.json(); toast(d.error||'Error creating page.', true); return; }
     const data=await res.json();
@@ -1175,7 +1235,7 @@ async function bldLoadPages() {
       const sRes=await fetch('/api/settings');
       let existingJson='';
       if (sRes.ok) { const s=await sRes.json(); existingJson=s.page_json||''; }
-      const initJson=existingJson||JSON.stringify({bg:'#020a03',accent:'#4dbd6a',text:'#f0f7f1',font:'Josefin Sans',sections:[]});
+      const initJson=existingJson||JSON.stringify({bg:__SITE__.bg,accent:__SITE__.accent,text:__SITE__.text,font:'Josefin Sans',sections:[]});
       const cr=await fetch('/api/pages',{method:'POST',headers:{...authHeaders(),'Content-Type':'application/json'},body:JSON.stringify({title:'Home',slug:'/',page_json:initJson})});
       if (cr.ok) { const d=await cr.json(); bldPages.unshift({id:d.id,title:'Home',slug:'/',page_json:initJson,is_published:1}); }
     }

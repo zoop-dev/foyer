@@ -63,7 +63,7 @@
           </div>
           <div id="ml-sent-view" class="ml-sent" style="display:none;">
             <div class="ml-spinner" id="ml-spinner"></div>
-            <svg id="ml-sent-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#39ff14" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M20 6 9 17l-5-5"/></svg>
+            <svg id="ml-sent-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:none;stroke:var(--site-accent-bright);"><path d="M20 6 9 17l-5-5"/></svg>
             <p id="ml-sent-msg">We sent a sign-in link to <b id="ml-sent-email"></b>.<br>Open it on <b>any device</b> — this window will sign in automatically.</p>
             <p class="ml-err" id="ml-resend-err"></p>
             <div class="ml-sent-actions">
@@ -199,7 +199,7 @@
           if (data.request_id) startPoll(data.request_id);
         } else {
           send.disabled = false; send.textContent = 'Send sign-in link';
-          err.textContent = data?.error === 'account_banned' ? 'Your access to this site has been revoked.' : (data?.error || 'Could not send link. Try again.');
+          err.textContent = data?.error === 'account_banned' ? 'Your access to this site has been revoked.' : data?.error === 'not_allowed' ? "This site is invite-only — your email isn't on the guest list." : (data?.error || 'Could not send link. Try again.');
         }
       });
     }

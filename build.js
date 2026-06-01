@@ -31,7 +31,11 @@ const cfg = JSON.parse(await readFile(path.join(siteDir, "config.json"), "utf8")
 const pkg = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
 const VERSION = pkg.version.split(".")[0];
 
-const SITE = { name: cfg.name, shortName: cfg.shortName, domain: cfg.domain };
+const SITE = {
+  name: cfg.name, shortName: cfg.shortName, domain: cfg.domain,
+
+  accent: cfg.themeColor, bg: cfg.bgColor || "#020a03", text: cfg.textColor || "#c8e6aa",
+};
 const define = {
   __VERSION__: JSON.stringify(VERSION),
   __SITE__: JSON.stringify(SITE),
@@ -108,7 +112,8 @@ await templateFile("robots.txt");
 await templateFile("style.css");
 await templateFile("admin/admin.css");
 
-for (const item of ["functions", "_headers", "_redirects", "schema.sql"]) {
+
+for (const item of ["functions", "foyer", "offline.html", "_headers", "_redirects", "schema.sql"]) {
   await cp(path.join(root, item), path.join(dist, item), { recursive: true }).catch(() => {});
 }
 await cp(path.join(siteDir, "icons"), path.join(dist, "icons"), { recursive: true });

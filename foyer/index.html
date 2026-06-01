@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Foyer — the gated-site framework</title>
+  <meta name="description" content="Foyer is a config-driven framework for gated personal sites on Cloudflare Pages + D1: a sign-in gate, magic-link & OAuth auth, a block page builder, and an admin CMS." />
+  <meta name="robots" content="index,follow" />
+  <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+  <meta property="og:title" content="Foyer — the gated-site framework" />
+  <meta property="og:description" content="Config-driven gated sites on Cloudflare Pages + D1." />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200;300&family=Josefin+Sans:wght@100;200;300;400&display=swap" />
+  <style>
+    :root { --bg:#0b0e13; --panel:#11151c; --ink:#e8edf2; --muted:#8b94a6; --line:rgba(170,190,215,.12); --accent:#7fa6d8; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { background:var(--bg); color:var(--ink); font-family:'Josefin Sans',system-ui,sans-serif; font-weight:200; line-height:1.7; -webkit-font-smoothing:antialiased; }
+    a { color:inherit; }
+    .wrap { max-width:720px; margin:0 auto; padding:0 1.5rem; }
+    /* glow */
+    .glow { position:fixed; inset:-30% -10% auto; height:60vh; background:radial-gradient(ellipse 50% 60% at 50% 0%, rgba(127,166,216,.10), transparent 70%); pointer-events:none; }
+    /* hero */
+    header { padding:6rem 0 3.5rem; text-align:center; position:relative; }
+    .lockup { display:inline-flex; align-items:center; gap:.7rem; }
+    .lockup svg { width:38px; height:auto; }
+    .lockup .name { font-family:'Unbounded',sans-serif; font-weight:200; font-size:2.1rem; letter-spacing:.02em; }
+    .tag { margin-top:1.2rem; color:var(--muted); font-size:.95rem; letter-spacing:.18em; text-transform:uppercase; font-weight:200; }
+    .lede { margin:2rem auto 0; max-width:560px; color:rgba(232,237,242,.78); font-size:1.05rem; font-weight:200; }
+    .cta { margin-top:2.4rem; display:flex; gap:.7rem; justify-content:center; flex-wrap:wrap; }
+    .btn { font-family:'Josefin Sans',sans-serif; font-weight:300; font-size:.7rem; letter-spacing:.22em; text-transform:uppercase; padding:.8rem 1.6rem; border-radius:9px; text-decoration:none; transition:all .2s; }
+    .btn-primary { background:var(--ink); color:#0b0e13; }
+    .btn-primary:hover { filter:brightness(1.1); }
+    .btn-ghost { border:1px solid var(--line); color:rgba(232,237,242,.8); }
+    .btn-ghost:hover { border-color:var(--accent); color:#fff; }
+    /* features */
+    section { padding:3rem 0; border-top:1px solid var(--line); }
+    .eyebrow { font-size:.6rem; letter-spacing:.4em; text-transform:uppercase; color:var(--accent); margin-bottom:1.6rem; font-weight:300; }
+    .grid { display:grid; grid-template-columns:repeat(2,1fr); gap:1.6rem 2.2rem; }
+    .feat h3 { font-family:'Unbounded',sans-serif; font-weight:200; font-size:.95rem; margin-bottom:.4rem; color:var(--ink); }
+    .feat p { color:var(--muted); font-size:.85rem; font-weight:200; }
+    @media (max-width:560px){ .grid{ grid-template-columns:1fr; } .lockup .name{ font-size:1.7rem; } }
+    footer { padding:3rem 0 4rem; border-top:1px solid var(--line); text-align:center; color:var(--muted); font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; font-weight:200; }
+    footer a { color:rgba(232,237,242,.7); text-decoration:none; }
+    footer a:hover { color:#fff; }
+  </style>
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="wrap">
+    <header>
+      <div class="lockup">
+        <svg viewBox="0 0 44 50" fill="none" stroke="var(--ink)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg>
+        <span class="name">foyer</span>
+      </div>
+      <p class="tag">The gated-site framework</p>
+      <p class="lede">Foyer turns a single config into a complete gated personal site — a sign-in entryway, passwordless &amp; social auth, a visual page builder, and an admin CMS — running entirely on Cloudflare's edge.</p>
+      <div class="cta">
+        <a class="btn btn-primary" href="mailto:inquiries@zo0p.dev?subject=Foyer%20inquiry">Get Foyer</a>
+        <a class="btn btn-ghost" href="/foyer/about">Learn more</a>
+        <a class="btn btn-ghost" href="/foyer/changelog">Changelog</a>
+      </div>
+    </header>
+
+    <section>
+      <p class="eyebrow">What you get</p>
+      <div class="grid">
+        <div class="feat"><h3>Gated entry</h3><p>A polished sign-in wall stands between visitors and your content — your site's foyer.</p></div>
+        <div class="feat"><h3>Passwordless + OAuth</h3><p>Magic-link email plus Google, GitHub, and Discord — sessions, accounts, and device management built in.</p></div>
+        <div class="feat"><h3>Block page builder</h3><p>Compose pages from typed sections — hero, cards, galleries, tutorials, reviews — no code.</p></div>
+        <div class="feat"><h3>Admin CMS</h3><p>Manage content, visitors, roles, analytics, and theme from a clean admin panel.</p></div>
+        <div class="feat"><h3>Edge-native</h3><p>Cloudflare Pages + D1 + Functions. Fast, cheap, serverless — global by default.</p></div>
+        <div class="feat"><h3>One config per site</h3><p>Name, domain, theme, and icons live in one file. Spin up a new site in minutes.</p></div>
+      </div>
+    </section>
+
+    <footer>
+      This site is built with Foyer · <a href="https://zo0p.dev" target="_blank" rel="noopener">made by zo0p.dev</a>
+    </footer>
+  </div>
+</body>
+</html>

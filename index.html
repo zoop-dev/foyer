@@ -60,6 +60,7 @@
       <div class="gate-card">
         <p class="gate-title site-name">{{NAME}}</p>
         <p class="gate-sub">Sign in to continue</p>
+        <div id="turnstile-embed" style="display:flex;justify-content:center;margin-bottom:.4rem;"></div>
         <div id="gate-btns" style="display:none;">
         <div id="google-btn-wrap"></div>
         <button class="gate-google-btn" id="googleSignInBtn">
@@ -86,7 +87,7 @@
         <p class="gate-err" id="gate-err"></p>
         </div>
       </div>
-      <a href="https://zo0p.dev" target="_blank" rel="noopener" class="foyer-credit">made with <svg class="fc-mark" viewBox="0 0 44 50" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg><span class="fc-name">Foyer</span></a>
+      <a href="/foyer" class="foyer-credit">made with <svg class="fc-mark" viewBox="0 0 44 50" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg><span class="fc-name">Foyer</span></a>
     </div>
   </div>
 
@@ -103,7 +104,7 @@
     <span class="user-name-text" id="userNameText"></span>
   </div>
 
-  <a class="made-by" href="https://zo0p.dev" target="_blank" rel="noopener">made with <svg class="fc-mark" viewBox="0 0 44 50" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg><b>Foyer</b></a>
+  <a class="made-by" href="/foyer">made with <svg class="fc-mark" viewBox="0 0 44 50" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg><b>Foyer</b></a>
 
   <div class="cursor-ring" id="cr"></div>
   <div class="cursor-dot"  id="cd"></div>

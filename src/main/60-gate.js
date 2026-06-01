@@ -39,7 +39,28 @@
       gate.style.opacity = '1';
       gate.style.pointerEvents = 'auto';
 
-      unlockGateBtns(settings);
+
+      if (_bootTurnstile) {
+        const renderTs = () => {
+          try {
+            window.turnstile.render('#turnstile-embed', {
+              sitekey: _bootTurnstile, theme: 'dark',
+              callback: () => unlockGateBtns(settings),
+              'error-callback': () => { const e = document.getElementById('gate-err'); if (e) e.textContent = 'Bot check failed — refresh to retry.'; },
+            });
+          } catch { unlockGateBtns(settings); }
+        };
+        if (window.turnstile) renderTs();
+        else {
+          const ts = document.createElement('script');
+          ts.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+          ts.async = true; ts.defer = true;
+          ts.onload = renderTs; ts.onerror = () => unlockGateBtns(settings);
+          document.head.appendChild(ts);
+        }
+      } else {
+        unlockGateBtns(settings);
+      }
 
       const s = document.createElement('script');
       s.src = 'https://accounts.google.com/gsi/client';
@@ -59,7 +80,7 @@
             dismissGate();
             loadAndShow(session);
           } else {
-            document.getElementById('gate-err').textContent = data?.error === 'account_banned' ? 'Your access to this site has been revoked.' : (data?.error || 'Sign-in failed. Try again.');
+            document.getElementById('gate-err').textContent = data?.error === 'account_banned' ? 'Your access to this site has been revoked.' : data?.error === 'not_allowed' ? "This site is invite-only — your email isn't on the guest list." : (data?.error || 'Sign-in failed. Try again.');
           }
         };
 
@@ -86,6 +107,7 @@
     }
 
     let _bootClientId  = '';
+    let _bootTurnstile = '';
     let _bootGithubId  = '';
     let _bootDiscordId = '';
 
@@ -118,7 +140,7 @@
         loadAndShow(session);
       } else {
         const err = document.getElementById('gate-err');
-        if (err) err.textContent = data?.error === 'account_banned' ? 'Your access to this site has been revoked.' : (data?.error || errMsg);
+        if (err) err.textContent = data?.error === 'account_banned' ? 'Your access to this site has been revoked.' : data?.error === 'not_allowed' ? "This site is invite-only — your email isn't on the guest list." : (data?.error || errMsg);
       }
     }
 

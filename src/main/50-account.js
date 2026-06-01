@@ -40,6 +40,20 @@
           <div class="acct-meta" id="acctMeta"></div>
 
           <div class="acct-sec">
+            <div class="acct-sec-head"><span>Preferences</span></div>
+            <label class="acct-pref">
+              <span>Navigation position</span>
+              <select id="acctNavPos">
+                <option value="">Site default</option>
+                <option value="top">Top</option>
+                <option value="bottom">Bottom</option>
+                <option value="left">Left side</option>
+                <option value="right">Right side</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="acct-sec">
             <div class="acct-sec-head">
               <span>Active sessions</span>
               <button type="button" class="acct-link" id="acctRevokeOthers" style="display:none;">Sign out others</button>
@@ -71,6 +85,16 @@
         await fetch('/api/account/sessions/revoke-others', { method: 'POST', headers: sessionHeaders(getSession()) }).catch(() => {});
         b.disabled = false; b.textContent = 'Sign out others';
         loadAccountSessions();
+      });
+
+      const navSel = modal.querySelector('#acctNavPos');
+      try { navSel.value = localStorage.getItem('foyer_nav_pref') || ''; } catch {}
+      navSel.addEventListener('change', () => {
+        try {
+          if (navSel.value) localStorage.setItem('foyer_nav_pref', navSel.value);
+          else localStorage.removeItem('foyer_nav_pref');
+        } catch {}
+        loadNav(getSession());   // re-render the nav immediately
       });
 
       return modal;

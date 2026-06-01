@@ -10,7 +10,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'files')    fetchAndRenderFiles();
     if (btn.dataset.tab === 'tutorials') fetchTutorials();
     if (btn.dataset.tab === 'reviews') fetchReviews();
-    if (btn.dataset.tab === 'settings') { fetchBlocklist(); loadNavEditor(); }
+    if (btn.dataset.tab === 'settings') { fetchBlocklist(); fetchAllowlist(); loadNavEditor(); }
   });
 });
 
@@ -31,6 +31,7 @@ async function fetchSettings() {
   document.getElementById('sNavTitle').value=s.nav_title||'';
   if (s.nav_style) document.getElementById('sNavStyle').value=s.nav_style;
   if (s.nav_align) document.getElementById('sNavAlign').value=s.nav_align;
+  if (s.nav_position) document.getElementById('sNavPosition').value=s.nav_position;
   if (s.theme_bg)     document.getElementById('sThemeBg').value=s.theme_bg;
   if (s.theme_accent) document.getElementById('sThemeAccent').value=s.theme_accent;
   if (s.theme_text)   document.getElementById('sThemeText').value=s.theme_text;
@@ -39,6 +40,8 @@ async function fetchSettings() {
   document.getElementById('sAuthDiscord').checked = s.auth_discord !== '0';
   document.getElementById('sAuthMagic').checked   = s.auth_magic   !== '0';
   document.getElementById('sSiteOffline').checked = s.site_offline === '1';
+  document.getElementById('sSitePublic').checked = s.site_public === '1';
+  document.getElementById('sSiteLockdown').checked = s.site_lockdown === '1';
 }
 document.getElementById('saveSettingsBtn').addEventListener('click', async () => {
   const sp=document.getElementById('settingsSpinner'),ss=document.getElementById('settingsStatus'),btn=document.getElementById('saveSettingsBtn');
@@ -55,6 +58,7 @@ document.getElementById('saveSettingsBtn').addEventListener('click', async () =>
       nav_title:document.getElementById('sNavTitle').value.trim(),
       nav_style:document.getElementById('sNavStyle').value,
       nav_align:document.getElementById('sNavAlign').value,
+      nav_position:document.getElementById('sNavPosition').value,
       theme_bg:document.getElementById('sThemeBg').value,
       theme_accent:document.getElementById('sThemeAccent').value,
       theme_text:document.getElementById('sThemeText').value,
@@ -62,7 +66,9 @@ document.getElementById('saveSettingsBtn').addEventListener('click', async () =>
       auth_github:document.getElementById('sAuthGithub').checked?'1':'0',
       auth_discord:document.getElementById('sAuthDiscord').checked?'1':'0',
       auth_magic:document.getElementById('sAuthMagic').checked?'1':'0',
-      site_offline:document.getElementById('sSiteOffline').checked?'1':'0'})});
+      site_offline:document.getElementById('sSiteOffline').checked?'1':'0',
+      site_public:document.getElementById('sSitePublic').checked?'1':'0',
+      site_lockdown:document.getElementById('sSiteLockdown').checked?'1':'0'})});
   sp.style.display='none'; btn.disabled=false; ss.textContent=res.ok?'Saved.':'Error.';
 });
 
@@ -503,10 +509,58 @@ document.getElementById('blocklistEmailInput').addEventListener('keydown', e => 
 });
 
 document.querySelectorAll('.tab-btn[data-tab="settings"], .mob-tab[data-tab="settings"]').forEach(btn => {
-  btn.addEventListener('click', fetchBlocklist);
+  btn.addEventListener('click', () => { fetchBlocklist(); fetchAllowlist(); });
+});
+
+async function fetchAllowlist() {
+  const res = await fetch('/api/allowed-emails', { headers: authHeaders() });
+  if (!res.ok) return;
+  const list = await res.json();
+  const el = document.getElementById('allowlistItems');
+  if (!el) return;
+  if (!list.length) {
+    el.innerHTML = '<p style="font-size:.65rem;font-weight:100;color:var(--muted);">No emails allowlisted yet.</p>';
+    return;
+  }
+  el.innerHTML = list.map(row => `
+    <div style="display:flex;align-items:center;gap:.6rem;padding:.5rem .75rem;border:1px solid rgba(var(--accent-rgb),.12);background:rgba(var(--accent-rgb),.04);">
+      <span style="flex:1;font-size:.72rem;font-weight:200;color:rgba(220,245,225,.75);font-family:monospace;">${escHtml(row.email)}</span>
+      <span style="font-size:.55rem;font-weight:100;color:var(--muted);white-space:nowrap;">${timeAgo(row.added_at)}</span>
+      <button class="al-remove-btn" data-email="${escHtml(row.email)}" style="font-family:'Josefin Sans',sans-serif;font-weight:200;font-size:.5rem;letter-spacing:.18em;text-transform:uppercase;padding:.22rem .6rem;border:1px solid rgba(var(--accent-rgb),.3);background:transparent;color:rgba(var(--accent-rgb),.8);cursor:pointer;">Remove</button>
+    </div>`).join('');
+  el.querySelectorAll('.al-remove-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!await dlg.confirm(`Remove ${btn.dataset.email} from the allowlist?`, { confirm: 'Remove' })) return;
+      await fetch(`/api/allowed-emails/${encodeURIComponent(btn.dataset.email)}`, { method: 'DELETE', headers: authHeaders() });
+      fetchAllowlist();
+    });
+  });
+}
+document.getElementById('allowlistAddBtn').addEventListener('click', async () => {
+  const input = document.getElementById('allowlistEmailInput');
+  const email = input.value.trim().toLowerCase();
+  if (!email) return;
+  const res = await fetch('/api/allowed-emails', {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) { await dlg.alert('Failed to add email to allowlist.'); return; }
+  input.value = '';
+  toast(`Allowed: ${email}`);
+  fetchAllowlist();
+});
+document.getElementById('allowlistEmailInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('allowlistAddBtn').click();
 });
 
 
 document.getElementById('pushUiUpdateBtn')?.addEventListener('click', pushUiUpdate);
+
+document.querySelectorAll('.set-cat').forEach(b => b.addEventListener('click', () => {
+  const cat = b.dataset.cat;
+  document.querySelectorAll('.set-cat').forEach(x => x.classList.toggle('active', x === b));
+  document.querySelectorAll('.set-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === cat));
+}));
 
 init(); // called here so all scripts are loaded first

@@ -277,7 +277,7 @@ function enterRateLimitMode() {
   if (!document.getElementById('rl-screen')) {
     const el = document.createElement('div');
     el.id = 'rl-screen';
-    el.style.cssText = 'position:fixed;inset:0;z-index:9998;background:#020a03;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1.2rem;font-family:"Josefin Sans",sans-serif;';
+    el.style.cssText = 'position:fixed;inset:0;z-index:9998;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1.2rem;font-family:"Josefin Sans",sans-serif;';
     el.innerHTML = `
       <img src="/icons/favicon.svg" width="36" height="36" style="opacity:.4;border-radius:6px;" alt="" />
       <p style="font-weight:100;font-size:.55rem;letter-spacing:.35em;text-transform:uppercase;color:rgba(230,200,90,.75);">Rate Limited</p>
@@ -307,7 +307,7 @@ async function pushUiUpdate() {
     _ls.setItem(UI_VERSION_KEY, newVer); // exempt ourselves from reload
     if (btn) {
       btn.textContent = '✓ Pushed!';
-      btn.style.color = '#4dbd6a';
+      btn.style.color = 'var(--accent)';
       btn.style.borderColor = 'rgba(var(--accent-rgb),.5)';
       setTimeout(() => {
         btn.textContent = 'Push UI Update ↑';

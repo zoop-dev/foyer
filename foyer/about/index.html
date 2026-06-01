@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>About Foyer</title>
+  <meta name="description" content="About Foyer — a config-driven framework for gated personal sites on Cloudflare Pages + D1, made by zo0p.dev." />
+  <meta name="robots" content="index,follow" />
+  <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200;300&family=Josefin+Sans:wght@100;200;300;400&display=swap" />
+  <style>
+    :root { --bg:#0b0e13; --ink:#e8edf2; --muted:#8b94a6; --line:rgba(170,190,215,.12); --accent:#7fa6d8; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--bg); color:var(--ink); font-family:'Josefin Sans',system-ui,sans-serif; font-weight:200; line-height:1.85; -webkit-font-smoothing:antialiased; }
+    .wrap { max-width:640px; margin:0 auto; padding:4.5rem 1.5rem 5rem; }
+    .back { display:inline-flex; align-items:center; gap:.5rem; color:var(--muted); text-decoration:none; font-size:.62rem; letter-spacing:.24em; text-transform:uppercase; margin-bottom:2.6rem; }
+    .back:hover { color:var(--ink); }
+    .back svg { width:16px; height:auto; }
+    h1 { font-family:'Unbounded',sans-serif; font-weight:200; font-size:1.8rem; margin-bottom:1.4rem; letter-spacing:.01em; }
+    h2 { font-family:'Unbounded',sans-serif; font-weight:200; font-size:1rem; margin:2.4rem 0 .8rem; color:var(--ink); }
+    p { color:rgba(232,237,242,.74); font-size:.95rem; margin-bottom:1rem; }
+    a.link { color:var(--accent); text-decoration:none; border-bottom:1px solid rgba(127,166,216,.3); }
+    a.link:hover { color:#fff; }
+    ul { list-style:none; margin:.4rem 0 1rem; }
+    li { color:rgba(232,237,242,.74); font-size:.9rem; padding-left:1.2rem; position:relative; margin-bottom:.4rem; }
+    li::before { content:'—'; position:absolute; left:0; color:var(--accent); }
+    footer { margin-top:3rem; padding-top:1.6rem; border-top:1px solid var(--line); color:var(--muted); font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; }
+    footer a { color:rgba(232,237,242,.7); text-decoration:none; }
+    footer a:hover { color:#fff; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="/foyer">
+      <svg viewBox="0 0 44 50" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg>
+      foyer
+    </a>
+
+    <h1>About Foyer</h1>
+    <p>Foyer is a config-driven framework for <strong style="color:var(--ink);font-weight:300;">gated personal sites</strong>. The site you came from is built with it. One small config file — name, domain, theme, icons — produces a complete site; everything else is shared, reusable engine.</p>
+
+    <h2>The idea</h2>
+    <p>Most personal sites are open. Foyer sites start with a <em>foyer</em>: a sign-in entryway. Visitors authenticate — by magic link, Google, GitHub, or Discord — before they reach your content. You get real accounts, sessions, roles, and analytics instead of anonymous traffic.</p>
+
+    <h2>What's inside</h2>
+    <ul>
+      <li>Sign-in gate with passwordless (magic-link) &amp; social auth</li>
+      <li>Sessions, account panel, and per-device sign-out</li>
+      <li>A visual block page builder + admin CMS</li>
+      <li>Tutorials, reviews, custom pages, and theming</li>
+      <li>Cloudflare Pages + D1 + Functions — serverless at the edge</li>
+    </ul>
+
+    <h2>Who made it</h2>
+    <p>Foyer is built and maintained by <a class="link" href="https://zo0p.dev" target="_blank" rel="noopener">zo0p.dev</a>. It's free to build with.</p>
+
+    <footer>
+      <a href="/foyer">← Foyer home</a> &nbsp;·&nbsp; <a href="https://zo0p.dev" target="_blank" rel="noopener">zo0p.dev</a>
+    </footer>
+  </div>
+</body>
+</html>

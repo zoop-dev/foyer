@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Offline</title>
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200;300&family=Josefin+Sans:wght@100;200;300&display=swap" />
+  <style>
+    :root { --bg:#0b0e13; --ink:#e8edf2; --muted:#8b94a6; --accent:#7fa6d8; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--bg); color:var(--ink); font-family:'Josefin Sans',system-ui,sans-serif; font-weight:200;
+      min-height:100vh; display:flex; align-items:center; justify-content:center; text-align:center; padding:2rem; -webkit-font-smoothing:antialiased; overflow:hidden; }
+    .glow { position:fixed; inset:-30% -10% auto; height:70vh; background:radial-gradient(ellipse 50% 60% at 50% 0%, rgba(127,166,216,.10), transparent 70%); pointer-events:none; }
+    .wrap { position:relative; max-width:440px; }
+    .mark { width:62px; height:auto; margin:0 auto 1.8rem; display:block; opacity:.92; animation:breathe 4s ease-in-out infinite; }
+    @keyframes breathe { 0%,100%{opacity:.78;transform:translateY(0)} 50%{opacity:1;transform:translateY(-3px)} }
+    .name { font-family:'Unbounded',sans-serif; font-weight:200; font-size:1.7rem; letter-spacing:.02em; margin-bottom:.5rem; }
+    .eyebrow { font-size:.56rem; letter-spacing:.4em; text-transform:uppercase; color:var(--accent); margin-bottom:1.6rem; font-weight:300; }
+    p { color:rgba(232,237,242,.7); font-size:1rem; line-height:1.8; margin-bottom:2.2rem; }
+    .btn { display:inline-flex; align-items:center; gap:.55rem; font-family:'Josefin Sans',sans-serif; font-weight:300; font-size:.66rem;
+      letter-spacing:.22em; text-transform:uppercase; padding:.8rem 1.6rem; border-radius:9px; text-decoration:none;
+      border:1px solid rgba(170,190,215,.2); color:rgba(232,237,242,.82); transition:all .2s; }
+    .btn:hover { border-color:var(--accent); color:#fff; }
+    .btn svg { width:13px; height:auto; }
+  </style>
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="wrap">
+    <svg class="mark" viewBox="0 0 44 50" fill="none" stroke="var(--ink)" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/>
+    </svg>
+    <p class="eyebrow" id="foyer-offline-eyebrow">Temporarily offline</p>
+    <p class="name" id="foyer-offline-title">This site is taking a short break</p>
+    <p id="foyer-offline-msg">It’ll be back soon. Thanks for your patience.</p>
+    <a class="btn" href="/foyer">
+      <svg viewBox="0 0 44 50" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg>
+      About Foyer
+    </a>
+  </div>
+</body>
+</html>

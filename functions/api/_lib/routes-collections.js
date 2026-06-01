@@ -1,6 +1,6 @@
 
 export async function handleCollections(ctx) {
-  const { route, method, request, env, headers, respond, compressJson, decompressJson, CREATE_SESSIONS, CREATE_BANNED_EMAILS, CREATE_PAGES, authed, visitorAuthed, _adminRole } = ctx;
+  const { route, method, request, env, headers, respond, compressJson, decompressJson, CREATE_SESSIONS, CREATE_BANNED_EMAILS, CREATE_PAGES, authed, visitorAuthed, _adminRole, canView } = ctx;
 
   const CREATE_TUTORIALS = `CREATE TABLE IF NOT EXISTS tutorials (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -23,7 +23,7 @@ export async function handleCollections(ctx) {
 
   const tutBySlug = route.match(/^tutorials\/by-slug\/(.+)$/);
   if (tutBySlug && method === 'GET') {
-    if (!authed() && !(await visitorAuthed())) return respond({ error: 'unauthorized' }, 401);
+    if (!(await canView())) return respond({ error: 'unauthorized' }, 401);
     await env.DB.prepare(CREATE_TUTORIALS).run();
     const slug = decodeURIComponent(tutBySlug[1]);
     const row = await env.DB.prepare('SELECT * FROM tutorials WHERE slug = ?').bind(slug).first();
@@ -88,7 +88,7 @@ export async function handleCollections(ctx) {
 
   const revBySlug = route.match(/^reviews\/by-slug\/(.+)$/);
   if (revBySlug && method === 'GET') {
-    if (!authed() && !(await visitorAuthed())) return respond({ error: 'unauthorized' }, 401);
+    if (!(await canView())) return respond({ error: 'unauthorized' }, 401);
     await env.DB.prepare(CREATE_REVIEWS).run();
     const slug = decodeURIComponent(revBySlug[1]);
     const row = await env.DB.prepare('SELECT * FROM reviews WHERE slug = ?').bind(slug).first();

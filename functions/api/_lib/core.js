@@ -137,9 +137,39 @@ export async function buildCtx({ request, env, params }) {
     return 'ok';
   };
 
+  const sitePublic = async () => {
+    const r = await env.DB.prepare("SELECT value FROM site_settings WHERE key='site_public'").first().catch(() => null);
+    return r?.value === '1';
+  };
+
+
+
+  const canView = async () => {
+    if (_adminRole) return true;
+    const token = request.headers.get('X-Session-Token') || '';
+    let row = null;
+    if (token) {
+      await env.DB.prepare(CREATE_SESSIONS).run();
+      row = await env.DB.prepare(
+        "SELECT v.email, v.is_banned, v.role FROM sessions s JOIN visitors v ON v.id = s.visitor_id WHERE s.token = ? AND s.expires_at > datetime('now')"
+      ).bind(token).first().catch(() => null);
+    }
+    if (row?.is_banned) return false;
+    const lockRow = await env.DB.prepare("SELECT value FROM site_settings WHERE key='site_lockdown'").first().catch(() => null);
+    if (lockRow?.value === '1') {
+      if (!row) return false;
+      if (row.role === 'owner' || row.role === 'admin') return true;
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS allowed_emails (email TEXT PRIMARY KEY, added_at TEXT NOT NULL DEFAULT (datetime('now')))").run();
+      const ok = await env.DB.prepare('SELECT 1 FROM allowed_emails WHERE email = ?').bind(row.email).first().catch(() => null);
+      return !!ok;
+    }
+    if (row) return true;
+    return await sitePublic();
+  };
+
   _adminRole = await resolveAdminRole();
 
   return { route, method, request, env, headers, respond, compressJson, decompressJson,
            CREATE_SESSIONS, CREATE_BANNED_EMAILS, CREATE_PAGES, authed, visitorAuthed, _adminRole,
-           ensureSessionCols, newSession, currentVisitor };
+           ensureSessionCols, newSession, currentVisitor, sitePublic, canView };
 }

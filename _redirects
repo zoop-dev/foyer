@@ -1,3 +1,9 @@
 /favicon.ico /icons/favicon.ico 200
 /apple-touch-icon.png /icons/apple-touch-icon.png 200
+/foyer /foyer/index.html 200
+/foyer/ /foyer/index.html 200
+/foyer/about /foyer/about/index.html 200
+/foyer/about/ /foyer/about/index.html 200
+/foyer/changelog /foyer/changelog/index.html 200
+/foyer/changelog/ /foyer/changelog/index.html 200
 /* /index.html 200

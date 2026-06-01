@@ -236,6 +236,32 @@
       backdrop-filter: blur(10px);
     }
     #site-nav.on { display: flex; }
+    
+    #site-nav.pos-bottom { top: auto; bottom: 0; }
+    #site-nav.pos-left, #site-nav.pos-right {
+      top: 0; bottom: 0; width: 172px; height: auto;
+      flex-direction: column; align-items: stretch; justify-content: flex-start;
+      gap: 1.2rem; padding: 1.5rem 1.4rem; overflow-y: auto;
+    }
+    #site-nav.pos-left  { left: 0; right: auto; }
+    #site-nav.pos-right { right: 0; left: auto; }
+    
+    .scene.nav-pad-top    { padding-top: 44px !important; }
+    .scene.nav-pad-bottom { padding-bottom: 44px !important; }
+    .scene.nav-pad-left   { padding-left: 172px !important; }
+    .scene.nav-pad-right  { padding-right: 172px !important; }
+    
+    body.nav-bottom #userBadge, body.nav-bottom .made-by { bottom: 56px; }
+    body.nav-left  .made-by   { left: 184px; }
+    body.nav-right #userBadge { right: 184px; }
+    @media (max-width: 640px) {
+      
+      #site-nav.pos-left, #site-nav.pos-right {
+        top: 0; bottom: auto; left: 0; right: 0; width: auto; height: 44px;
+        flex-direction: row; align-items: center; gap: 2rem; padding: 0 1.8rem; overflow: visible;
+      }
+      .scene.nav-pad-left, .scene.nav-pad-right { padding-left: 0 !important; padding-right: 0 !important; padding-top: 44px !important; }
+    }
     .nav-a {
       font-family: 'Josefin Sans', sans-serif; font-weight: 200; font-size: .58rem;
       letter-spacing: .28em; text-transform: uppercase;
@@ -248,6 +274,7 @@
       position: fixed; inset: 0; z-index: 10;
       display: none; align-items: center; justify-content: center;
       overflow-y: auto; padding: 2rem 1rem;
+      scroll-behavior: smooth;   
     }
 
     
@@ -371,6 +398,18 @@
     }
     .acct-link:hover { color: rgba(255,120,120,0.9); }
     .acct-link:disabled { opacity: 0.5; cursor: default; }
+    .acct-pref { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; }
+    .acct-pref > span { font-weight: 200; font-size: 0.72rem; letter-spacing: 0.02em; color: rgba(220,245,220,0.8); }
+    .acct-pref select {
+      background: #0e150e; border: 1px solid rgba(255,255,255,0.14); border-radius: 7px;
+      color: rgba(225,245,225,0.92); font-family: 'Josefin Sans', sans-serif; font-weight: 300;
+      font-size: 0.7rem; padding: 0.4rem 1.6rem 0.4rem 0.6rem; outline: none; cursor: pointer;
+      -webkit-appearance: none; appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%238fb89a' stroke-width='1.5' stroke-linecap='round'/></svg>");
+      background-repeat: no-repeat; background-position: right 0.55rem center;
+    }
+    .acct-pref select:focus { border-color: rgba(var(--site-accent-rgb),0.45); }
+    .acct-pref select option { background: #0e150e; color: rgba(225,245,225,0.92); }
     .acct-sessions { display: flex; flex-direction: column; gap: 0.5rem; }
     .acct-loading { font-weight: 200; font-size: 0.66rem; color: rgba(var(--site-muted-rgb),0.4); margin: 0; }
     .acct-session {
@@ -449,3 +488,20 @@
     .md-content img { display: block; max-width: 100%; height: auto; margin: 1.4em auto; border-radius: 6px; }
     .md-content img:not([style]) { max-width: 480px; }
     .md-content hr { border: none; border-top: 1px solid currentColor; opacity: .2; margin: 1em 0; }
+
+    
+    @media (max-width: 640px) {
+      .pg-row { flex-direction: column !important; }
+      .scene [style*="grid-template-columns:repeat("] { grid-template-columns: 1fr !important; }
+      .scene [style*="grid-template-columns:1fr 1fr"],
+      .scene [style*="grid-template-columns:2fr 3fr"],
+      .scene [style*="% 1fr"] { grid-template-columns: 1fr !important; }
+      .scene img { max-width: 100% !important; height: auto; }
+      
+      .scene [style*="grid-template-columns"] { gap: 1.4rem !important; }
+    }
+
+    
+    #pg-bg { will-change: background-position; }
+    @keyframes pgGrad   { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    @keyframes pgAurora { 0%{background-position:0% 0%} 50%{background-position:100% 100%} 100%{background-position:0% 0%} }

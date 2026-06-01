@@ -3,6 +3,15 @@
       const c = `color:${text};`;
       bg = bg || '#020a03';
       switch (s.type) {
+        case 'collection': {
+          const items = s.items || [];
+          const p = s.pad==='sm'?'1rem 2rem':s.pad==='lg'?'4rem 2rem':'2rem 2rem';
+          const cols = s.layout==='grid-2'?2:s.layout==='grid-4'?4:3;
+          const forSale = items.filter(it=>it.for_sale==='yes').length;
+          const countLine = s.show_count!=='no' ? `${items.length} item${items.length===1?'':'s'}${forSale?` · ${forSale} for sale`:''}` : '';
+          const cards = items.map(it=>`<div style="border:1px solid ${pgRgb(accent,.12)};background:${pgRgb(accent,.03)};position:relative;">${it.for_sale==='yes'?`<div style="position:absolute;top:.5rem;right:.5rem;background:${accent};color:${bg};font-size:.55rem;font-weight:400;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .5rem;">For sale${it.price?` · ${pgE(it.price)}`:''}</div>`:''}${it.img?`<img src="${escAttr(it.img)}" alt="${escAttr(it.name||'')}" style="width:100%;height:140px;object-fit:cover;display:block;" />`:`<div style="width:100%;height:140px;background:${pgRgb(accent,.06)};"></div>`}<div style="padding:.7rem .9rem;"><div style="font-weight:300;font-size:.88rem;color:${pgRgb(text,.9)};">${pgE(it.name||'')}</div>${it.note?`<div style="font-size:.7rem;font-weight:200;line-height:1.6;color:${pgRgb(text,.5)};margin-top:.25rem;">${pgE(it.note)}</div>`:''}</div></div>`).join('');
+          return `<div style="${f}${c}padding:${p};">${s.heading?`<div style="font-weight:300;font-size:1.1rem;letter-spacing:.02em;margin-bottom:.3rem;">${pgE(s.heading)}</div>`:''}${countLine?`<div style="font-size:.7rem;font-weight:200;letter-spacing:.1em;text-transform:uppercase;color:${pgRgb(accent,.6)};margin-bottom:1.4rem;">${countLine}</div>`:''}<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:1.2rem;">${cards}</div></div>`;
+        }
         case 'hero': {
           const ta = `text-align:${s.align||'center'};`;
           const sz = s.name_size==='sm'?'1.6rem':s.name_size==='md'?'2.2rem':s.name_size==='xl'?'clamp(3rem,10vw,5rem)':'clamp(1.9rem,8vw,3.2rem)';
@@ -313,16 +322,47 @@
       });
     }
 
+    function applyPageBg(state, scene) {
+      const bg = state.bg || '#020a03';
+      const accent = state.accent || '#4dbd6a';
+      const style = state.bg_style || 'solid';
+      let layer = document.getElementById('pg-bg');
+      if (style === 'solid') {
+        if (layer) layer.style.display = 'none';
+        scene.style.background = bg;
+        return;
+      }
+      if (!layer) { layer = document.createElement('div'); layer.id = 'pg-bg'; document.body.appendChild(layer); }
+      scene.style.background = 'transparent';
+      const anim = !!state.bg_anim;
+      let css = 'position:fixed;inset:0;z-index:1;pointer-events:none;display:block;';
+      if (style === 'gradient') {
+        css += `background:linear-gradient(${state.bg_angle||135}deg, ${bg}, ${state.bg_color2||accent});`;
+        if (anim) css += 'background-size:300% 300%;animation:pgGrad 16s ease infinite;';
+      } else if (style === 'aurora') {
+        const a = c => pgRgb(accent, c);
+        css += `background:radial-gradient(40% 50% at 20% 25%, ${a(.18)}, transparent 60%), radial-gradient(45% 55% at 80% 30%, ${a(.14)}, transparent 60%), radial-gradient(55% 60% at 50% 95%, ${a(.12)}, transparent 60%), ${bg};`;
+        if (anim) css += 'background-size:200% 200%;animation:pgAurora 26s ease-in-out infinite;';
+      } else if (style === 'image') {
+        const ov = state.bg_overlay || '0.4';
+        css += `background:linear-gradient(rgba(0,0,0,${ov}),rgba(0,0,0,${ov})), url('${String(state.bg_image||'').replace(/'/g,'%27')}') center/cover no-repeat fixed;`;
+      }
+      layer.style.cssText = css;
+    }
+
     function renderCustomPage(state, session) {
       dismissLoading();
       const { bg, accent, text, font, sections } = state;
       const scene = document.getElementById('scene');
       scene.style.cssText = 'position:fixed;inset:0;z-index:10;display:block;overflow-y:auto;padding:0;';
-      scene.style.background = bg;
+      applyPageBg(state, scene);
       const rows = groupRows(sections || []);
       scene.innerHTML = rows.map(row => {
-        if (row.length === 1) return pgRenderSec(row[0], accent, text, font, bg);
-        return `<div style="display:flex;gap:0;">${row.map(s=>`<div style="flex:1;min-width:0;">${pgRenderSec(s, accent, text, font, bg)}</div>`).join('')}</div>`;
+        if (row.length === 1) {
+          const s = row[0], h = pgRenderSec(s, accent, text, font, bg);
+          return s.anchor ? `<div id="${escAttr(s.anchor)}" style="scroll-margin-top:64px;">${h}</div>` : h;
+        }
+        return `<div class="pg-row" style="display:flex;gap:0;">${row.map(s=>`<div${s.anchor?` id="${escAttr(s.anchor)}"`:''} style="flex:1;min-width:0;scroll-margin-top:64px;">${pgRenderSec(s, accent, text, font, bg)}</div>`).join('')}</div>`;
       }).join('');
       initCarousels(scene);
       scene.querySelectorAll('a, button').forEach(hookHover);

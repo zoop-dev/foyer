@@ -1,19 +1,27 @@
     async function loadNav(session) {
       const data = await protectedFetch('/api/nav', session);
       if (!data) return;
-      const { pages = [], custom_links = [], nav_title = '', nav_style = 'blurred', nav_align = 'left' } = data;
+      const { pages = [], custom_links = [], nav_title = '', nav_style = 'blurred', nav_align = 'left', nav_position = 'top' } = data;
       if (!pages.length && !custom_links.length && !nav_title) return;
       const nav = document.getElementById('site-nav');
       const cur = window.location.pathname.replace(/\/$/, '') || '/';
+
+      let navPref = '';
+      try { navPref = localStorage.getItem('foyer_nav_pref') || ''; } catch {}
+      const pos = ['top','bottom','left','right'].includes(navPref) ? navPref
+                : ['top','bottom','left','right'].includes(nav_position) ? nav_position : 'top';
+      const vertical = pos === 'left' || pos === 'right';
       const siteBg     = getComputedStyle(document.documentElement).getPropertyValue('--site-bg').trim()     || '#020a03';
       const siteAccent = getComputedStyle(document.documentElement).getPropertyValue('--site-accent').trim() || '#4dbd6a';
+      const bSide = pos==='bottom'?'border-top':pos==='left'?'border-right':pos==='right'?'border-left':'border-bottom';
       const styleMap = {
-        blurred:     `background:${siteBg}dd;backdrop-filter:blur(10px);border-bottom:1px solid ${siteAccent}18;`,
-        solid:       `background:${siteBg};border-bottom:1px solid ${siteAccent}20;`,
-        transparent: 'background:transparent;border-bottom:none;',
+        blurred:     `background:${siteBg}dd;backdrop-filter:blur(10px);${bSide}:1px solid ${siteAccent}18;`,
+        solid:       `background:${siteBg};${bSide}:1px solid ${siteAccent}20;`,
+        transparent: 'background:transparent;',
       };
       nav.style.cssText = (styleMap[nav_style] || styleMap.blurred);
-      const justifyMap = { left:'flex-start', center:'center', right:'flex-end' };
+      const alignMap = { left:'flex-start', center:'center', right:'flex-end' };
+      const j = alignMap[nav_align] || 'flex-start';
       const pageLinks = pages.map(p => {
         const href = p.slug === '/' ? '/' : (p.slug.startsWith('/') ? p.slug : '/' + p.slug);
         return `<a href="${href}" class="nav-a${href === cur ? ' cur' : ''}">${p.title}</a>`;
@@ -22,11 +30,20 @@
         `<a href="${escAttr(l.url || '#')}" class="nav-a" target="${l.new_tab !== false ? '_blank' : '_self'}" rel="noopener">${pgE(l.label || '')}</a>`
       );
       const links = [...pageLinks, ...extLinks].join('');
-      nav.innerHTML = nav_title
-        ? `<span style="font-family:'Josefin Sans',sans-serif;font-weight:200;font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(var(--site-muted-rgb),0.75);flex-shrink:0;">${nav_title}</span><div style="flex:1;display:flex;gap:2rem;justify-content:${justifyMap[nav_align]||'flex-start'};">${links}</div>`
-        : `<div style="width:100%;display:flex;gap:2rem;justify-content:${justifyMap[nav_align]||'flex-start'};">${links}</div>`;
-      nav.classList.add('on');
-      document.getElementById('scene').style.paddingTop = '44px';
+      const wrapStyle = vertical
+        ? `display:flex;flex-direction:column;gap:1rem;align-items:${j};width:100%;`
+        : `flex:1;display:flex;gap:2rem;justify-content:${j};`;
+      const titleSpan = nav_title
+        ? `<span style="font-family:'Josefin Sans',sans-serif;font-weight:200;font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(var(--site-muted-rgb),0.75);flex-shrink:0;${vertical?'margin-bottom:.5rem;':''}">${nav_title}</span>`
+        : '';
+      nav.innerHTML = titleSpan + `<div style="${wrapStyle}">${links}</div>`;
+      nav.className = 'on pos-' + pos;
+      const scene = document.getElementById('scene');
+      scene.classList.remove('nav-pad-top','nav-pad-bottom','nav-pad-left','nav-pad-right');
+      scene.classList.add('nav-pad-' + pos);
+
+      document.body.classList.remove('nav-bottom','nav-left','nav-right');
+      if (pos !== 'top') document.body.classList.add('nav-' + pos);
     }
 
     function syncCursor() {
@@ -197,6 +214,8 @@
 
     async function loadAndShow(session) {
       if (!versionPollStarted) { versionPollStarted = true; }
+
+      const _pgbg = document.getElementById('pg-bg'); if (_pgbg) _pgbg.style.display = 'none';
 
 
       let _wantsAdmin = false;

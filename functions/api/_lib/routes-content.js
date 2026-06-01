@@ -1,6 +1,6 @@
 
 export async function handleContent(ctx) {
-  const { route, method, request, env, headers, respond, compressJson, decompressJson, CREATE_SESSIONS, CREATE_BANNED_EMAILS, CREATE_PAGES, authed, visitorAuthed, _adminRole } = ctx;
+  const { route, method, request, env, headers, respond, compressJson, decompressJson, CREATE_SESSIONS, CREATE_BANNED_EMAILS, CREATE_PAGES, authed, visitorAuthed, _adminRole, sitePublic, canView } = ctx;
 
   if (route === 'settings' && method === 'GET') {
     const { results } = await env.DB.prepare('SELECT key, value FROM site_settings').all();
@@ -26,10 +26,8 @@ export async function handleContent(ctx) {
     const slug = url.searchParams.get('slug');
     if (slug !== null) {
       const vAuth = await visitorAuthed();
-      if (!authed() && vAuth !== 'ok') {
-        if (vAuth === 'banned') return respond({ error: 'account_banned' }, 403);
-        return respond({ error: 'unauthorized' }, 401);
-      }
+      if (vAuth === 'banned') return respond({ error: 'account_banned' }, 403);
+      if (!authed() && vAuth !== 'ok' && !(await sitePublic())) return respond({ error: 'unauthorized' }, 401);
       const page = await env.DB.prepare(
         'SELECT * FROM pages WHERE slug = ? AND is_published = 1'
       ).bind(slug).first();
@@ -88,17 +86,17 @@ export async function handleContent(ctx) {
   }
 
   if (route === 'nav' && method === 'GET') {
-    if (!authed() && !await visitorAuthed()) return respond({ error: 'unauthorized' }, 401);
+    if (!(await canView())) return respond({ error: 'unauthorized' }, 401);
     await env.DB.prepare(CREATE_PAGES).run();
     const { results } = await env.DB.prepare(
       'SELECT id, title, slug, page_json, sort_order FROM pages WHERE is_published = 1 ORDER BY sort_order ASC, id ASC'
     ).all();
 
-    const settingKeys = ['nav_title', 'nav_style', 'nav_align', 'nav_custom_links', 'nav_page_order'];
+    const settingKeys = ['nav_title', 'nav_style', 'nav_align', 'nav_custom_links', 'nav_page_order', 'nav_position'];
     const settingsRows = await Promise.all(
       settingKeys.map(k => env.DB.prepare("SELECT value FROM site_settings WHERE key = ?").bind(k).first().catch(() => null))
     );
-    const [nav_title, nav_style, nav_align, nav_custom_links_raw, nav_page_order_raw] = settingsRows.map(r => r?.value || '');
+    const [nav_title, nav_style, nav_align, nav_custom_links_raw, nav_page_order_raw, nav_position] = settingsRows.map(r => r?.value || '');
 
     let navPageOrder = [];
     try { navPageOrder = JSON.parse(nav_page_order_raw || '[]'); } catch {}
@@ -126,8 +124,9 @@ export async function handleContent(ctx) {
       pages,
       custom_links,
       nav_title,
-      nav_style:  nav_style  || 'blurred',
-      nav_align:  nav_align  || 'left',
+      nav_style:    nav_style    || 'blurred',
+      nav_align:    nav_align    || 'left',
+      nav_position: nav_position || 'top',
     });
   }
 

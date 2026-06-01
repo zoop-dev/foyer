@@ -41,7 +41,11 @@ run("npx", [
 console.log(`\n▸ deploying dist/ → Pages project '${cfg.cloudflare.project}'`);
 run("npx", [
   "wrangler", "pages", "deploy", "dist",
-  `--project-name=${cfg.cloudflare.project}`, "--commit-dirty=true",
+  `--project-name=${cfg.cloudflare.project}`,
+
+
+
+  "--branch=production", "--commit-dirty=true",
 ]);
 
 console.log(`\n✓ deployed ${site} v${VERSION}`);

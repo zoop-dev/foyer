@@ -11,6 +11,22 @@ export async function handleAuth(ctx) {
   }
 
 
+  const CREATE_ALLOWED_EMAILS = "CREATE TABLE IF NOT EXISTS allowed_emails (email TEXT PRIMARY KEY, added_at TEXT NOT NULL DEFAULT (datetime('now')))";
+  async function denyAccess(email) {
+    await env.DB.prepare(CREATE_BANNED_EMAILS).run();
+    if (await env.DB.prepare('SELECT 1 FROM banned_emails WHERE email = ?').bind(email).first()) return 'account_banned';
+    const lock = await env.DB.prepare("SELECT value FROM site_settings WHERE key='site_lockdown'").first().catch(() => null);
+    if (lock?.value === '1') {
+      const v = await env.DB.prepare('SELECT role FROM visitors WHERE email = ?').bind(email).first().catch(() => null);
+      if (!(v && (v.role === 'owner' || v.role === 'admin'))) {
+        await env.DB.prepare(CREATE_ALLOWED_EMAILS).run();
+        if (!await env.DB.prepare('SELECT 1 FROM allowed_emails WHERE email = ?').bind(email).first()) return 'not_allowed';
+      }
+    }
+    return null;
+  }
+
+
   function deviceLabel(ua) {
     ua = ua || '';
     if (!ua) return 'Unknown device';
@@ -106,9 +122,8 @@ export async function handleAuth(ctx) {
   )`;
 
   async function createEmailSession(email, name, sub) {
-    await env.DB.prepare(CREATE_BANNED_EMAILS).run();
-    const blockedEmail = await env.DB.prepare('SELECT 1 FROM banned_emails WHERE email = ?').bind(email).first();
-    if (blockedEmail) return { error: 'account_banned' };
+    const denied = await denyAccess(email);
+    if (denied) return { error: denied };
 
     await env.DB.prepare(`
       INSERT INTO visitors (google_sub, email, name, picture)
@@ -138,9 +153,10 @@ export async function handleAuth(ctx) {
     const email = (rawEmail || '').trim().toLowerCase();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return respond({ error: 'enter a valid email' }, 400);
 
-    await env.DB.prepare(CREATE_BANNED_EMAILS).run();
-    const blockedEmail = await env.DB.prepare('SELECT 1 FROM banned_emails WHERE email = ?').bind(email).first();
-    if (blockedEmail) return respond({ ok: true });
+
+    const denied = await denyAccess(email);
+    if (denied === 'account_banned') return respond({ ok: true });
+    if (denied) return respond({ error: denied }, 403);
 
     await env.DB.prepare(CREATE_MAGIC_LINKS).run();
     await env.DB.prepare('ALTER TABLE magic_links ADD COLUMN ip TEXT').run().catch(() => {});
@@ -367,9 +383,8 @@ export async function handleAuth(ctx) {
     const picture = ghUser.avatar_url || '';
     const email   = primaryEmail.toLowerCase();
 
-    await env.DB.prepare(CREATE_BANNED_EMAILS).run();
-    const blockedEmail = await env.DB.prepare('SELECT 1 FROM banned_emails WHERE email = ?').bind(email).first();
-    if (blockedEmail) return respond({ error: 'account_banned' }, 403);
+    const denied = await denyAccess(email);
+    if (denied) return respond({ error: denied }, 403);
 
     await env.DB.prepare(`
       INSERT INTO visitors (google_sub, email, name, picture)
@@ -433,9 +448,8 @@ export async function handleAuth(ctx) {
       ? `https://cdn.discordapp.com/avatars/${dcUser.id}/${dcUser.avatar}.png`
       : '';
 
-    await env.DB.prepare(CREATE_BANNED_EMAILS).run();
-    const blockedEmail = await env.DB.prepare('SELECT 1 FROM banned_emails WHERE email = ?').bind(email).first();
-    if (blockedEmail) return respond({ error: 'account_banned' }, 403);
+    const denied = await denyAccess(email);
+    if (denied) return respond({ error: denied }, 403);
 
     await env.DB.prepare(`
       INSERT INTO visitors (google_sub, email, name, picture)
@@ -481,9 +495,8 @@ export async function handleAuth(ctx) {
     const picture = info.picture || '';
     const sub     = info.sub     || '';
 
-    await env.DB.prepare(CREATE_BANNED_EMAILS).run();
-    const blockedEmail = await env.DB.prepare('SELECT 1 FROM banned_emails WHERE email = ?').bind(email).first();
-    if (blockedEmail) return respond({ error: 'account_banned' }, 403);
+    const denied = await denyAccess(email);
+    if (denied) return respond({ error: denied }, 403);
 
     await env.DB.prepare(`
       INSERT INTO visitors (google_sub, email, name, picture)

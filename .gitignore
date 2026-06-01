@@ -3,3 +3,4 @@ dist/
 .wrangler/
 meta.json
 wrangler.toml
+.foyer.env

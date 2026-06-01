@@ -31,7 +31,8 @@
         const s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
         const hasSession = s && (Date.now() - s.ts <= SESSION_TTL);
         const hasOAuthCode = location.search.includes('code=');
-        if (!hasSession && !hasOAuthCode) {
+        const isPublic = localStorage.getItem('foyer_public') === '1';
+        if (!hasSession && !hasOAuthCode && !isPublic) {
           const gate = document.getElementById('gate');
           gate.style.opacity = '1';
           gate.style.pointerEvents = 'auto';

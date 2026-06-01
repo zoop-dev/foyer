@@ -59,6 +59,29 @@ export async function handlePeople(ctx) {
     return respond({ ok: true });
   }
 
+  const CREATE_ALLOWED_EMAILS = "CREATE TABLE IF NOT EXISTS allowed_emails (email TEXT PRIMARY KEY, added_at TEXT NOT NULL DEFAULT (datetime('now')))";
+  if (route === 'allowed-emails' && method === 'GET') {
+    if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    await env.DB.prepare(CREATE_ALLOWED_EMAILS).run();
+    const { results } = await env.DB.prepare('SELECT email, added_at FROM allowed_emails ORDER BY added_at DESC').all();
+    return respond(results);
+  }
+  if (route === 'allowed-emails' && method === 'POST') {
+    if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    await env.DB.prepare(CREATE_ALLOWED_EMAILS).run();
+    const { email } = await request.json().catch(() => ({}));
+    if (!email?.trim()) return respond({ error: 'email required' }, 400);
+    await env.DB.prepare('INSERT OR IGNORE INTO allowed_emails (email) VALUES (?)').bind(email.trim().toLowerCase()).run();
+    return respond({ ok: true });
+  }
+  const allowedEmailDel = route.match(/^allowed-emails\/(.+)$/);
+  if (allowedEmailDel && method === 'DELETE') {
+    if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    await env.DB.prepare(CREATE_ALLOWED_EMAILS).run();
+    await env.DB.prepare('DELETE FROM allowed_emails WHERE email = ?').bind(decodeURIComponent(allowedEmailDel[1]).toLowerCase()).run();
+    return respond({ ok: true });
+  }
+
   const visitorBan = route.match(/^visitors\/(\d+)\/(ban|unban)$/);
   if (visitorBan && method === 'POST') {
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
