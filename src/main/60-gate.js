@@ -80,7 +80,7 @@
             dismissGate();
             loadAndShow(session);
           } else {
-            document.getElementById('gate-err').textContent = data?.error === 'account_banned' ? 'Your access to this site has been revoked.' : data?.error === 'not_allowed' ? "This site is invite-only — your email isn't on the guest list." : (data?.error || 'Sign-in failed. Try again.');
+            document.getElementById('gate-err').textContent = data?.error === 'account_banned' ? 'Your access to this site has been revoked.' : data?.error === 'not_allowed' ? "This site is invite-only — your email isn't on the guest list." : data?.error === 'vpn_blocked' ? "Sign-ups over a VPN or proxy aren't allowed. Please turn it off and try again." : data?.error === 'signup_limited' ? 'Too many recent sign-ups from your email domain. Please try again later.' : (data?.error || 'Sign-in failed. Try again.');
           }
         };
 
@@ -140,7 +140,7 @@
         loadAndShow(session);
       } else {
         const err = document.getElementById('gate-err');
-        if (err) err.textContent = data?.error === 'account_banned' ? 'Your access to this site has been revoked.' : data?.error === 'not_allowed' ? "This site is invite-only — your email isn't on the guest list." : (data?.error || errMsg);
+        if (err) err.textContent = data?.error === 'account_banned' ? 'Your access to this site has been revoked.' : data?.error === 'not_allowed' ? "This site is invite-only — your email isn't on the guest list." : data?.error === 'vpn_blocked' ? "Sign-ups over a VPN or proxy aren't allowed. Please turn it off and try again." : data?.error === 'signup_limited' ? 'Too many recent sign-ups from your email domain. Please try again later.' : (data?.error || errMsg);
       }
     }
 

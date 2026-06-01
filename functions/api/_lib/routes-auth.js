@@ -12,6 +12,44 @@ export async function handleAuth(ctx) {
 
 
   const CREATE_ALLOWED_EMAILS = "CREATE TABLE IF NOT EXISTS allowed_emails (email TEXT PRIMARY KEY, added_at TEXT NOT NULL DEFAULT (datetime('now')))";
+
+
+  async function signupDomainLimited(email) {
+    const limRow = await env.DB.prepare("SELECT value FROM site_settings WHERE key='signup_domain_limit'").first().catch(() => null);
+    const limit = parseInt(limRow?.value || '0', 10);
+    if (!limit) return false;
+    const winRow = await env.DB.prepare("SELECT value FROM site_settings WHERE key='signup_domain_window_h'").first().catch(() => null);
+    const winH = parseInt(winRow?.value || '24', 10) || 24;
+    const domain = (email.split('@')[1] || '').toLowerCase();
+    if (!domain) return false;
+
+
+    const DEFAULT_EXEMPT = 'gmail.com,yahoo.com,outlook.com,hotmail.com,icloud.com,proton.me,protonmail.com,aol.com,live.com,msn.com,gmx.com,mail.com';
+    const exRow = await env.DB.prepare("SELECT value FROM site_settings WHERE key='signup_domain_exempt'").first().catch(() => null);
+    const exempt = (exRow && exRow.value != null ? exRow.value : DEFAULT_EXEMPT).toLowerCase().split(/[\s,]+/).map(d => d.replace(/^@/, '').trim()).filter(Boolean);
+    if (exempt.includes(domain)) return false;
+    const row = await env.DB.prepare(
+      "SELECT COUNT(*) AS n FROM visitors WHERE lower(email) LIKE ? AND first_seen > datetime('now', ?)"
+    ).bind('%@' + domain, '-' + winH + ' hours').first().catch(() => null);
+    return (row?.n || 0) >= limit;
+  }
+
+
+  async function signupVpnBlocked() {
+    const on = await env.DB.prepare("SELECT value FROM site_settings WHERE key='signup_block_vpn'").first().catch(() => null);
+    if (on?.value !== '1') return false;
+    const ip = request.headers.get('CF-Connecting-IP') || '';
+    if (!ip) return false;
+    try {
+      const key = env.PROXYCHECK_KEY || '';
+      const r = await fetch(`https://proxycheck.io/v2/${encodeURIComponent(ip)}?vpn=1${key ? '&key=' + encodeURIComponent(key) : ''}`);
+      if (!r.ok) return false;
+      const j = await r.json();
+      const rec = j && j[ip];
+      return !!(rec && rec.proxy === 'yes');
+    } catch { return false; }
+  }
+
   async function denyAccess(email) {
     await env.DB.prepare(CREATE_BANNED_EMAILS).run();
     if (await env.DB.prepare('SELECT 1 FROM banned_emails WHERE email = ?').bind(email).first()) return 'account_banned';
@@ -22,6 +60,12 @@ export async function handleAuth(ctx) {
         await env.DB.prepare(CREATE_ALLOWED_EMAILS).run();
         if (!await env.DB.prepare('SELECT 1 FROM allowed_emails WHERE email = ?').bind(email).first()) return 'not_allowed';
       }
+    }
+
+    const existing = await env.DB.prepare('SELECT 1 FROM visitors WHERE email = ? LIMIT 1').bind(email).first().catch(() => null);
+    if (!existing) {
+      if (await signupDomainLimited(email)) return 'signup_limited';
+      if (await signupVpnBlocked()) return 'vpn_blocked';
     }
     return null;
   }

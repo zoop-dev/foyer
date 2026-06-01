@@ -15,6 +15,35 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 
+const HIDEABLE_TABS = ['images','files','tutorials','reviews','analytics'];
+const TAB_LABELS = { images:'Images', files:'Files', tutorials:'Tutorials', reviews:'Reviews', analytics:'Analytics' };
+function getHiddenTabs() { try { return JSON.parse(localStorage.getItem('foyer_hidden_tabs')||'[]'); } catch { return []; } }
+function setHiddenTabs(arr) { try { localStorage.setItem('foyer_hidden_tabs', JSON.stringify(arr)); } catch {} }
+function applyHiddenTabs() {
+  const hidden = getHiddenTabs();
+  document.querySelectorAll('.tab-btn, .mob-tab').forEach(b => {
+    if (HIDEABLE_TABS.includes(b.dataset.tab)) b.style.display = hidden.includes(b.dataset.tab) ? 'none' : '';
+  });
+  const active = document.querySelector('.tab-btn.active');
+  if (active && hidden.includes(active.dataset.tab)) document.querySelector('.tab-btn[data-tab="builder"]')?.click();
+}
+function renderTabToggles() {
+  const el = document.getElementById('tabToggleList');
+  if (!el) return;
+  const hidden = getHiddenTabs();
+  el.innerHTML = HIDEABLE_TABS.map(t => `<label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;font-size:.72rem;font-weight:200;color:rgba(220,245,225,.8);padding:.25rem 0;"><input type="checkbox" data-tabtoggle="${t}" ${hidden.includes(t)?'':'checked'} /> ${TAB_LABELS[t]}</label>`).join('');
+  el.querySelectorAll('input[data-tabtoggle]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      let h = getHiddenTabs(); const t = cb.dataset.tabtoggle;
+      if (cb.checked) h = h.filter(x => x !== t); else if (!h.includes(t)) h.push(t);
+      setHiddenTabs(h); applyHiddenTabs();
+    });
+  });
+}
+applyHiddenTabs();
+renderTabToggles();
+
+
 
 async function fetchSettings() {
   const res=await fetch('/api/settings'); if (!res.ok) return;
@@ -42,6 +71,11 @@ async function fetchSettings() {
   document.getElementById('sSiteOffline').checked = s.site_offline === '1';
   document.getElementById('sSitePublic').checked = s.site_public === '1';
   document.getElementById('sSiteLockdown').checked = s.site_lockdown === '1';
+  document.getElementById('sSignupBlockVpn').checked = s.signup_block_vpn === '1';
+  document.getElementById('sSignupDomainLimit').value = s.signup_domain_limit && s.signup_domain_limit !== '0' ? s.signup_domain_limit : '';
+  document.getElementById('sSignupDomainWindow').value = s.signup_domain_window_h || '';
+  const DEF_EXEMPT = 'gmail.com, yahoo.com, outlook.com, hotmail.com, icloud.com, proton.me, protonmail.com, aol.com, live.com, msn.com, gmx.com, mail.com';
+  document.getElementById('sSignupDomainExempt').value = s.signup_domain_exempt != null ? s.signup_domain_exempt : DEF_EXEMPT;
 }
 document.getElementById('saveSettingsBtn').addEventListener('click', async () => {
   const sp=document.getElementById('settingsSpinner'),ss=document.getElementById('settingsStatus'),btn=document.getElementById('saveSettingsBtn');
@@ -68,7 +102,11 @@ document.getElementById('saveSettingsBtn').addEventListener('click', async () =>
       auth_magic:document.getElementById('sAuthMagic').checked?'1':'0',
       site_offline:document.getElementById('sSiteOffline').checked?'1':'0',
       site_public:document.getElementById('sSitePublic').checked?'1':'0',
-      site_lockdown:document.getElementById('sSiteLockdown').checked?'1':'0'})});
+      site_lockdown:document.getElementById('sSiteLockdown').checked?'1':'0',
+      signup_block_vpn:document.getElementById('sSignupBlockVpn').checked?'1':'0',
+      signup_domain_limit:String(parseInt(document.getElementById('sSignupDomainLimit').value,10)||0),
+      signup_domain_window_h:String(parseInt(document.getElementById('sSignupDomainWindow').value,10)||24),
+      signup_domain_exempt:document.getElementById('sSignupDomainExempt').value.trim()})});
   sp.style.display='none'; btn.disabled=false; ss.textContent=res.ok?'Saved.':'Error.';
 });
 
