@@ -297,15 +297,40 @@ async function cmdRegistry() {
       (s.licensed ? c.green("licensed") : c.red("unlicensed")) + (s.offline ? c.yellow("  · offline") : ""));
   console.log();
 }
-async function cmdChangelog(version, ...rest) {
+const CHANGELOG_TAGS = ["feature", "fix", "release", "improvement"];
+async function cmdChangelog(...argv) {
   const key = await sbServiceKey();
   if (!key) die("needs the service key in " + c.cyan(".foyer.env") + ".");
-  if (!version || !rest.length) die('usage: foyer changelog <version> <title…>');
+
+  const flags = {}; const pos = [];
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === "--body" || a === "-b") flags.body = argv[++i];
+    else if (a === "--tag" || a === "-t") flags.tag = argv[++i];
+    else if (a === "--title") flags.title = argv[++i];
+    else if (a === "--date") flags.date = argv[++i];
+    else if (a === "--draft" || a === "--unpublished") flags.draft = true;
+    else pos.push(a);
+  }
+  const version = pos.shift();
+
+  let tag = flags.tag;
+  if (!tag && CHANGELOG_TAGS.includes(pos[0])) tag = pos.shift();
+  tag = tag || "feature";
+  const title = flags.title || pos.join(" ");
+  if (!version || !title)
+    die('usage: foyer changelog <version> [tag] <title…> [--body "…"] [--draft]\n        tags: ' + CHANGELOG_TAGS.join(", "));
+  const rec = { version: String(version), tag, title, body: flags.body || "" };
+  if (flags.draft) rec.published = false;
+  if (flags.date) rec.released_at = flags.date;
   header("add changelog entry");
   const r = await fetch(`${SB_URL}/rest/v1/foyer_changelog`,
-    { method: "POST", headers: { ...sbH(key), Prefer: "return=minimal" }, body: JSON.stringify({ version: String(version), title: rest.join(" "), tag: "feature" }) });
+    { method: "POST", headers: { ...sbH(key), Prefer: "return=minimal" }, body: JSON.stringify(rec) });
   if (!r.ok) { console.log(c.dim("      " + await r.text())); die("insert failed (" + r.status + ")"); }
-  console.log("    " + ok + ` added v${version}: ${rest.join(" ")}\n`);
+  const tagColor = tag === "fix" ? c.yellow : tag === "release" ? c.green : c.cyan;
+  console.log("    " + ok + ` v${version}  ` + tagColor("[" + tag + "]") + "  " + c.bold(title) + (rec.published === false ? c.dim("  (draft)") : ""));
+  if (rec.body) console.log("    " + dot + c.dim(" " + rec.body.replace(/\n/g, " ").slice(0, 70) + (rec.body.length > 70 ? "…" : "")));
+  console.log();
 }
 
 function help() {
@@ -329,7 +354,7 @@ function help() {
     ["license <site>", "license a site to run Foyer"],
     ["unlicense <site> [reason]", "revoke a site's licence (+ message)"],
     ["bypass <site> <kind> <code>", "set view-bypass code (kind: offline|unlicensed; 'clear' to remove)"],
-    ["changelog <NN> <title>", "add a /foyer changelog entry"],
+    ["changelog <NN> [tag] <title>", "add a /foyer changelog entry (--body, --draft)"],
     ["version [NN]", "show or set the version"],
     ["help", "show this"],
   ].forEach(([a, b]) => console.log(row(a, b)));

@@ -33,6 +33,14 @@
 
     (async function boot() {
 
+      try {
+        console.log(
+          '%c ∩ foyer %c this site runs on the foyer website architecture · v' + VERSION,
+          'background:linear-gradient(135deg,#eef1f5,#a9b1bd);color:#11151b;font-weight:800;padding:3px 9px;border-radius:4px;letter-spacing:.05em',
+          'color:#8b94a6;font-style:italic;padding-left:6px'
+        );
+      } catch {}
+
 
       const _SB = 'https://tvtfoghrdqwssdwvebuo.supabase.co';
       const _K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2dGZvZ2hyZHF3c3Nkd3ZlYnVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMzk2ODksImV4cCI6MjA5NTgxNTY4OX0.n_CRdzQQKYNGDHYmoVxyKafFJCfezKKlSiZddx8MXH4';
