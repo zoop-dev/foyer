@@ -1,3 +1,38 @@
+
+    function promptName(session, done) {
+      const el = document.createElement('div');
+      el.id = 'ml-name-modal';
+      el.style.cssText = 'position:fixed;inset:0;z-index:100002;display:flex;align-items:center;justify-content:center;padding:1.5rem;background:rgba(2,8,3,.78);backdrop-filter:blur(6px);';
+      el.innerHTML = `<div class="ml-card" style="max-width:360px;">
+          <h3>Welcome! What's your name?</h3>
+          <p class="ml-desc">This is how you'll appear on the site. You can change it anytime.</p>
+          <form id="mlNameForm" autocomplete="on">
+            <input id="mlNameInput" class="ml-input" type="text" autocomplete="name" placeholder="Your name" required maxlength="80" />
+            <button type="submit" class="ml-submit" id="mlNameSave">Continue →</button>
+          </form>
+        </div>`;
+      document.body.appendChild(el);
+      const input = el.querySelector('#mlNameInput');
+      setTimeout(() => input.focus(), 120);
+      el.querySelector('#mlNameForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = (input.value || '').trim();
+        if (!name) return;
+        const btn = el.querySelector('#mlNameSave'); btn.disabled = true; btn.textContent = 'Saving…';
+        await fetch('/api/account/name', { method: 'POST', headers: { 'Content-Type': 'application/json', ...sessionHeaders(session) }, body: JSON.stringify({ name }) }).catch(() => {});
+        session.name = name; setSession(session);
+        const nt = document.getElementById('userNameText'); if (nt) nt.textContent = name;
+        el.remove();
+        done && done();
+      });
+    }
+
+    function magicContinue(session) {
+      dismissGate();
+      if (session.needs_name) promptName(session, () => loadAndShow(session));
+      else loadAndShow(session);
+    }
+
     function showMagicApprovedScreen(session) {
       const acc = getComputedStyle(document.documentElement).getPropertyValue('--site-accent').trim() || '#4dbd6a';
       const el = document.createElement('div');
@@ -16,8 +51,7 @@
       el.querySelector('#ml-continue-here').addEventListener('click', () => {
         setSession(session);
         el.remove();
-        dismissGate();
-        loadAndShow(session);
+        magicContinue(session);
       });
     }
 
@@ -33,7 +67,7 @@
       if (data?.ok) {
 
 
-        const session = { email: data.email, name: data.name, picture: data.picture, session_token: data.session_token };
+        const session = { email: data.email, name: data.name, picture: data.picture, session_token: data.session_token, needs_name: data.needs_name };
         dismissGate();
         showMagicApprovedScreen(session);
         return true;
@@ -170,9 +204,9 @@
             stopPoll(); stopCooldown();
             spinner.style.display = 'none'; sentIcon.style.display = '';
             sentMsg.innerHTML = 'Approved! Signing you in…';
-            const session = { email: s.email, name: s.name, picture: s.picture, session_token: s.session_token };
+            const session = { email: s.email, name: s.name, picture: s.picture, session_token: s.session_token, needs_name: s.needs_name };
             setSession(session);
-            setTimeout(() => { modal.classList.remove('show'); dismissGate(); loadAndShow(session); }, 700);
+            setTimeout(() => { modal.classList.remove('show'); magicContinue(session); }, 700);
           } else if (s.status === 'expired') {
             stopPoll();
             spinner.style.display = 'none';

@@ -245,11 +245,13 @@ async function cmdGitea(msg) {
   header("deploy → Gitea");
   const v = await version();
   const message = (msg && msg.trim()) ? msg.trim() : `deploy v${v}`;
-  await run("stage changes", "git", ["add", "-A"]);
   const st = await run("check working tree", "git", ["status", "--porcelain"]);
-  if (st.trim()) await run(`commit "${message}"`, "git", ["commit", "-m", message]);
+
+
+  if (st.trim()) { await passthrough("git", ["add", "-A"]); await passthrough("git", ["commit", "-m", message]); }
   else console.log("    " + dot + c.dim(" nothing to commit"));
-  await run("push to Gitea", "git", ["push"]);
+  console.log("    " + dot + c.dim(" pushing — git may ask for credentials…") + "\n");
+  await passthrough("git", ["push"]);
   console.log("\n  " + ok + c.green(c.bold("  pushed to Gitea")) + c.dim(` · ${message}`) + "\n");
 }
 

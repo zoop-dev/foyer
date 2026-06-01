@@ -99,6 +99,17 @@ export async function handleAuth(ctx) {
     return respond({ ok: true });
   }
 
+
+  if (route === 'account/name' && method === 'POST') {
+    const v = await currentVisitor();
+    if (!v) return respond({ error: 'unauthorized' }, 401);
+    const { name } = await request.json().catch(() => ({}));
+    const nm = (name || '').trim().slice(0, 80);
+    if (!nm) return respond({ error: 'name required' }, 400);
+    await env.DB.prepare('UPDATE visitors SET name = ? WHERE id = ?').bind(nm, v.id).run();
+    return respond({ ok: true });
+  }
+
   if (route === 'auth/signout' && method === 'POST') {
     const token = request.headers.get('X-Session-Token') || '';
     if (token) {
@@ -125,23 +136,23 @@ export async function handleAuth(ctx) {
     const denied = await denyAccess(email);
     if (denied) return { error: denied };
 
+
     await env.DB.prepare(`
       INSERT INTO visitors (google_sub, email, name, picture)
       VALUES (?, ?, ?, '')
       ON CONFLICT(google_sub) DO UPDATE SET
         email = excluded.email,
-        name  = excluded.name,
         visit_count = visit_count + 1,
         last_seen = datetime('now')
     `).bind(sub, email, name).run();
 
     const visitor = await env.DB.prepare(
-      'SELECT id, is_banned FROM visitors WHERE google_sub = ? OR google_sub = \'banned:\' || ?'
+      'SELECT id, is_banned, name FROM visitors WHERE google_sub = ? OR google_sub = \'banned:\' || ?'
     ).bind(sub, sub).first();
     if (visitor?.is_banned) return { error: 'account_banned' };
 
     const { token: sessionToken } = await newSession(visitor.id);
-    return { session_token: sessionToken, name };
+    return { session_token: sessionToken, name: visitor.name || name };
   }
 
   if (route === 'auth/magic-link' && method === 'POST') {
@@ -319,9 +330,9 @@ export async function handleAuth(ctx) {
 
     await env.DB.prepare(
       'UPDATE magic_links SET used = 1, approved = 1, session_token = ?, session_name = ? WHERE token = ?'
-    ).bind(sess.session_token, name, token).run();
+    ).bind(sess.session_token, sess.name, token).run();
 
-    return respond({ ok: true, approved: true, email, name, picture: '', session_token: sess.session_token });
+    return respond({ ok: true, approved: true, email, name: sess.name, picture: '', session_token: sess.session_token, needs_name: sess.name === name });
   }
 
   if (route === 'auth/magic-link/status' && method === 'POST') {
@@ -336,7 +347,8 @@ export async function handleAuth(ctx) {
     if (!row) return respond({ status: 'expired' });
     if (new Date(row.expires_at.replace(' ', 'T') + 'Z') < new Date()) return respond({ status: 'expired' });
     if (row.approved && row.session_token) {
-      return respond({ status: 'approved', email: row.email, name: row.session_name || row.email.split('@')[0], picture: '', session_token: row.session_token });
+      const nm = row.session_name || row.email.split('@')[0];
+      return respond({ status: 'approved', email: row.email, name: nm, picture: '', session_token: row.session_token, needs_name: nm === row.email.split('@')[0] });
     }
     return respond({ status: 'pending' });
   }
