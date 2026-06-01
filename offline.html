@@ -29,6 +29,16 @@
     button.btn { font-family:'Josefin Sans',sans-serif; cursor:pointer; background:transparent; }
     .recheck { color:var(--muted); font-size:.6rem; letter-spacing:.18em; text-transform:uppercase; margin-bottom:1.6rem; font-variant-numeric:tabular-nums; }
     .btns { display:flex; gap:.7rem; justify-content:center; flex-wrap:wrap; }
+    .bypass { margin-top:2rem; }
+    .bypasslink { background:none; border:none; cursor:pointer; color:var(--muted); font-family:'Josefin Sans',sans-serif; font-weight:300;
+      font-size:.55rem; letter-spacing:.26em; text-transform:uppercase; opacity:.55; transition:opacity .2s; }
+    .bypasslink:hover { opacity:.95; }
+    .bypassform { display:none; margin-top:1rem; }
+    .bypassrow { display:flex; gap:.5rem; justify-content:center; flex-wrap:wrap; }
+    #bypassCode { background:rgba(255,255,255,.04); border:1px solid rgba(170,190,215,.2); color:var(--ink); font-family:'Josefin Sans',sans-serif;
+      font-weight:300; font-size:.72rem; letter-spacing:.1em; padding:.72rem 1rem; border-radius:9px; outline:none; width:170px; text-align:center; }
+    #bypassCode:focus { border-color:var(--accent); }
+    .bypasserr { color:#e0608a; font-size:.58rem; letter-spacing:.14em; text-transform:uppercase; margin-top:.8rem; min-height:.7rem; }
   </style>
 </head>
 <body>
@@ -48,6 +58,16 @@
         About Foyer
       </a>
     </div>
+    <div class="bypass" id="bypassWrap" style="display:none;">
+      <button class="bypasslink" id="bypassToggle" type="button">Operator access</button>
+      <form class="bypassform" id="bypassForm">
+        <div class="bypassrow">
+          <input id="bypassCode" type="password" placeholder="Bypass code" autocomplete="off" autocapitalize="off" spellcheck="false" />
+          <button class="btn" type="submit">View site</button>
+        </div>
+        <p class="bypasserr" id="bypassErr"></p>
+      </form>
+    </div>
   </div>
 
   <script>
@@ -57,21 +77,57 @@
       var SB = "https://tvtfoghrdqwssdwvebuo.supabase.co";
       var K = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2dGZvZ2hyZHF3c3Nkd3ZlYnVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMzk2ODksImV4cCI6MjA5NTgxNTY4OX0.n_CRdzQQKYNGDHYmoVxyKafFJCfezKKlSiZddx8MXH4";
       var rc = document.getElementById('recheck'), btn = document.getElementById('checkNow');
-      var n = 60, busy = false;
+      var n = 60, busy = false, bypassHash = '';
+      function sha256Hex(str) {
+        return crypto.subtle.digest('SHA-256', new TextEncoder().encode(str)).then(function (b) {
+          return [].map.call(new Uint8Array(b), function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
+        });
+      }
       function check() {
         if (busy) return; busy = true; rc.textContent = 'Rechecking…';
-        fetch(SB + '/rest/v1/foyer_sites?domain=eq.' + encodeURIComponent(location.hostname) + '&select=offline,licensed&cb=' + Date.now(),
-          { headers: { apikey: K, authorization: 'Bearer ' + K } })
+        fetch(SB + '/rest/v1/foyer_sites?domain=eq.' + encodeURIComponent(location.hostname) + '&select=offline,licensed,offline_bypass_hash,unlicensed_bypass_hash',
+          { cache: 'no-store', headers: { apikey: K, authorization: 'Bearer ' + K } })
           .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
           .then(function (rows) {
             var s = rows[0];
-            if (s && s.offline !== true && s.licensed !== false) { rc.textContent = 'Back online — reloading…'; location.reload(); }
-            else { n = 60; busy = false; }
+            if (s && s.offline !== true && s.licensed !== false) { rc.textContent = 'Back online — reloading…'; location.reload(); return; }
+            // Stash the bypass hash for the current block kind, and reveal the operator field.
+            if (s) {
+              bypassHash = (s.licensed === false ? s.unlicensed_bypass_hash : s.offline_bypass_hash) || '';
+              document.getElementById('bypassWrap').style.display = bypassHash ? 'block' : 'none';
+            }
+            n = 60; busy = false;
           })
           .catch(function () { n = 60; busy = false; });
       }
       setInterval(function () { if (busy) return; n--; if (n <= 0) check(); else rc.textContent = 'Rechecking in ' + n + 's'; }, 1000);
       btn.addEventListener('click', function () { n = 60; check(); });
+      check();   // run once immediately so the bypass field appears without waiting 60s
+
+      // Operator view-bypass: verify the code locally, then load the site with a
+      // one-shot ?__fb param. Nothing is stored — reloading returns to this screen.
+      var toggle = document.getElementById('bypassToggle'),
+          form = document.getElementById('bypassForm'),
+          codeEl = document.getElementById('bypassCode'),
+          errEl = document.getElementById('bypassErr');
+      toggle.addEventListener('click', function () {
+        var open = form.style.display === 'block';
+        form.style.display = open ? 'none' : 'block';
+        if (!open) codeEl.focus();
+      });
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        errEl.textContent = '';
+        var code = codeEl.value;
+        if (!code) return;
+        sha256Hex(code).then(function (h) {
+          if (bypassHash && h === bypassHash) {
+            location.href = '/?__fb=' + encodeURIComponent(code);
+          } else {
+            errEl.textContent = 'Incorrect code';
+          }
+        });
+      });
     })();
   </script>
 </body>

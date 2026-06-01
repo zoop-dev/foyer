@@ -4,6 +4,7 @@
 
 import { readdir, readFile, writeFile, mkdir, cp, access } from "node:fs/promises";
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import process from "node:process";
 
@@ -124,6 +125,8 @@ async function cmdDeploy(target) {
     console.log("      " + dot + c.dim(" live: ") + c.cyan("https://" + cfg.domain) + (url ? c.dim("  (" + url + ")") : ""));
   }
   console.log("\n  " + ok + c.green(c.bold(`  deployed ${list.length} site${list.length>1?"s":""} · v${v}`)) + "\n");
+
+  await cmdGitea(`deploy v${v}`).catch((e) => console.log("  " + c.yellow("!") + c.dim(" gitea push skipped: " + e.message)));
 }
 
 async function cmdDev(name) {
@@ -229,16 +232,45 @@ async function cmdOffline(name, on, reason) {
   if (on && reason) console.log("    " + dot + c.dim(' message: "') + reason + c.dim('"'));
   console.log();
 }
-async function cmdLicense(name, on) {
+async function cmdLicense(name, on, reason) {
   const key = await sbServiceKey();
   if (!key) die("needs the service key in " + c.cyan(".foyer.env") + ".");
   const domain = await toDomain(name);
   header(`${on ? "license" : "unlicense"} ${c.br(domain)}`);
+  const patch = { licensed: on };
+  if (!on && reason) patch.offline_message = reason;   // shown on the unlicensed screen
   const r = await fetch(`${SB_URL}/rest/v1/foyer_sites?domain=eq.${encodeURIComponent(domain)}`,
-    { method: "PATCH", headers: { ...sbH(key), Prefer: "return=representation" }, body: JSON.stringify({ licensed: on }) });
+    { method: "PATCH", headers: { ...sbH(key), Prefer: "return=representation" }, body: JSON.stringify(patch) });
   if (!r.ok) { console.log(c.dim("      " + await r.text())); die("update failed (" + r.status + ")"); }
   if (!(await r.json()).length) die(`no registry row for '${domain}'. Add it to foyer_sites first.`);
-  console.log("    " + ok + ` ${domain} is now ` + (on ? c.green("LICENSED") : c.red("UNLICENSED")) + c.dim("  (edge cache clears within ~60s)\n"));
+  console.log("    " + ok + ` ${domain} is now ` + (on ? c.green("LICENSED") : c.red("UNLICENSED")) + c.dim("  (edge cache clears within ~60s)"));
+  if (!on && reason) console.log("    " + dot + c.dim(' message: "') + reason + c.dim('"'));
+  console.log();
+}
+
+async function cmdBypass(name, kind, code) {
+  const key = await sbServiceKey();
+  if (!key) die("needs the service key in " + c.cyan(".foyer.env") + ".");
+  if (!name || !kind || !["offline", "unlicensed"].includes(kind))
+    die('usage: foyer bypass <site> <offline|unlicensed> <code|clear>');
+  const col = kind === "unlicensed" ? "unlicensed_bypass_hash" : "offline_bypass_hash";
+  const domain = await toDomain(name);
+  const clear = !code || code === "clear" || code === "-";
+  header(`${clear ? "clear" : "set"} ${kind} bypass · ${c.br(domain)}`);
+  const hash = clear ? "" : createHash("sha256").update(code).digest("hex");
+  const r = await fetch(`${SB_URL}/rest/v1/foyer_sites?domain=eq.${encodeURIComponent(domain)}`,
+    { method: "PATCH", headers: { ...sbH(key), Prefer: "return=representation" }, body: JSON.stringify({ [col]: hash }) });
+  if (!r.ok) { console.log(c.dim("      " + await r.text())); die("update failed (" + r.status + ")"); }
+  if (!(await r.json()).length) die(`no registry row for '${domain}'. Add it to foyer_sites first.`);
+  if (clear) {
+    console.log("    " + ok + ` ${kind} bypass ` + c.red("cleared") + c.dim("  (edge cache clears within ~60s)"));
+  } else {
+    console.log("    " + ok + ` ${kind} bypass set` + c.dim("  (edge cache clears within ~60s)"));
+    console.log("    " + dot + c.dim(" code:  ") + c.br(code));
+    console.log("    " + dot + c.dim(" view:  visit the offline screen → “Operator access”, or ") + c.cyan(`https://${domain}/?__fb=${encodeURIComponent(code)}`));
+    console.log("    " + dot + c.dim(" lasts until you reload — nothing is stored client-side."));
+  }
+  console.log();
 }
 
 async function cmdGitea(msg) {
@@ -295,7 +327,8 @@ function help() {
     ["offline <site> [reason]", "take a site offline (+ message)"],
     ["online <site>", "bring a site back online"],
     ["license <site>", "license a site to run Foyer"],
-    ["unlicense <site>", "revoke a site's licence"],
+    ["unlicense <site> [reason]", "revoke a site's licence (+ message)"],
+    ["bypass <site> <kind> <code>", "set view-bypass code (kind: offline|unlicensed; 'clear' to remove)"],
     ["changelog <NN> <title>", "add a /foyer changelog entry"],
     ["version [NN]", "show or set the version"],
     ["help", "show this"],
@@ -316,7 +349,8 @@ const table = {
   offline: () => cmdOffline(args[0], true, args.slice(1).join(" ")),
   online: () => cmdOffline(args[0], false),
   license: () => cmdLicense(args[0], true),
-  unlicense: () => cmdLicense(args[0], false),
+  unlicense: () => cmdLicense(args[0], false, args.slice(1).join(" ")),
+  bypass: () => cmdBypass(args[0], args[1], args.slice(2).join(" ")),
   gitea: () => cmdGitea(args.join(" ")),
   registry: () => cmdRegistry(),
   changelog: () => cmdChangelog(...args),

@@ -34,12 +34,31 @@
     (async function boot() {
 
 
+      const _SB = 'https://tvtfoghrdqwssdwvebuo.supabase.co';
+      const _K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2dGZvZ2hyZHF3c3Nkd3ZlYnVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMzk2ODksImV4cCI6MjA5NTgxNTY4OX0.n_CRdzQQKYNGDHYmoVxyKafFJCfezKKlSiZddx8MXH4';
+
+
+      let _foyerBypass = false;
       try {
-        const _SB = 'https://tvtfoghrdqwssdwvebuo.supabase.co';
-        const _K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2dGZvZ2hyZHF3c3Nkd3ZlYnVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMzk2ODksImV4cCI6MjA5NTgxNTY4OX0.n_CRdzQQKYNGDHYmoVxyKafFJCfezKKlSiZddx8MXH4';
-        const _r = await fetch(`${_SB}/rest/v1/foyer_sites?domain=eq.${encodeURIComponent(location.hostname)}&select=offline,licensed`, { headers: { apikey: _K, authorization: 'Bearer ' + _K } });
-        if (_r.ok) { const _s = (await _r.json())[0]; if (_s && (_s.offline === true || _s.licensed === false)) { location.replace('/offline'); return; } }
+        const _u = new URL(location.href);
+        if (_u.searchParams.get('__fb')) {
+          _foyerBypass = true;
+          _u.searchParams.delete('__fb');
+          history.replaceState(null, '', _u.pathname + _u.search + _u.hash);
+        }
       } catch {}
+      async function _foyerOffline() {
+        try {
+          const _r = await fetch(`${_SB}/rest/v1/foyer_sites?domain=eq.${encodeURIComponent(location.hostname)}&select=offline,licensed`, { headers: { apikey: _K, authorization: 'Bearer ' + _K }, cache: 'no-store' });
+          if (_r.ok) { const _s = (await _r.json())[0]; return !!(_s && (_s.offline === true || _s.licensed === false)); }
+        } catch {}
+        return false;
+      }
+      if (!_foyerBypass) {
+        if (await _foyerOffline()) { location.replace('/offline'); return; }
+
+        setInterval(async () => { if (await _foyerOffline()) location.replace('/offline'); }, 60000);
+      }
 
       const [cfg, settings] = await Promise.all([
         fetch('/api/config').then(r => r.json()).catch(() => ({})),

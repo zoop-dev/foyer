@@ -112,9 +112,9 @@ export async function handleContent(ctx) {
     const candidates = orderedIds.map(id => pageMap[id]).filter(p => p && p.slug !== '__404__');
     const pages = [];
     for (const p of candidates) {
-      let show = true;
-      try { show = JSON.parse((await decompressJson(p.page_json)) || '{}').show_in_nav !== false; } catch { show = true; }
-      if (show) pages.push({ title: p.title, slug: p.slug });
+      let show = true, parent = '';
+      try { const st = JSON.parse((await decompressJson(p.page_json)) || '{}'); show = st.show_in_nav !== false; parent = st.parent || ''; } catch {}
+      if (show) pages.push({ title: p.title, slug: p.slug, parent });
     }
 
     let custom_links = [];
@@ -142,9 +142,9 @@ export async function handleContent(ctx) {
     try { nav_page_order = JSON.parse(orderRow?.value || '[]'); } catch {}
     const pages = [];
     for (const p of results) {
-      let show = true;
-      try { show = JSON.parse((await decompressJson(p.page_json)) || '{}').show_in_nav !== false; } catch { show = true; }
-      pages.push({ id: p.id, title: p.title, slug: p.slug, show_in_nav: show });
+      let show = true, parent = '';
+      try { const st = JSON.parse((await decompressJson(p.page_json)) || '{}'); show = st.show_in_nav !== false; parent = st.parent || ''; } catch {}
+      pages.push({ id: p.id, title: p.title, slug: p.slug, show_in_nav: show, parent });
     }
 
     pages.sort((a, b) => {

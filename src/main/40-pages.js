@@ -22,9 +22,16 @@
       nav.style.cssText = (styleMap[nav_style] || styleMap.blurred);
       const alignMap = { left:'flex-start', center:'center', right:'flex-end' };
       const j = alignMap[nav_align] || 'flex-start';
-      const pageLinks = pages.map(p => {
-        const href = p.slug === '/' ? '/' : (p.slug.startsWith('/') ? p.slug : '/' + p.slug);
-        return `<a href="${href}" class="nav-a${href === cur ? ' cur' : ''}">${p.title}</a>`;
+
+      const hrefOf = slug => slug === '/' ? '/' : (slug.startsWith('/') ? slug : '/' + slug);
+      const slugSet = new Set(pages.map(p => p.slug));
+      const kidsOf = {};
+      pages.forEach(p => { if (p.parent && slugSet.has(p.parent)) (kidsOf[p.parent] = kidsOf[p.parent] || []).push(p); });
+      const navLink = p => `<a href="${hrefOf(p.slug)}" class="nav-a${hrefOf(p.slug) === cur ? ' cur' : ''}">${p.title}</a>`;
+      const pageLinks = pages.filter(p => !(p.parent && slugSet.has(p.parent))).map(p => {
+        const kids = kidsOf[p.slug];
+        if (!kids || !kids.length) return navLink(p);
+        return `<div class="nav-parent"><a href="${hrefOf(p.slug)}" class="nav-a${hrefOf(p.slug) === cur ? ' cur' : ''}">${p.title} <span class="nav-caret">▾</span></a><div class="nav-flyout">${kids.map(navLink).join('')}</div></div>`;
       });
       const extLinks = custom_links.map(l =>
         `<a href="${escAttr(l.url || '#')}" class="nav-a" target="${l.new_tab !== false ? '_blank' : '_self'}" rel="noopener">${pgE(l.label || '')}</a>`

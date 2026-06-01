@@ -18,10 +18,15 @@ create table if not exists foyer_sites (
   licensed        boolean not null default true,    -- allowed to run Foyer?
   offline         boolean not null default false,   -- Foyer-level remote kill-switch
   offline_message text not null default 'This site is temporarily unavailable.',
+  offline_bypass_hash    text not null default '',   -- sha256(hex) of the offline view-bypass code ('' = none)
+  unlicensed_bypass_hash text not null default '',   -- sha256(hex) of the unlicensed view-bypass code ('' = none)
   notes           text not null default '',
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now()
 );
+-- For tables created before the bypass columns existed:
+alter table foyer_sites add column if not exists offline_bypass_hash    text not null default '';
+alter table foyer_sites add column if not exists unlicensed_bypass_hash text not null default '';
 drop trigger if exists trg_foyer_sites_touch on foyer_sites;
 create trigger trg_foyer_sites_touch before update on foyer_sites
   for each row execute function foyer_touch_updated_at();

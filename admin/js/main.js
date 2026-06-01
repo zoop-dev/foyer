@@ -100,6 +100,10 @@ function renderNavPageList(pages) {
       <span style="font-size:.9rem;color:var(--muted);cursor:grab;">⋮⋮</span>
       <span style="flex:1;font-weight:200;font-size:.72rem;color:rgba(220,245,225,.8);">${escHtml(p.title)}</span>
       <span style="font-size:.6rem;color:var(--muted);font-family:monospace;">${escHtml(p.slug)}</span>
+      <select data-parent-pid="${p.id}" title="Sub-page of…" style="font-size:.58rem;font-weight:200;background:var(--bg);color:rgba(220,245,225,.8);border:1px solid var(--border);padding:.25rem .35rem;max-width:130px;">
+        <option value="">— top level —</option>
+        ${pages.filter(o => o.id !== p.id).map(o => `<option value="${escAttr(o.slug)}" ${p.parent === o.slug ? 'selected' : ''}>↳ ${escHtml(o.title)}</option>`).join('')}
+      </select>
       <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.6rem;color:var(--muted);">
         <input type="checkbox" data-nav-pid="${p.id}" ${p.show_in_nav ? 'checked' : ''} /> Show
       </label>
@@ -139,6 +143,24 @@ function renderNavPageList(pages) {
         body: JSON.stringify({ title: page.title, slug: page.slug, page_json: JSON.stringify(state), is_published: page.is_published }),
       });
       toast(e.target.checked ? 'Added to nav' : 'Removed from nav');
+    });
+
+    row.querySelector('select[data-parent-pid]').addEventListener('change', async e => {
+      const pid = +e.target.dataset.parentPid;
+      const allRes = await fetch('/api/pages', { headers: authHeaders() });
+      if (!allRes.ok) return;
+      const allPages = await allRes.json();
+      const page = allPages.find(p => p.id === pid);
+      if (!page) return;
+      let state = {};
+      try { state = JSON.parse(page.page_json || '{}'); } catch {}
+      if (e.target.value) state.parent = e.target.value; else delete state.parent;
+      await fetch(`/api/pages/${pid}`, {
+        method: 'PUT',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: page.title, slug: page.slug, page_json: JSON.stringify(state), is_published: page.is_published }),
+      });
+      toast(e.target.value ? 'Now a sub-page' : 'Moved to top level');
     });
   });
 }
