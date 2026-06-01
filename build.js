@@ -57,7 +57,6 @@ const tokens = {
   THEME_COLOR: cfg.themeColor,
   BG_COLOR: cfg.bgColor || "#020a03",
   BG_RGB: hexToRgb(cfg.bgColor || "#020a03"),
-  VERIFI_SITE: cfg.verifiSite,
   TAGLINE: cfg.tagline || "",
   DESCRIPTION: cfg.description || "",
   KEYWORDS: cfg.keywords || "",

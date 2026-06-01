@@ -53,7 +53,8 @@ async function version() {
 function die(msg) { console.log("\n  " + bad + " " + msg + "\n"); process.exit(1); }
 function header(t) { console.log("\n  " + c.bold(c.br("▸ ")) + c.bold(t)); }
 
-function run(label, cmd, args, env = process.env) {
+
+function run(label, cmd, args, env = process.env, input = null) {
   const frames = ["⠋","⠙","⠹","⠸","⠼","⠴","⠦","⠧","⠇","⠏"];
   return new Promise((resolve, reject) => {
     let i = 0, buf = "";
@@ -61,6 +62,7 @@ function run(label, cmd, args, env = process.env) {
       process.stdout.write("\r    " + c.br(frames[i++ % frames.length]) + " " + c.dim(label) + "   ");
     }, 80) : null;
     const p = spawn(cmd, args, { env, cwd: ROOT });
+    if (input != null) { p.stdin.write(input); p.stdin.end(); }
     p.stdout.on("data", (d) => (buf += d));
     p.stderr.on("data", (d) => (buf += d));
     p.on("close", (code) => {
@@ -82,6 +84,76 @@ function passthrough(cmd, args, env = process.env) {
   });
 }
 const acctEnv = (cfg) => ({ ...process.env, CLOUDFLARE_ACCOUNT_ID: cfg.cloudflare.accountId });
+
+
+function readLine({ hidden = false } = {}) {
+  return new Promise((resolve) => {
+    const stdin = process.stdin;
+    const wasRaw = !!stdin.isRaw;
+    if (stdin.setRawMode) stdin.setRawMode(true);
+    stdin.resume();
+    let buf = "";
+    const onData = (d) => {
+      for (const ch of d.toString("utf8")) {
+        if (ch === "\r" || ch === "\n") {
+          if (stdin.setRawMode) stdin.setRawMode(wasRaw);
+          stdin.pause(); stdin.removeListener("data", onData);
+          process.stdout.write("\n"); return resolve(buf);
+        } else if (ch === "") { process.stdout.write("\n"); process.exit(130); }
+        else if (ch === "" || ch === "\b") { if (buf.length) { buf = buf.slice(0, -1); if (!hidden) process.stdout.write("\b \b"); } }
+        else if (ch >= " ") { buf += ch; process.stdout.write(hidden ? "•" : ch); }
+      }
+    };
+    stdin.on("data", onData);
+  });
+}
+async function ask(label, { def = "", required = false, hidden = false } = {}) {
+  for (;;) {
+    const hint = hidden ? "" : def ? c.dim(` [${def}]`) : (required ? c.dim(" (required)") : c.dim(" (optional)"));
+    process.stdout.write("    " + c.br("?") + " " + c.bold(label) + hint + c.dim(": "));
+    const a = (await readLine({ hidden })).trim();
+    if (a) return a;
+    if (def) return def;
+    if (!required) return "";
+    console.log("      " + c.yellow("• required"));
+  }
+}
+async function confirm(label, def = true) {
+  process.stdout.write("    " + c.br("?") + " " + c.bold(label) + c.dim(def ? " [Y/n]: " : " [y/N]: "));
+  const a = (await readLine()).trim().toLowerCase();
+  return a ? a[0] === "y" : def;
+}
+
+const _rgb = (h) => { h = h.replace("#", ""); return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)]; };
+const normHex = (s) => { s = (s || "").trim(); if (!s) return null; if (!s.startsWith("#")) s = "#" + s; return /^#[0-9a-fA-F]{6}$/.test(s) ? s.toLowerCase() : null; };
+async function askColor(label, def) {
+  for (;;) {
+    const v = await ask(label + " " + swatch(def), { def });
+    const h = normHex(v);
+    if (h) { console.log("      " + swatch(h) + c.dim(" " + h)); return h; }
+    console.log("      " + c.yellow("• use a hex color like #4dbd6a"));
+  }
+}
+function previewCard({ bg, accent, text, name, tagline }) {
+  if (!tty) return;
+  const [R, G, B] = _rgb(bg), [ar, ag, ab] = _rgb(accent), [tr, tg, tb] = _rgb(text);
+  const BG = `\x1b[48;2;${R};${G};${B}m`, RS = "\x1b[0m";
+  const AC = `\x1b[38;2;${ar};${ag};${ab}m`, TX = `\x1b[38;2;${tr};${tg};${tb}m`;
+  const W = 32;
+  const row = (fg, s) => { s = (s || "").slice(0, W); return "    " + BG + "  " + fg + s + " ".repeat(Math.max(0, W - s.length)) + "  " + RS; };
+  console.log("\n    " + c.dim("preview"));
+  console.log(row(TX, ""));
+  console.log(row(AC, name || ""));
+  console.log(row(TX, tagline || ""));
+  console.log(row(TX, ""));
+  console.log();
+}
+
+function putSecret(cfg, key, value, label) {
+  return run(label || `secret ${key}`, "npx",
+    ["wrangler", "pages", "secret", "put", key, `--project-name=${cfg.cloudflare.project}`],
+    acctEnv(cfg), value + "\n");
+}
 
 async function cmdSites() {
   const list = await sites(), v = await version();
@@ -138,17 +210,197 @@ async function cmdDev(name) {
   await passthrough("npx", ["wrangler","pages","dev","dist","--ip","127.0.0.1"]);
 }
 
-async function cmdNew(name) {
-  if (!name) die("usage: foyer new <site>");
-  const dest = path.join(ROOT, "sites", name);
-  if (await exists(path.join(dest, "config.json"))) die(`site '${name}' already exists.`);
-  header(`new site ${c.br(name)}`);
+async function sbRegister({ domain, name, project }) {
+  const key = await sbServiceKey();
+  if (!key) { console.log("    " + c.yellow("!") + c.dim(" no service key in .foyer.env — skipped Supabase registration (run later with the key set)")); return; }
+  const r = await fetch(`${SB_URL}/rest/v1/foyer_sites?on_conflict=domain`,
+    { method: "POST", headers: { ...sbH(key), Prefer: "resolution=merge-duplicates,return=minimal" },
+      body: JSON.stringify({ domain, name, cf_project: project, licensed: true, offline: false }) });
+  if (!r.ok) { console.log("    " + bad + c.dim(" Supabase: " + (await r.text()).slice(0, 160))); return; }
+  console.log("    " + ok + " registered in the Foyer control-plane " + c.dim("(licensed)"));
+}
+
+async function listCfAccounts() {
+  const out = await run("read your Cloudflare accounts", "npx", ["wrangler", "whoami"], process.env).catch(() => "");
+  const accts = [];
+  const re = /[│|]\s*([^│|]+?)\s*[│|]\s*([0-9a-fA-F]{32})\s*[│|]/g;
+  let m;
+  while ((m = re.exec(out))) accts.push({ name: m[1].trim(), id: m[2].toLowerCase() });
+  return accts;
+}
+
+async function cmdNew(initialName) {
+  banner();
+  console.log("  " + c.bold("Onboard a new Foyer site") + c.dim("  — answer a few questions and I'll create everything.\n"));
+
+  const existing = await sites();
+  const taken = new Set(existing.map((s) => s.name));
+  const knownAccounts = [...new Set(existing.map((s) => s.cfg.cloudflare?.accountId).filter(Boolean))];
+
+  header("identity");
+  let key = (initialName || "").trim();
+  for (;;) {
+    if (!key) key = await ask("Site key (folder / project slug, e.g. 'acme')", { required: true });
+    if (!/^[a-z0-9][a-z0-9-]*$/.test(key)) { console.log("      " + c.yellow("• lowercase letters, digits and dashes only")); key = ""; continue; }
+    if (taken.has(key)) { console.log("      " + c.yellow(`• '${key}' already exists`)); key = ""; continue; }
+    break;
+  }
+  const name = await ask("Display name", { def: key.charAt(0).toUpperCase() + key.slice(1), required: true });
+  const shortName = await ask("Short name (home-screen / PWA label)", { def: name.split(/\s+/)[0] });
+  let domain = await ask("Domain (bare, no https://)", { required: true });
+  domain = domain.replace(/^https?:\/\//, "").replace(/\/.*$/, "").trim();
+
+  header("branding");
+  const themeColor = await askColor("Theme / accent color", "#4dbd6a");
+  const bgColor = await askColor("Background color", "#020a03");
+  const textColor = await askColor("Text color", "#c8e6aa");
+  const tagline = await ask("Tagline", { def: "" });
+  const description = await ask("Meta description", { def: tagline });
+  const keywords = await ask("Keywords (comma separated)", { def: "" });
+  previewCard({ bg: bgColor, accent: themeColor, text: textColor, name, tagline });
+
+  header("cloudflare");
+
+  let accounts = await listCfAccounts();
+  let accountId = "", accountName = "";
+  for (;;) {
+    if (accounts.length) {
+      console.log("    " + dot + c.dim(" your Cloudflare accounts:"));
+      accounts.forEach((a, i) => console.log("      " + c.cyan(String(i + 1).padStart(2)) + ". " + c.bold(a.name) + c.dim("  " + a.id) + (knownAccounts.includes(a.id) ? c.dim("  · in use") : "")));
+      console.log("       " + c.cyan("L") + ". " + c.dim("log in to a different account"));
+      const pick = (await ask("Pick an account (number), or L to log in", { required: true })).trim();
+      if (/^l$/i.test(pick)) { await passthrough("npx", ["wrangler", "login"]); accounts = await listCfAccounts(); continue; }
+      const sel = accounts[parseInt(pick) - 1];
+      if (sel) { accountId = sel.id; accountName = sel.name; break; }
+      console.log("      " + c.yellow("• pick a listed number, or L to log in"));
+    } else {
+      console.log("    " + c.yellow("• not logged in to Cloudflare (or no accounts found)"));
+      if (await confirm("Log in to Cloudflare now?", true)) { await passthrough("npx", ["wrangler", "login"]); accounts = await listCfAccounts(); continue; }
+      accountId = await ask("Enter a Cloudflare account id manually", { def: knownAccounts[0] || "", required: true });
+      break;
+    }
+  }
+  if (accountName) console.log("    " + ok + " using " + c.bold(accountName) + c.dim("  " + accountId));
+  const project = await ask("Pages project name", { def: key });
+  const cfEnv = { ...process.env, CLOUDFLARE_ACCOUNT_ID: accountId };
+
+  let dbList = [];
+  const dbOut = await run("scan your D1 databases", "npx", ["wrangler", "d1", "list", "--json"], cfEnv).catch(() => "");
+  try { const m = dbOut.match(/\[[\s\S]*\]/); if (m) dbList = JSON.parse(m[0]); } catch {}
+  let d1Name = "", d1Id = "";
+  if (dbList.length) {
+    console.log("    " + dot + c.dim(" existing databases:"));
+    dbList.forEach((d, i) => console.log("      " + c.cyan(String(i + 1).padStart(2)) + ". " + c.bold(d.name) + c.dim("  " + (d.uuid || d.database_id || ""))));
+    if (await confirm("Use one of these (instead of creating a new one)?", true)) {
+      for (;;) {
+        const pick = await ask("Which one? (number or name)", { required: true });
+        const sel = dbList[parseInt(pick) - 1] || dbList.find((d) => d.name === pick.trim());
+        if (sel) { d1Name = sel.name; d1Id = sel.uuid || sel.database_id || ""; break; }
+        console.log("      " + c.yellow("• no match — pick a number or exact name"));
+      }
+    }
+  } else {
+    console.log("    " + c.dim("(no existing D1 databases on this account)"));
+  }
+  if (!d1Name) d1Name = await ask("New D1 database name", { def: key });
+
+  header("access");
+  const isPublic = await confirm("Make the site fully public (no sign-in gate)?", false);
+  const secrets = {};   // KEY → value, set as Cloudflare secrets after the project exists
+  let turnstile = false;
+  if (!isPublic) {
+    console.log("    " + c.dim("Choose sign-in methods (set up the ones you say yes to):"));
+    if (await confirm("  • Google sign-in?", true)) {
+      secrets.GOOGLE_CLIENT_ID = await ask("Google OAuth client id", { required: true });
+    }
+    if (await confirm("  • GitHub sign-in?", false)) {
+      secrets.GITHUB_CLIENT_ID = await ask("GitHub OAuth client id", { required: true });
+      secrets.GITHUB_CLIENT_SECRET = await ask("GitHub OAuth client secret", { required: true, hidden: true });
+    }
+    if (await confirm("  • Discord sign-in?", false)) {
+      secrets.DISCORD_CLIENT_ID = await ask("Discord OAuth client id", { required: true });
+      secrets.DISCORD_CLIENT_SECRET = await ask("Discord OAuth client secret", { required: true, hidden: true });
+    }
+    if (await confirm("  • Magic-link (email) sign-in?", false)) {
+      secrets.RESEND_API_KEY = await ask("Resend API key", { required: true, hidden: true });
+      secrets.RESEND_FROM = await ask("From address (e.g. login@yourdomain.com)", { required: true });
+      secrets.SITE_NAME = name;
+      secrets.SITE_URL = `https://${domain}`;
+    }
+    turnstile = await confirm("  • Add a Turnstile bot-check on the gate?", false);
+    if (turnstile) {
+      secrets.TURNSTILE_SITE_KEY = await ask("Turnstile site key", { required: true });
+      secrets.TURNSTILE_SECRET_KEY = await ask("Turnstile secret key", { required: true, hidden: true });
+    }
+  }
+
+  header("admin");
+  const adminPw = await ask("Admin password (for /admin login)", { required: true, hidden: true });
+  secrets.ADMIN_PASSWORD = adminPw;
+
+  header("review");
+  const line = (k, v) => console.log("    " + c.dim((k + ":").padEnd(16)) + v);
+  line("key", c.bold(key));
+  line("name", name);
+  line("domain", c.cyan(domain));
+  line("account", accountName ? accountName + c.dim("  " + accountId) : accountId);
+  line("project", project);
+  line("d1", d1Name + (d1Id ? c.dim("  (reuse existing)") : c.dim("  (create new)")));
+  line("access", isPublic ? c.green("public (no gate)") : c.yellow("gated"));
+  if (!isPublic) line("methods", Object.keys(secrets).filter((k) => /CLIENT_ID|RESEND_API/.test(k)).map((k) => k.split("_")[0].toLowerCase()).join(", ") + (turnstile ? " + turnstile" : ""));
+  console.log();
+  if (!(await confirm("Create the D1 db, project, secrets, Supabase entry, then build & deploy?", true))) die("aborted — nothing was created.");
+
+  const dest = path.join(ROOT, "sites", key);
+  const cfg = {
+    name, shortName, domain, themeColor, bgColor, textColor,
+    accentBright: themeColor, mutedRgb: "180,230,190",
+    tagline, description, keywords,
+    ...(isPublic ? { publicAccess: true } : {}),
+    cloudflare: { accountId, project, d1Name, d1Id },
+  };
+  const env = acctEnv(cfg);
+
+  header("scaffold");
   await mkdir(path.join(dest, "icons"), { recursive: true });
-  const sample = await readFile(path.join(ROOT, "config.sample.json"), "utf8").catch(() => "{}");
-  await writeFile(path.join(dest, "config.json"), sample);
-  console.log("    " + ok + " created " + c.cyan(`sites/${name}/config.json`));
-  console.log("    " + ok + " created " + c.cyan(`sites/${name}/icons/`) + c.dim(" (drop your favicon set here)"));
-  console.log("\n  " + dot + c.dim(" next: edit the config, then ") + c.cyan(`foyer deploy ${name}`) + "\n");
+  await writeFile(path.join(dest, "config.json"), JSON.stringify(cfg, null, 2) + "\n");
+  console.log("    " + ok + " wrote " + c.cyan(`sites/${key}/config.json`) + c.dim("  · drop favicons in ") + c.cyan(`sites/${key}/icons/`));
+
+  header("provision cloudflare");
+  if (!cfg.cloudflare.d1Id) {
+
+    const d1Out = await run(`create D1 database '${d1Name}'`, "npx", ["wrangler", "d1", "create", d1Name], env);
+    const id = (d1Out.match(/database_id\s*=\s*"([0-9a-f-]{36})"/i) || d1Out.match(/"(?:uuid|database_id)"\s*:\s*"([0-9a-f-]{36})"/i) || [])[1];
+    if (!id) die("couldn't read the new D1 id from wrangler output. Create it manually and set cloudflare.d1Id in the config.");
+    cfg.cloudflare.d1Id = id;
+    await writeFile(path.join(dest, "config.json"), JSON.stringify(cfg, null, 2) + "\n");
+  }
+  console.log("    " + ok + " D1 " + c.bold(d1Name) + c.dim("  " + cfg.cloudflare.d1Id));
+
+  await run("apply schema.sql", "npx", ["wrangler", "d1", "execute", d1Name, "--file=schema.sql", "--remote"], env);
+
+  await run("create Pages project", "npx", ["wrangler", "pages", "project", "create", project, "--production-branch=production"], env)
+    .catch(() => console.log("      " + c.dim("(project already exists — continuing)")));
+
+  const secretKeys = Object.keys(secrets);
+  if (secretKeys.length) {
+    header("secrets");
+    for (const k of secretKeys) await putSecret(cfg, k, secrets[k], `set ${k}`);
+  }
+
+  header("control-plane");
+  await sbRegister({ domain, name, project });
+
+  await cmdDeploy(key);
+
+  header("done");
+  console.log("    " + ok + c.green(c.bold(` ${name} is live`)) + c.dim(" once DNS points at the Pages project."));
+  console.log("    " + dot + c.dim(" point ") + c.cyan(domain) + c.dim(" at the '") + project + c.dim("' Pages project (Cloudflare → Pages → Custom domains)"));
+  if (!isPublic) {
+    if (secrets.GOOGLE_CLIENT_ID || secrets.GITHUB_CLIENT_ID || secrets.DISCORD_CLIENT_ID)
+      console.log("    " + dot + c.dim(" add ") + c.cyan(`https://${domain}`) + c.dim(" as an authorized OAuth redirect/origin in each provider's console"));
+  }
+  console.log("    " + dot + c.dim(" admin panel: ") + c.cyan(`https://${domain}/admin`) + "\n");
 }
 
 async function cmdSecret(name, key) {
@@ -345,7 +597,7 @@ function help() {
     ["deploy gitea [msg]", "commit + push to Gitea"],
     ["dev <site>", "build + local server"],
     ["status <site|all>", "compare live vs local version"],
-    ["new <site>", "scaffold a new site config"],
+    ["new [site]", "interactive onboarding → db, project, secrets, deploy"],
     ["secret <site> <NAME>", "set a Cloudflare secret"],
     ["db <site> \"<SQL>\"", "run a D1 query (remote)"],
     ["registry", "list sites in the Foyer control-plane"],

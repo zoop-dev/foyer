@@ -1,5 +1,5 @@
 {
-  "// about":              "Copy this to sites/<your-site>/config.json and fill it in. One file per site; everything else (code) is shared.",
+  "// about":              "Copy this to sites/<your-site>/config.json and fill it in. One file per site; everything else (code) is shared. Easiest path: run `foyer new` for guided onboarding (it creates the D1 db, Pages project, secrets, Supabase entry, then builds & deploys).",
 
   "name":                 "Your Site Name",
   "// name":              "Public display + meta/title fallback (the live name can still be overridden in the admin panel / D1 site_settings).",
@@ -11,14 +11,26 @@
   "// domain":            "Bare domain, no protocol. Used for canonical/OG/Twitter URLs and the JS meta origin.",
 
   "themeColor":           "#4dbd6a",
-  "// themeColor":        "Browser UI theme color + PWA theme_color. The in-site palette is set separately in the admin panel (D1 theme_* settings).",
+  "// themeColor":        "Accent color → browser UI theme, PWA theme_color, and the site accent CSS var.",
 
-  "verifiSite":           "your-verifi-site-id",
-  "// verifiSite":        "The data-site id for the verifi bot-check embed (verifi.zo0p.dev). Use your own per site.",
+  "bgColor":              "#020a03",
+  "// bgColor":           "Page background color (CSS --site-bg). Defaults to #020a03.",
+
+  "textColor":            "#c8e6aa",
+  "// textColor":         "Body text color (CSS --site-text). Defaults to #c8e6aa.",
+
+  "accentBright":         "#39ff14",
+  "// accentBright":      "Brighter accent for highlights/glows. Defaults to themeColor.",
+
+  "mutedRgb":             "180,230,190",
+  "// mutedRgb":          "R,G,B for muted/secondary text (CSS --site-muted-rgb). Defaults to 180,230,190.",
 
   "tagline":              "What this site is about",
   "description":          "One-line meta description for search/social.",
   "keywords":             "comma, separated, keywords",
+
+  "publicAccess":         false,
+  "// publicAccess":      "Set true to permanently open the site (no OAuth/magic-link gate), regardless of the admin 'site public' toggle. Enforced client-side (boot) and server-side (FOYER_PUBLIC var in wrangler.toml). Omit or false to keep the gate.",
 
   "cloudflare": {
     "accountId":          "your-cloudflare-account-id",
@@ -26,5 +38,5 @@
     "d1Name":             "your-d1-database-name",
     "d1Id":               "your-d1-database-uuid"
   },
-  "// cloudflare":        "Used by deploy.js (Pages project + D1 target) and to generate wrangler.toml for local dev. SECRETS (OAuth client secrets, RESEND_API_KEY, ADMIN_PASSWORD) are NEVER stored here — set them as Cloudflare encrypted secrets per project. Public OAuth client IDs live in the project's env vars too."
+  "// cloudflare":        "Used by build/deploy (Pages project + D1 target) and to generate wrangler.toml (which wires the D1 binding on deploy). SECRETS (OAuth client secrets, RESEND_API_KEY, ADMIN_PASSWORD, TURNSTILE_SECRET_KEY) are NEVER stored here — set them as Cloudflare encrypted secrets per project (foyer new does this for you). Public OAuth client IDs (GOOGLE_CLIENT_ID, GITHUB_CLIENT_ID, DISCORD_CLIENT_ID) are also set as project secrets/env."
 }
