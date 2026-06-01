@@ -2,8 +2,9 @@
 
 
 
-import { readdir, readFile, writeFile, mkdir, cp, access } from "node:fs/promises";
+import { readdir, readFile, writeFile, mkdir, cp, access, rm } from "node:fs/promises";
 import { spawn } from "node:child_process";
+import { createInterface } from "node:readline";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import process from "node:process";
@@ -86,6 +87,15 @@ function passthrough(cmd, args, env = process.env) {
 const acctEnv = (cfg) => ({ ...process.env, CLOUDFLARE_ACCOUNT_ID: cfg.cloudflare.accountId });
 
 
+
+function promptVisible(query) {
+  return new Promise((resolve) => {
+    const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: true });
+    rl.on("SIGINT", () => { rl.close(); process.stdout.write("\n"); process.exit(130); });
+    rl.question(query, (ans) => { rl.close(); resolve(ans); });
+  });
+}
+
 function readLine({ hidden = false } = {}) {
   return new Promise((resolve) => {
     const stdin = process.stdin;
@@ -110,8 +120,10 @@ function readLine({ hidden = false } = {}) {
 async function ask(label, { def = "", required = false, hidden = false } = {}) {
   for (;;) {
     const hint = hidden ? "" : def ? c.dim(` [${def}]`) : (required ? c.dim(" (required)") : c.dim(" (optional)"));
-    process.stdout.write("    " + c.br("?") + " " + c.bold(label) + hint + c.dim(": "));
-    const a = (await readLine({ hidden })).trim();
+    const q = "    " + c.br("?") + " " + c.bold(label) + hint + c.dim(": ");
+    let a;
+    if (hidden) { process.stdout.write(q); a = (await readLine({ hidden: true })).trim(); }
+    else { a = (await promptVisible(q)).trim(); }
     if (a) return a;
     if (def) return def;
     if (!required) return "";
@@ -119,8 +131,8 @@ async function ask(label, { def = "", required = false, hidden = false } = {}) {
   }
 }
 async function confirm(label, def = true) {
-  process.stdout.write("    " + c.br("?") + " " + c.bold(label) + c.dim(def ? " [Y/n]: " : " [y/N]: "));
-  const a = (await readLine()).trim().toLowerCase();
+  const q = "    " + c.br("?") + " " + c.bold(label) + c.dim(def ? " [Y/n]: " : " [y/N]: ");
+  const a = (await promptVisible(q)).trim().toLowerCase();
   return a ? a[0] === "y" : def;
 }
 
@@ -208,6 +220,68 @@ async function cmdDev(name) {
   await run("build", "node", ["build.js", name]);
   console.log("    " + dot + c.dim(" starting local server (ctrl-c to stop)…\n"));
   await passthrough("npx", ["wrangler","pages","dev","dist","--ip","127.0.0.1"]);
+}
+
+
+function defaultIconSvg({ bg = "#020a03", accent = "#4dbd6a" } = {}) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">` +
+    `<rect width="64" height="64" rx="14" fill="${bg}"/>` +
+    `<g fill="none" stroke="${accent}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">` +
+    `<path d="M14 50 V30 a18 18 0 0 1 36 0 V50"/><path d="M25 50 V34 a7 7 0 0 1 14 0 V50"/></g></svg>`;
+}
+
+function makeIco(images) {
+  const header = Buffer.alloc(6);
+  header.writeUInt16LE(0, 0); header.writeUInt16LE(1, 2); header.writeUInt16LE(images.length, 4);
+  const dir = Buffer.alloc(16 * images.length);
+  let offset = 6 + 16 * images.length;
+  images.forEach((img, i) => {
+    const o = i * 16, n = img.size >= 256 ? 0 : img.size;
+    dir.writeUInt8(n, o); dir.writeUInt8(n, o + 1);
+    dir.writeUInt16LE(1, o + 4); dir.writeUInt16LE(32, o + 6);
+    dir.writeUInt32LE(img.buf.length, o + 8); dir.writeUInt32LE(offset, o + 12);
+    offset += img.buf.length;
+  });
+  return Buffer.concat([header, dir, ...images.map((i) => i.buf)]);
+}
+
+async function generateIcons(svg, dir) {
+  let sharp;
+  try { sharp = (await import("sharp")).default; }
+  catch { die("icon generation needs the " + c.cyan("sharp") + " package — run " + c.cyan("npm i sharp") + " and retry."); }
+  await mkdir(dir, { recursive: true });
+  await writeFile(path.join(dir, "favicon.svg"), svg.trim() + "\n");
+  const src = Buffer.from(svg);
+  const png = (size) => sharp(src, { density: 512 })
+    .resize(size, size, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toBuffer();
+  const files = { 16: "favicon-16.png", 32: "favicon-32.png", 48: "favicon-48.png", 96: "favicon-96.png", 180: "apple-touch-icon.png", 192: "favicon-192.png", 512: "favicon-512.png" };
+  const bufs = {};
+  for (const size of Object.keys(files).map(Number)) { bufs[size] = await png(size); await writeFile(path.join(dir, files[size]), bufs[size]); }
+  await writeFile(path.join(dir, "favicon.ico"), makeIco([16, 32, 48].map((s) => ({ size: s, buf: bufs[s] }))));
+  console.log("    " + ok + " generated " + c.bold(Object.keys(files).length + 1) + c.dim(" icons (svg, ico, png 16→512, apple-touch)"));
+}
+
+
+async function autoTurnstile(accountId, domain, name) {
+  const token = process.env.CLOUDFLARE_API_TOKEN;
+  if (!token) return null;
+  try {
+    const r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/challenges/widgets`, {
+      method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body: JSON.stringify({ name: (name || domain).slice(0, 50), domains: [domain], mode: "managed" }),
+    });
+    const j = await r.json();
+    if (j.success && j.result?.sitekey && j.result?.secret) return { sitekey: j.result.sitekey, secret: j.result.secret };
+  } catch {}
+  return null;
+}
+
+async function sbDelete(domain) {
+  const key = await sbServiceKey();
+  if (!key) { console.log("    " + c.yellow("!") + c.dim(" no service key — skipped Supabase removal (delete the row manually)")); return; }
+  const r = await fetch(`${SB_URL}/rest/v1/foyer_sites?domain=eq.${encodeURIComponent(domain)}`,
+    { method: "DELETE", headers: { ...sbH(key), Prefer: "return=minimal" } });
+  console.log("    " + (r.ok ? ok : bad) + (r.ok ? " removed from the control-plane" : c.dim(" Supabase delete failed (" + r.status + ")")));
 }
 
 async function sbRegister({ domain, name, project }) {
@@ -329,14 +403,32 @@ async function cmdNew(initialName) {
     }
     turnstile = await confirm("  • Add a Turnstile bot-check on the gate?", false);
     if (turnstile) {
-      secrets.TURNSTILE_SITE_KEY = await ask("Turnstile site key", { required: true });
-      secrets.TURNSTILE_SECRET_KEY = await ask("Turnstile secret key", { required: true, hidden: true });
+      const auto = await autoTurnstile(accountId, domain, name);
+      if (auto) {
+        secrets.TURNSTILE_SITE_KEY = auto.sitekey;
+        secrets.TURNSTILE_SECRET_KEY = auto.secret;
+        console.log("    " + ok + c.dim(" auto-created a Turnstile widget for ") + c.cyan(domain));
+      } else {
+        console.log("    " + c.dim("(set CLOUDFLARE_API_TOKEN to auto-create — entering keys manually)"));
+        secrets.TURNSTILE_SITE_KEY = await ask("Turnstile site key", { required: true });
+        secrets.TURNSTILE_SECRET_KEY = await ask("Turnstile secret key", { required: true, hidden: true });
+      }
     }
   }
 
   header("admin");
-  const adminPw = await ask("Admin password (for /admin login)", { required: true, hidden: true });
-  secrets.ADMIN_PASSWORD = adminPw;
+  secrets.ADMIN_PASSWORD = await ask("Admin password (primary)", { required: true, hidden: true });
+  const adminPw2 = await ask("Second admin password (optional)", { hidden: true });
+  if (adminPw2) secrets.ADMIN_PASSWORD_2 = adminPw2;
+
+  header("icon");
+  console.log("    " + c.dim("paste single-line <svg…> code, or a path to an .svg file (multi-line SVGs: save to a file)"));
+  let iconInput = "";
+  for (;;) {
+    iconInput = (await ask("Icon SVG (blank = generate an arch mark in your colors)", { def: "" })).trim();
+    if (!iconInput || iconInput.startsWith("<") || (await exists(iconInput))) break;
+    console.log("      " + c.yellow("• that's neither <svg> code nor an existing file path"));
+  }
 
   header("review");
   const line = (k, v) => console.log("    " + c.dim((k + ":").padEnd(16)) + v);
@@ -364,7 +456,11 @@ async function cmdNew(initialName) {
   header("scaffold");
   await mkdir(path.join(dest, "icons"), { recursive: true });
   await writeFile(path.join(dest, "config.json"), JSON.stringify(cfg, null, 2) + "\n");
-  console.log("    " + ok + " wrote " + c.cyan(`sites/${key}/config.json`) + c.dim("  · drop favicons in ") + c.cyan(`sites/${key}/icons/`));
+  console.log("    " + ok + " wrote " + c.cyan(`sites/${key}/config.json`));
+  let iconSvg = null;
+  if (iconInput.startsWith("<")) iconSvg = iconInput;
+  else if (iconInput) iconSvg = await readFile(iconInput, "utf8").catch(() => null);
+  await generateIcons(iconSvg || defaultIconSvg({ bg: bgColor, accent: themeColor }), path.join(dest, "icons"));
 
   header("provision cloudflare");
   if (!cfg.cloudflare.d1Id) {
@@ -401,6 +497,52 @@ async function cmdNew(initialName) {
       console.log("    " + dot + c.dim(" add ") + c.cyan(`https://${domain}`) + c.dim(" as an authorized OAuth redirect/origin in each provider's console"));
   }
   console.log("    " + dot + c.dim(" admin panel: ") + c.cyan(`https://${domain}/admin`) + "\n");
+}
+
+async function cmdIcons(name, svgPath) {
+  if (!name) die('usage: foyer icons <site> [icon.svg]   (regenerates the full favicon set)');
+  const cfg = await getSite(name);
+  const dir = path.join(ROOT, "sites", name, "icons");
+  header(`generate icons ${c.br(name)}`);
+  let svg;
+  if (svgPath) {
+    svg = svgPath.trim().startsWith("<") ? svgPath : await readFile(svgPath, "utf8").catch(() => die("can't read " + c.cyan(svgPath)));
+  } else if (await exists(path.join(dir, "favicon.svg"))) {
+    svg = await readFile(path.join(dir, "favicon.svg"), "utf8");
+    console.log("    " + dot + c.dim(" using existing ") + c.cyan(`sites/${name}/icons/favicon.svg`));
+  } else {
+    svg = defaultIconSvg({ bg: cfg.bgColor || "#020a03", accent: cfg.themeColor || "#4dbd6a" });
+    console.log("    " + dot + c.dim(" no SVG given — generated an arch mark in the site's colors"));
+  }
+  await generateIcons(svg, dir);
+  console.log("    " + dot + c.dim(" rebuild/deploy to publish: ") + c.cyan(`foyer deploy ${name}`) + "\n");
+}
+
+async function cmdDelete(name) {
+  if (!name) die("usage: foyer delete <site>");
+  const cfg = await getSite(name);   // dies if unknown
+  header(`delete ${c.br(name)} ${c.red("— removes EVERYTHING")}`);
+  console.log("    " + c.dim("this will permanently delete:"));
+  console.log("      " + c.red("•") + c.dim(" local ") + c.cyan(`sites/${name}/`));
+  console.log("      " + c.red("•") + c.dim(" Cloudflare Pages project ") + c.bold(cfg.cloudflare.project) + c.dim(" (and its secrets)"));
+  console.log("      " + c.red("•") + c.dim(" D1 database ") + c.bold(cfg.cloudflare.d1Name) + c.dim(" (all its data)"));
+  console.log("      " + c.red("•") + c.dim(" the Foyer control-plane row for ") + c.cyan(cfg.domain));
+  console.log();
+  const typed = (await ask(`Type the site key ${c.bold(name)} to confirm`, {})).trim();
+  if (typed !== name) die("aborted — nothing was deleted.");
+  const env = acctEnv(cfg);
+
+  header("teardown");
+  await run("delete Pages project", "npx", ["wrangler", "pages", "project", "delete", cfg.cloudflare.project, "--yes"], env)
+    .catch((e) => console.log("      " + c.yellow("! ") + c.dim("Pages project: " + e.message)));
+
+  console.log("    " + dot + c.dim(" deleting D1 database (confirm the wrangler prompt)…"));
+  await passthrough("npx", ["wrangler", "d1", "delete", cfg.cloudflare.d1Name], env)
+    .catch((e) => console.log("      " + c.yellow("! ") + c.dim("D1: " + e.message)));
+  await sbDelete(cfg.domain);
+  await rm(path.join(ROOT, "sites", name), { recursive: true, force: true });
+  console.log("    " + ok + " removed " + c.cyan(`sites/${name}/`));
+  console.log("\n  " + ok + c.green(c.bold(`  '${name}' deleted`)) + c.dim(" — remember to remove the custom domain in Cloudflare if it was attached.") + "\n");
 }
 
 async function cmdSecret(name, key) {
@@ -587,7 +729,8 @@ async function cmdChangelog(...argv) {
 
 function help() {
   banner();
-  const row = (cmd, desc) => "    " + c.cyan(cmd.padEnd(26)) + c.dim(desc);
+
+  const row = (cmd, desc) => "    " + c.cyan(cmd) + " ".repeat(Math.max(2, 30 - cmd.length)) + c.dim(desc);
   console.log(c.bold("  USAGE") + c.dim("  foyer <command> [args]\n"));
   console.log(c.bold("  COMMANDS"));
   [
@@ -598,6 +741,8 @@ function help() {
     ["dev <site>", "build + local server"],
     ["status <site|all>", "compare live vs local version"],
     ["new [site]", "interactive onboarding → db, project, secrets, deploy"],
+    ["delete <site>", "delete a site everywhere (local, CF project, D1, registry)"],
+    ["icons <site> [svg]", "generate the full favicon set from an SVG"],
     ["secret <site> <NAME>", "set a Cloudflare secret"],
     ["db <site> \"<SQL>\"", "run a D1 query (remote)"],
     ["registry", "list sites in the Foyer control-plane"],
@@ -621,6 +766,8 @@ const table = {
   dev: () => cmdDev(args[0]),
   status: () => cmdStatus(args[0]),
   new: () => cmdNew(args[0]),
+  delete: () => cmdDelete(args[0]), remove: () => cmdDelete(args[0]),
+  icons: () => cmdIcons(args[0], args[1]),
   secret: () => cmdSecret(args[0], args[1]),
   db: () => cmdDb(...args),
   offline: () => cmdOffline(args[0], true, args.slice(1).join(" ")),
