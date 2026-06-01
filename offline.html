@@ -26,6 +26,9 @@
       border:1px solid rgba(170,190,215,.2); color:rgba(232,237,242,.82); transition:all .2s; }
     .btn:hover { border-color:var(--accent); color:#fff; }
     .btn svg { width:13px; height:auto; }
+    button.btn { font-family:'Josefin Sans',sans-serif; cursor:pointer; background:transparent; }
+    .recheck { color:var(--muted); font-size:.6rem; letter-spacing:.18em; text-transform:uppercase; margin-bottom:1.6rem; font-variant-numeric:tabular-nums; }
+    .btns { display:flex; gap:.7rem; justify-content:center; flex-wrap:wrap; }
   </style>
 </head>
 <body>
@@ -37,10 +40,39 @@
     <p class="eyebrow" id="foyer-offline-eyebrow">Temporarily offline</p>
     <p class="name" id="foyer-offline-title">This site is taking a short break</p>
     <p id="foyer-offline-msg">It’ll be back soon. Thanks for your patience.</p>
-    <a class="btn" href="/foyer">
-      <svg viewBox="0 0 44 50" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg>
-      About Foyer
-    </a>
+    <p class="recheck" id="recheck">Rechecking in 60s</p>
+    <div class="btns">
+      <button class="btn" id="checkNow" type="button">Check now</button>
+      <a class="btn" href="/foyer">
+        <svg viewBox="0 0 44 50" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg>
+        About Foyer
+      </a>
+    </div>
   </div>
+
+  <script>
+    // Auto-recheck status: poll Supabase every 60s (+ a live countdown), and a
+    // "Check now" button. When the site is back online/licensed, reload to enter.
+    (function () {
+      var SB = "https://tvtfoghrdqwssdwvebuo.supabase.co";
+      var K = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2dGZvZ2hyZHF3c3Nkd3ZlYnVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMzk2ODksImV4cCI6MjA5NTgxNTY4OX0.n_CRdzQQKYNGDHYmoVxyKafFJCfezKKlSiZddx8MXH4";
+      var rc = document.getElementById('recheck'), btn = document.getElementById('checkNow');
+      var n = 60, busy = false;
+      function check() {
+        if (busy) return; busy = true; rc.textContent = 'Rechecking…';
+        fetch(SB + '/rest/v1/foyer_sites?domain=eq.' + encodeURIComponent(location.hostname) + '&select=offline,licensed&cb=' + Date.now(),
+          { headers: { apikey: K, authorization: 'Bearer ' + K } })
+          .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+          .then(function (rows) {
+            var s = rows[0];
+            if (s && s.offline !== true && s.licensed !== false) { rc.textContent = 'Back online — reloading…'; location.reload(); }
+            else { n = 60; busy = false; }
+          })
+          .catch(function () { n = 60; busy = false; });
+      }
+      setInterval(function () { if (busy) return; n--; if (n <= 0) check(); else rc.textContent = 'Rechecking in ' + n + 's'; }, 1000);
+      btn.addEventListener('click', function () { n = 60; check(); });
+    })();
+  </script>
 </body>
 </html>
