@@ -75,23 +75,32 @@
 
     function renderAnnouncement(a) {
       if (document.getElementById('foyer-ann')) return;
+
       const warn = a.level === 'warn';
+      const accent = warn ? '#e0b15a' : '#7fa6d8';
       const bar = document.createElement('div');
       bar.id = 'foyer-ann';
       bar.style.cssText = [
         'position:fixed;top:0;left:0;right:0;z-index:9990;',
-        'display:flex;align-items:center;justify-content:center;gap:1rem;',
-        'padding:.6rem 2.6rem;font-family:\'Josefin Sans\',sans-serif;',
-        'font-weight:200;font-size:.72rem;letter-spacing:.04em;line-height:1.5;text-align:center;',
-        `background:${warn ? 'rgba(230,170,60,.16)' : 'rgba(var(--site-accent-rgb),.14)'};`,
-        `color:rgba(220,245,225,.92);border-bottom:1px solid ${warn ? 'rgba(230,170,60,.4)' : 'rgba(var(--site-accent-rgb),.3)'};`,
-        'backdrop-filter:blur(8px);transition:transform .4s cubic-bezier(.16,1,.3,1),opacity .4s ease;transform:translateY(-100%);',
+        'display:flex;align-items:center;justify-content:center;gap:.7rem;',
+        'padding:.62rem 2.8rem;font-family:\'Josefin Sans\',system-ui,sans-serif;',
+        'font-weight:300;font-size:.72rem;letter-spacing:.05em;line-height:1.5;text-align:center;',
+        'background:rgba(13,17,23,0.97);color:#e8edf2;',
+        `border-bottom:1px solid ${accent}59;box-shadow:0 2px 22px rgba(0,0,0,.32);`,
+        'backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);',
+        'transition:transform .45s cubic-bezier(.16,1,.3,1),opacity .4s ease;transform:translateY(-100%);',
       ].join('');
+      const mark = document.createElement('span');
+      mark.style.cssText = 'flex-shrink:0;display:inline-flex;opacity:.9;';
+      mark.innerHTML = `<svg width="12" height="14" viewBox="0 0 44 50" fill="none" stroke="${accent}" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg>`;
+      bar.appendChild(mark);
       const span = document.createElement('span'); span.textContent = a.message; bar.appendChild(span);
       const x = document.createElement('button');
       x.textContent = '×'; x.setAttribute('aria-label', 'Dismiss');
-      x.style.cssText = 'position:absolute;right:.9rem;top:50%;transform:translateY(-50%);background:none;border:none;color:inherit;font-size:1.15rem;cursor:pointer;opacity:.6;line-height:1;';
-      const dismiss = () => { bar.style.transform = 'translateY(-100%)'; bar.style.opacity = '0'; setTimeout(() => bar.remove(), 440); };
+      x.style.cssText = 'position:absolute;right:1rem;top:50%;transform:translateY(-50%);background:none;border:none;color:#8b94a6;font-size:1.15rem;cursor:pointer;opacity:.7;line-height:1;transition:opacity .2s,color .2s;';
+      x.addEventListener('mouseenter', () => { x.style.opacity = '1'; x.style.color = '#e8edf2'; });
+      x.addEventListener('mouseleave', () => { x.style.opacity = '.7'; x.style.color = '#8b94a6'; });
+      const dismiss = () => { bar.style.transform = 'translateY(-100%)'; bar.style.opacity = '0'; setTimeout(() => bar.remove(), 460); };
       x.addEventListener('click', () => { try { localStorage.setItem('foyer_ann_dismissed_' + a.id, '1'); } catch {} dismiss(); });
       bar.appendChild(x);
       document.body.appendChild(bar);

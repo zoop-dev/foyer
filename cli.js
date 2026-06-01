@@ -758,7 +758,7 @@ async function cmdRegistry() {
 async function cmdAnnounce(scope, ...argv) {
   const key = await sbServiceKey();
   if (!key) die("needs the service key in " + c.cyan(".foyer.env") + ".");
-  if (!scope) die('usage: foyer announce <site|all> "<message>" [--warn] [--hide <sec>] [--ends <iso>]  ·  or: clear | list');
+  if (!scope) die('usage: foyer announce <site|all> "<message>" [--warn] [--hide <sec>] [--ends <iso>]  ·  or: clear | remove | list');
   const target = scope === "all" ? "global" : await toDomain(scope);
   const sub = argv[0];
 
@@ -773,7 +773,12 @@ async function cmdAnnounce(scope, ...argv) {
   if (sub === "clear" || sub === "off") {
     header(`clear announcements · ${c.br(target)}`);
     const r = await fetch(`${SB_URL}/rest/v1/foyer_announcements?scope=eq.${encodeURIComponent(target)}`, { method: "PATCH", headers: { ...sbH(key), Prefer: "return=minimal" }, body: JSON.stringify({ active: false }) });
-    console.log("    " + (r.ok ? ok : bad) + (r.ok ? " cleared active announcements" : " failed") + "\n"); return;
+    console.log("    " + (r.ok ? ok : bad) + (r.ok ? " deactivated active announcements (kept in history)" : " failed") + "\n"); return;
+  }
+  if (sub === "remove" || sub === "rm" || sub === "delete") {
+    header(`remove announcements · ${c.br(target)}`);
+    const r = await fetch(`${SB_URL}/rest/v1/foyer_announcements?scope=eq.${encodeURIComponent(target)}`, { method: "DELETE", headers: { ...sbH(key), Prefer: "return=minimal" } });
+    console.log("    " + (r.ok ? ok : bad) + (r.ok ? " permanently removed all announcements for " + (target === "global" ? "all sites" : target) : " failed") + "\n"); return;
   }
 
   const flags = {}; const words = [];
@@ -887,7 +892,7 @@ function help() {
     ["db <site> \"<SQL>\"", "run a D1 query (remote)"],
     ["setrole <site> <email> <role>", "set a visitor's role (admin|owner|none)"],
     ["registry", "list sites: live status, version, last-seen"],
-    ["announce <site|all> <msg>", "push a banner (--warn, --hide <s>, --ends <iso>); clear|list"],
+    ["announce <site|all> <msg>", "push a banner (--warn,--hide,--ends); clear|remove|list"],
     ["flag <site|all> <key> <val>", "set a feature flag (on|off|value)"],
     ["flags <site|all>", "list feature flags"],
     ["errors <site|all> [n]", "show recent client error reports"],
