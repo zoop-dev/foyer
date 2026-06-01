@@ -138,6 +138,7 @@ export async function buildCtx({ request, env, params }) {
   };
 
   const sitePublic = async () => {
+    if (env.FOYER_PUBLIC === '1') return true;   // permanent public flag from config.json (publicAccess)
     const r = await env.DB.prepare("SELECT value FROM site_settings WHERE key='site_public'").first().catch(() => null);
     return r?.value === '1';
   };

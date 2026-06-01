@@ -77,7 +77,7 @@
       let githubId  = settings.auth_github  !== '0' ? (cfg.github_client_id  || '') : '';
       let discordId = settings.auth_discord !== '0' ? (cfg.discord_client_id || '') : '';
       let magicOn   = settings.auth_magic   !== '0' && !!cfg.magic_enabled;
-      const publicMode = settings.site_public === '1';
+      const publicMode = settings.site_public === '1' || __SITE__.publicAccess === true;
 
       try { localStorage.setItem('foyer_public', publicMode ? '1' : '0'); } catch {}
       _bootClientId   = clientId;

@@ -35,6 +35,9 @@ const SITE = {
   name: cfg.name, shortName: cfg.shortName, domain: cfg.domain,
 
   accent: cfg.themeColor, bg: cfg.bgColor || "#020a03", text: cfg.textColor || "#c8e6aa",
+
+
+  publicAccess: cfg.publicAccess === true,
 };
 const define = {
   __VERSION__: JSON.stringify(VERSION),
@@ -127,7 +130,10 @@ await cp(path.join(siteDir, "icons"), path.join(dist, "icons"), { recursive: tru
 const wrangler = `name = "${cfg.cloudflare.project}"
 compatibility_date = "2024-09-23"
 pages_build_output_dir = "dist"
-
+${cfg.publicAccess === true ? `
+[vars]
+FOYER_PUBLIC = "1"
+` : ""}
 [[d1_databases]]
 binding = "DB"
 database_name = "${cfg.cloudflare.d1Name}"
