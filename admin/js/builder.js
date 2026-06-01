@@ -20,7 +20,13 @@ function bRender(s, theme) {
       const cols=s.layout==='grid-2'?2:s.layout==='grid-4'?4:3;
       const forSale=items.filter(it=>it.for_sale==='yes').length;
       const countLine=s.show_count!=='no'?`${items.length} item${items.length===1?'':'s'}${forSale?` · ${forSale} for sale`:''}`:'';
-      const cards=items.map(it=>`<div style="border:1px solid ${bRgb(accent,.12)};background:${bRgb(accent,.03)};position:relative;">${it.for_sale==='yes'?`<div style="position:absolute;top:.5rem;right:.5rem;background:${accent};color:${bg};font-size:.5rem;font-weight:400;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .5rem;">For sale${it.price?` · ${bE(it.price)}`:''}</div>`:''}${it.img?`<img src="${bA(it.img)}" alt="" style="width:100%;height:130px;object-fit:cover;display:block;" />`:`<div style="width:100%;height:130px;background:${bRgb(accent,.06)};border:1px dashed ${bRgb(accent,.15)};"></div>`}<div style="padding:.6rem .8rem;"><div style="font-weight:300;font-size:.82rem;color:${bRgb(text,.9)};">${bE(it.name||'')}</div>${it.note?`<div style="font-weight:200;font-size:.68rem;line-height:1.6;color:${bRgb(text,.5)};margin-top:.2rem;">${bE(it.note)}</div>`:''}</div></div>`).join('');
+      const cards=items.map(it=>{
+        const imgs=(it.imgs&&it.imgs.length)?it.imgs.filter(Boolean):(it.img?[it.img]:[]);
+        const cover=imgs[0]||'';
+        const coverHtml=cover?`<img src="${bA(cover)}" alt="" style="width:100%;height:130px;object-fit:cover;display:block;" />`:`<div style="width:100%;height:130px;background:${bRgb(accent,.06)};border:1px dashed ${bRgb(accent,.15)};"></div>`;
+        const thumbs=imgs.length>1?`<div style="display:flex;gap:.25rem;padding:.35rem .35rem 0;overflow-x:auto;">${imgs.map(u=>`<img src="${bA(u)}" alt="" style="width:30px;height:30px;object-fit:cover;flex-shrink:0;border:1px solid ${bRgb(accent,.2)};" />`).join('')}</div>`:'';
+        return `<div style="border:1px solid ${bRgb(accent,.12)};background:${bRgb(accent,.03)};position:relative;">${it.for_sale==='yes'?`<div style="position:absolute;top:.5rem;right:.5rem;background:${accent};color:${bg};font-size:.5rem;font-weight:400;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .5rem;z-index:1;">For sale${it.price?` · ${bE(it.price)}`:''}</div>`:''}${coverHtml}${thumbs}<div style="padding:.6rem .8rem;"><div style="font-weight:300;font-size:.82rem;color:${bRgb(text,.9)};">${bE(it.name||'')}</div>${it.note?`<div style="font-weight:200;font-size:.68rem;line-height:1.6;color:${bRgb(text,.5)};margin-top:.2rem;">${bE(it.note)}</div>`:''}</div></div>`;
+      }).join('');
       return `<div style="${ff}${fc}padding:${p};">${s.heading?`<div style="font-weight:300;font-size:1.05rem;letter-spacing:.02em;margin-bottom:.3rem;">${bE(s.heading)}</div>`:''}${countLine?`<div style="font-size:.65rem;font-weight:200;letter-spacing:.1em;text-transform:uppercase;color:${bRgb(accent,.6)};margin-bottom:1.2rem;">${countLine}</div>`:''}<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:1rem;">${cards}</div></div>`;
     }
     case 'hero': {
@@ -298,7 +304,7 @@ function bDefault(type) {
     case 'spacer':  return { id, type, size:'md' };
     case 'link':    return { id, type, label:'Visit →', url:'', align:'center', style:'pill', size:'md', new_tab:'yes', pad:'md' };
     case 'cards':   return { id, type, items:[{img:'',title:'Card Title',body:'',url:'',new_tab:'yes'},{img:'',title:'Card Title',body:'',url:'',new_tab:'yes'}], layout:'grid-2', radius:'none', pad:'md' };
-    case 'collection': return { id, type, heading:'My Collection', show_count:'yes', layout:'grid-3', items:[{img:'',name:'Item one',note:'',for_sale:'no',price:''},{img:'',name:'Item two',note:'',for_sale:'no',price:''}], pad:'md' };
+    case 'collection': return { id, type, heading:'My Collection', show_count:'yes', layout:'grid-3', items:[{imgs:[''],name:'Item one',note:'',for_sale:'no',price:''},{imgs:[''],name:'Item two',note:'',for_sale:'no',price:''}], pad:'md' };
     case 'gallery': return { id, type, items:[{img:'',url:'',caption:''},{img:'',url:'',caption:''},{img:'',url:'',caption:''}], cols:'3', height:'md', gap:'sm', radius:'none', pad:'md' };
     case 'imgtext':   return { id, type, img:'', reverse:'no', img_w:'md', img_h:'md', radius:'none', eyebrow:'', heading:'Heading', body:'', btn_label:'', btn_url:'', pad:'md' };
     case 'group':     return { id, type, label:'Group', default_open:'yes', sections:[] };
@@ -428,7 +434,7 @@ function bEditorFields(s) {
     f=`<div class="bld-ef"><label>Heading</label><input type="text" data-f="heading" value="${bA(s.heading||'')}" /></div>
        <div class="bld-ef"><label>Show count line</label><select data-f="show_count"><option value="yes"${s.show_count!=='no'?' selected':''}>Yes</option><option value="no"${s.show_count==='no'?' selected':''}>No</option></select></div>
        <div id="bCOLI">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button>
-      <div class="bld-ef"><label>Image</label><div style="display:flex;gap:.4rem;"><input type="url" data-ci="${i}" data-cf="img" value="${bA(it.img||'')}" style="flex:1;" /><button class="btn btn-sm bld-img-pick" data-target-ci="${i}" data-target-cf="img">Pick</button></div></div>
+      ${(()=>{const imgs=(it.imgs&&it.imgs.length)?it.imgs:(it.img?[it.img]:['']);return `<div class="bld-ef"><label>Images</label>${imgs.map((u,j)=>`<div style="display:flex;gap:.4rem;margin-bottom:.3rem;"><input type="url" data-cii="${i}" data-ciij="${j}" value="${bA(u||'')}" style="flex:1;" placeholder="Image URL" /><button class="btn btn-sm bld-img-pick" data-target-cii="${i}" data-target-ciij="${j}">Pick</button><button class="btn btn-sm bld-cimg-rm" data-cii="${i}" data-ciij="${j}" title="Remove image">✕</button></div>`).join('')}<button class="btn btn-sm bld-cimg-add" data-cii="${i}">+ image</button></div>`;})()}
       <div class="bld-ef"><label>Name</label><input type="text" data-ci="${i}" data-cf="name" value="${bA(it.name||'')}" /></div>
       <div class="bld-ef"><label>Note <span style="opacity:.5">(optional)</span></label><textarea data-ci="${i}" data-cf="note" rows="2">${bE(it.note||'')}</textarea></div>
       <div class="bld-ef"><label>For sale</label><select data-ci="${i}" data-cf="for_sale"><option value="no"${it.for_sale!=='yes'?' selected':''}>No</option><option value="yes"${it.for_sale==='yes'?' selected':''}>Yes</option></select></div>
@@ -643,7 +649,18 @@ function bBindEditor(panel, s, onUpdate) {
   const addCi=panel.querySelector('#bAddCi');
   if (addCi) addCi.addEventListener('click', () => { s.items.push({img:'',title:'',body:'',url:'',new_tab:'yes'}); onUpdate(s,'re-editor'); });
   const addColl=panel.querySelector('#bAddColl');
-  if (addColl) addColl.addEventListener('click', () => { s.items.push({img:'',name:'',note:'',for_sale:'no',price:''}); onUpdate(s,'re-editor'); });
+  if (addColl) addColl.addEventListener('click', () => { s.items.push({imgs:[''],name:'',note:'',for_sale:'no',price:''}); onUpdate(s,'re-editor'); });
+
+  const ensureColImgs = (i) => { if (!s.items[i].imgs) s.items[i].imgs = (s.items[i].img ? [s.items[i].img] : []); return s.items[i].imgs; };
+  panel.querySelectorAll('input[data-cii][data-ciij]').forEach(inp => {
+    inp.addEventListener('input', () => { const a=ensureColImgs(+inp.dataset.cii); a[+inp.dataset.ciij]=inp.value; onUpdate(s); });
+  });
+  panel.querySelectorAll('.bld-cimg-rm').forEach(btn => {
+    btn.addEventListener('click', () => { const a=ensureColImgs(+btn.dataset.cii); a.splice(+btn.dataset.ciij,1); onUpdate(s,'re-editor'); });
+  });
+  panel.querySelectorAll('.bld-cimg-add').forEach(btn => {
+    btn.addEventListener('click', () => { ensureColImgs(+btn.dataset.cii).push(''); onUpdate(s,'re-editor'); });
+  });
 
   panel.querySelectorAll('[data-cti][data-ctf]').forEach(inp => {
     inp.addEventListener('input', () => { if (!s.items) s.items=[]; const i=+inp.dataset.cti; if (!s.items[i]) s.items[i]={label:'',val:'',href:''}; s.items[i][inp.dataset.ctf]=inp.value; onUpdate(s); });
@@ -737,6 +754,9 @@ function bBindEditor(panel, s, onUpdate) {
           if (inp) { inp.value = url; inp.dispatchEvent(new Event('input')); }
         } else if (targetCi !== undefined && targetCf) {
           const inp = panel.querySelector(`[data-ci="${targetCi}"][data-cf="${targetCf}"]`);
+          if (inp) { inp.value = url; inp.dispatchEvent(new Event('input')); }
+        } else if (btn.dataset.targetCii !== undefined && btn.dataset.targetCiij !== undefined) {
+          const inp = panel.querySelector(`[data-cii="${btn.dataset.targetCii}"][data-ciij="${btn.dataset.targetCiij}"]`);
           if (inp) { inp.value = url; inp.dispatchEvent(new Event('input')); }
         }
       });

@@ -9,7 +9,18 @@
           const cols = s.layout==='grid-2'?2:s.layout==='grid-4'?4:3;
           const forSale = items.filter(it=>it.for_sale==='yes').length;
           const countLine = s.show_count!=='no' ? `${items.length} item${items.length===1?'':'s'}${forSale?` · ${forSale} for sale`:''}` : '';
-          const cards = items.map(it=>`<div style="border:1px solid ${pgRgb(accent,.12)};background:${pgRgb(accent,.03)};position:relative;">${it.for_sale==='yes'?`<div style="position:absolute;top:.5rem;right:.5rem;background:${accent};color:${bg};font-size:.55rem;font-weight:400;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .5rem;">For sale${it.price?` · ${pgE(it.price)}`:''}</div>`:''}${it.img?`<img src="${escAttr(it.img)}" alt="${escAttr(it.name||'')}" style="width:100%;height:140px;object-fit:cover;display:block;" />`:`<div style="width:100%;height:140px;background:${pgRgb(accent,.06)};"></div>`}<div style="padding:.7rem .9rem;"><div style="font-weight:300;font-size:.88rem;color:${pgRgb(text,.9)};">${pgE(it.name||'')}</div>${it.note?`<div style="font-size:.7rem;font-weight:200;line-height:1.6;color:${pgRgb(text,.5)};margin-top:.25rem;">${pgE(it.note)}</div>`:''}</div></div>`).join('');
+          const cards = items.map(it=>{
+            const imgs = (it.imgs && it.imgs.length) ? it.imgs.filter(Boolean) : (it.img ? [it.img] : []);
+            const cover = imgs[0] || '';
+            const coverHtml = cover
+              ? `<img class="coll-cover" src="${escAttr(cover)}" alt="${escAttr(it.name||'')}" style="width:100%;height:140px;object-fit:cover;display:block;" />`
+              : `<div style="width:100%;height:140px;background:${pgRgb(accent,.06)};"></div>`;
+            const thumbs = imgs.length>1
+              ? `<div style="display:flex;gap:.3rem;padding:.4rem .4rem 0;overflow-x:auto;">${imgs.map((u,k)=>`<img class="coll-thumb" data-cover="${escAttr(u)}" src="${escAttr(u)}" alt="" style="width:34px;height:34px;object-fit:cover;flex-shrink:0;cursor:pointer;border:1px solid ${pgRgb(accent,.2)};opacity:${k===0?'1':'.55'};" />`).join('')}</div>`
+              : '';
+            const badge = it.for_sale==='yes'?`<div style="position:absolute;top:.5rem;right:.5rem;background:${accent};color:${bg};font-size:.55rem;font-weight:400;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .5rem;z-index:1;">For sale${it.price?` · ${pgE(it.price)}`:''}</div>`:'';
+            return `<div class="coll-card" style="border:1px solid ${pgRgb(accent,.12)};background:${pgRgb(accent,.03)};position:relative;">${badge}${coverHtml}${thumbs}<div style="padding:.7rem .9rem;"><div style="font-weight:300;font-size:.88rem;color:${pgRgb(text,.9)};">${pgE(it.name||'')}</div>${it.note?`<div style="font-size:.7rem;font-weight:200;line-height:1.6;color:${pgRgb(text,.5)};margin-top:.25rem;">${pgE(it.note)}</div>`:''}</div></div>`;
+          }).join('');
           return `<div style="${f}${c}padding:${p};">${s.heading?`<div style="font-weight:300;font-size:1.1rem;letter-spacing:.02em;margin-bottom:.3rem;">${pgE(s.heading)}</div>`:''}${countLine?`<div style="font-size:.7rem;font-weight:200;letter-spacing:.1em;text-transform:uppercase;color:${pgRgb(accent,.6)};margin-bottom:1.4rem;">${countLine}</div>`:''}<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:1.2rem;">${cards}</div></div>`;
         }
         case 'hero': {
@@ -322,6 +333,17 @@
       });
     }
 
+    function initCollGalleries(root) {
+      root.querySelectorAll('.coll-thumb').forEach(t => {
+        t.addEventListener('click', () => {
+          const card = t.closest('.coll-card'); if (!card) return;
+          const cover = card.querySelector('.coll-cover'); if (cover) cover.src = t.dataset.cover;
+          card.querySelectorAll('.coll-thumb').forEach(x => { x.style.opacity = '.55'; });
+          t.style.opacity = '1';
+        });
+      });
+    }
+
     function applyPageBg(state, scene) {
       const bg = state.bg || '#020a03';
       const accent = state.accent || '#4dbd6a';
@@ -365,6 +387,7 @@
         return `<div class="pg-row" style="display:flex;gap:0;">${row.map(s=>`<div${s.anchor?` id="${escAttr(s.anchor)}"`:''} style="flex:1;min-width:0;scroll-margin-top:64px;">${pgRenderSec(s, accent, text, font, bg)}</div>`).join('')}</div>`;
       }).join('');
       initCarousels(scene);
+      initCollGalleries(scene);
       scene.querySelectorAll('a, button').forEach(hookHover);
 
       if (session) {

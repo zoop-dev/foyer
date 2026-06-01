@@ -8,26 +8,24 @@ export async function handleCore(ctx) {
 
   const CREATE_VERSIONS = `CREATE TABLE IF NOT EXISTS versions (
     id  INTEGER PRIMARY KEY CHECK (id = 1),
-    sys TEXT NOT NULL DEFAULT '1',
     ui  TEXT NOT NULL DEFAULT '1'
   )`;
 
   if (route === 'version' && method === 'GET') {
     await env.DB.prepare(CREATE_VERSIONS).run();
-    await env.DB.prepare("INSERT OR IGNORE INTO versions (id, sys, ui) VALUES (1, '1', '1')").run();
-    const row = await env.DB.prepare('SELECT sys, ui FROM versions WHERE id = 1').first().catch(() => null);
-    return respond({ sys_version: row?.sys || '', ui_version: row?.ui || '0' });
+    await env.DB.prepare("INSERT OR IGNORE INTO versions (id, ui) VALUES (1, '1')").run();
+    const row = await env.DB.prepare('SELECT ui FROM versions WHERE id = 1').first().catch(() => null);
+    return respond({ ui_version: row?.ui || '0' });
   }
 
   if (route === 'version' && method === 'PUT') {
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
     await env.DB.prepare(CREATE_VERSIONS).run();
-    await env.DB.prepare("INSERT OR IGNORE INTO versions (id, sys, ui) VALUES (1, '1', '1')").run();
+    await env.DB.prepare("INSERT OR IGNORE INTO versions (id, ui) VALUES (1, '1')").run();
     const b = await request.json().catch(() => ({}));
-    if (b.sys != null) await env.DB.prepare('UPDATE versions SET sys = ? WHERE id = 1').bind(String(b.sys)).run();
-    if (b.ui  != null) await env.DB.prepare('UPDATE versions SET ui = ? WHERE id = 1').bind(String(b.ui)).run();
-    const row = await env.DB.prepare('SELECT sys, ui FROM versions WHERE id = 1').first();
-    return respond({ ok: true, sys_version: row?.sys, ui_version: row?.ui });
+    if (b.ui != null) await env.DB.prepare('UPDATE versions SET ui = ? WHERE id = 1').bind(String(b.ui)).run();
+    const row = await env.DB.prepare('SELECT ui FROM versions WHERE id = 1').first();
+    return respond({ ok: true, ui_version: row?.ui });
   }
 
   if (route === 'me' && method === 'GET') {

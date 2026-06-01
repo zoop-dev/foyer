@@ -49,17 +49,23 @@
           window.foyerFlags = f;
         }).catch(() => {});
 
-      fetch(`${SB}/rest/v1/foyer_announcements?scope=in.(global,${encodeURIComponent(host)})&active=eq.true&select=id,message,level,hide_after,starts_at,ends_at&order=created_at.desc`, { headers: H, cache: 'no-store' })
-        .then(r => r.ok ? r.json() : []).then(rows => {
-          const now = Date.now();
-          const a = (rows || []).find(x => {
-            if (x.starts_at && new Date(x.starts_at).getTime() > now) return false;
-            if (x.ends_at && new Date(x.ends_at).getTime() < now) return false;
-            try { if (localStorage.getItem('foyer_ann_dismissed_' + x.id) === '1') return false; } catch {}
-            return true;
-          });
-          if (a) renderAnnouncement(a);
-        }).catch(() => {});
+
+      const checkAnnouncements = () => {
+        fetch(`${SB}/rest/v1/foyer_announcements?scope=in.(global,${encodeURIComponent(host)})&active=eq.true&select=id,message,level,hide_after,starts_at,ends_at&order=created_at.desc`, { headers: H, cache: 'no-store' })
+          .then(r => r.ok ? r.json() : []).then(rows => {
+            if (document.getElementById('foyer-ann')) return;   // one banner at a time
+            const now = Date.now();
+            const a = (rows || []).find(x => {
+              if (x.starts_at && new Date(x.starts_at).getTime() > now) return false;
+              if (x.ends_at && new Date(x.ends_at).getTime() < now) return false;
+              try { if (localStorage.getItem('foyer_ann_dismissed_' + x.id) === '1') return false; } catch {}
+              return true;
+            });
+            if (a) renderAnnouncement(a);
+          }).catch(() => {});
+      };
+      checkAnnouncements();
+      setInterval(checkAnnouncements, 60000);
 
       let errCount = 0;
       const report = (message, stack) => {

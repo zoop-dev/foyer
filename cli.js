@@ -200,9 +200,7 @@ async function cmdDeploy(target) {
     header(`deploy ${c.br(name)} ${c.dim("→ v" + v)}`);
     const env = acctEnv(cfg);
     await run("build", "node", ["build.js", name]);
-    await run("bump D1 reload signal", "npx", ["wrangler","d1","execute",cfg.cloudflare.d1Name,
-      "--command",`CREATE TABLE IF NOT EXISTS versions (id INTEGER PRIMARY KEY CHECK (id=1), sys TEXT NOT NULL DEFAULT '1', ui TEXT NOT NULL DEFAULT '1');INSERT OR IGNORE INTO versions (id,sys,ui) VALUES (1,'1','1');UPDATE versions SET sys='${v}' WHERE id=1;`,
-      "--remote"], env);
+
     const out = await run("publish to Cloudflare Pages", "npx", ["wrangler","pages","deploy","dist",
       `--project-name=${cfg.cloudflare.project}`,"--branch=production","--commit-dirty=true"], env);
     const url = (out.match(/https:\/\/[a-z0-9]+\.[a-z0-9-]+\.pages\.dev/) || [])[0];
