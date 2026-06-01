@@ -126,8 +126,8 @@ async function fetchAnalytics() {
             : `<button class="v-promote-btn" data-id="${v.id}">Make Admin</button>`) : '')}
         ${v.is_banned
           ? `<button class="v-unban-btn" data-id="${v.id}" data-vi="${i}">Restore</button>`
-          : ((v.role === 'owner' && !isOwner)
-            ? ''   // admins can't ban owners
+          : (v.role === 'owner'
+            ? ''   // owners can't be banned by anyone
             : `<button class="v-ban-btn" data-id="${v.id}" data-vi="${i}">Ban</button>`)}
       </div>
     </div>`).join('');
