@@ -47,6 +47,7 @@ const hexToRgb = (hex) => {
 };
 
 const tokens = {
+  VERSION: String(VERSION),
   NAME: cfg.name,
   SHORT_NAME: cfg.shortName,
   DOMAIN: cfg.domain,
@@ -115,6 +116,11 @@ await templateFile("admin/admin.css");
 
 for (const item of ["functions", "foyer", "offline.html", "_headers", "_redirects", "schema.sql"]) {
   await cp(path.join(root, item), path.join(dist, item), { recursive: true }).catch(() => {});
+}
+
+
+for (const html of ["foyer/index.html", "foyer/changelog/index.html", "foyer/about/index.html", "offline.html"]) {
+  await templateFile(html).catch(() => {});
 }
 await cp(path.join(siteDir, "icons"), path.join(dist, "icons"), { recursive: true });
 
