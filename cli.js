@@ -210,6 +210,8 @@ async function cmdDeploy(target) {
   }
   console.log("\n  " + ok + c.green(c.bold(`  deployed ${list.length} site${list.length>1?"s":""} · v${v}`)) + "\n");
 
+  await sbSetMeta("latest_version", v).then((okv) => console.log("  " + (okv ? ok : c.yellow("!")) + c.dim(okv ? " global sys version → v" + v : " couldn't sync global version") + "\n")).catch(() => {});
+
   await cmdGitea(`deploy v${v}`).catch((e) => console.log("  " + c.yellow("!") + c.dim(" gitea push skipped: " + e.message)));
 }
 
@@ -561,6 +563,25 @@ async function cmdDb(name, ...rest) {
   await passthrough("npx", ["wrangler","d1","execute",cfg.cloudflare.d1Name,"--command",sql,"--remote"], acctEnv(cfg));
 }
 
+async function cmdSetRole(name, email, role) {
+  if (!name || !email || !role) die('usage: foyer setrole <site> <email> <admin|owner|none>');
+  const r = role.toLowerCase();
+  if (!["admin", "owner", "none"].includes(r)) die("role must be " + c.cyan("admin") + ", " + c.cyan("owner") + ", or " + c.cyan("none") + ".");
+  const cfg = await getSite(name);
+  const env = acctEnv(cfg);
+  const addr = email.trim().toLowerCase().replace(/'/g, "''");   // basic SQL-quote escape
+  const dbRole = r === "none" ? "" : r;
+  header(`set role · ${c.br(name)}`);
+
+  const sel = await run("look up visitor", "npx", ["wrangler", "d1", "execute", cfg.cloudflare.d1Name, "--remote", "--json", "--command", `SELECT id FROM visitors WHERE email='${addr}'`], env);
+  let count = 0;
+  try { const m = sel.match(/\[[\s\S]*\]/); if (m) count = (JSON.parse(m[0])[0]?.results || []).length; } catch {}
+  if (!count) die(`no visitor with email '${email}' on ${name} — they must sign in at least once first.`);
+  await run("update role", "npx", ["wrangler", "d1", "execute", cfg.cloudflare.d1Name, "--remote", "--command", `UPDATE visitors SET role='${dbRole}' WHERE email='${addr}'`], env);
+  console.log("    " + ok + " " + c.cyan(email) + c.dim(" → ") + c.bold(dbRole || "none") + c.dim(`  (${count} account${count > 1 ? "s" : ""} · live immediately, no redeploy)`));
+  console.log();
+}
+
 async function cmdVersion(next) {
   const pkgPath = path.join(ROOT, "package.json");
   const pkg = JSON.parse(await readFile(pkgPath, "utf8"));
@@ -568,9 +589,14 @@ async function cmdVersion(next) {
     const n = String(next).replace(/\D/g, "");
     pkg.version = `${n}.0.0`;
     await writeFile(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
-    console.log("\n  " + ok + " version → " + c.bold("v" + n) + c.dim(" (build/deploy to apply)\n"));
+    const pushed = await sbSetMeta("latest_version", n);
+    console.log("\n  " + ok + " version → " + c.bold("v" + n) + c.dim(" (build/deploy to apply)"));
+    console.log("  " + (pushed ? ok : c.yellow("!")) + c.dim(pushed ? " synced global latest_version to Supabase" : " couldn't sync to Supabase (no service key?)") + "\n");
   } else {
-    console.log("\n  " + dot + " Foyer version " + c.bold("v" + pkg.version.split(".")[0]) + "\n");
+    const local = pkg.version.split(".")[0];
+    const global = await sbGetMeta("latest_version");
+    console.log("\n  " + dot + " Foyer version " + c.bold("v" + local) +
+      (global ? c.dim("   · global latest ") + (global === local ? c.green("v" + global) : c.yellow("v" + global)) : "") + "\n");
   }
 }
 
@@ -610,6 +636,22 @@ async function sbServiceKey() {
 }
 const sbH = (key) => ({ apikey: key, authorization: `Bearer ${key}`, "content-type": "application/json" });
 async function toDomain(name) { const a = await sites(); const s = a.find((x) => x.name === name); return s ? s.cfg.domain : name; }
+
+async function sbGetMeta(key) {
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/foyer_meta?key=eq.${encodeURIComponent(key)}&select=value`, { headers: sbH(SB_ANON) });
+    if (r.ok) return (await r.json())[0]?.value ?? null;
+  } catch {}
+  return null;
+}
+async function sbSetMeta(key, value) {
+  const sk = await sbServiceKey();
+  if (!sk) return false;
+  const r = await fetch(`${SB_URL}/rest/v1/foyer_meta?on_conflict=key`,
+    { method: "POST", headers: { ...sbH(sk), Prefer: "resolution=merge-duplicates,return=minimal" },
+      body: JSON.stringify({ key, value: String(value) }) });
+  return r.ok;
+}
 
 async function cmdOffline(name, on, reason) {
   const key = await sbServiceKey();
@@ -682,7 +724,8 @@ async function cmdGitea(msg) {
 }
 
 async function cmdRegistry() {
-  header("site registry");
+  const gv = await sbGetMeta("latest_version");
+  header(`site registry${gv ? c.dim("  · global latest v" + gv) : ""}`);
   console.log();
   const r = await fetch(`${SB_URL}/rest/v1/foyer_sites?select=domain,licensed,offline&order=domain`, { headers: sbH(SB_ANON) });
   if (!r.ok) die("fetch failed (" + r.status + ")");
@@ -745,6 +788,7 @@ function help() {
     ["icons <site> [svg]", "generate the full favicon set from an SVG"],
     ["secret <site> <NAME>", "set a Cloudflare secret"],
     ["db <site> \"<SQL>\"", "run a D1 query (remote)"],
+    ["setrole <site> <email> <role>", "set a visitor's role (admin|owner|none)"],
     ["registry", "list sites in the Foyer control-plane"],
     ["offline <site> [reason]", "take a site offline (+ message)"],
     ["online <site>", "bring a site back online"],
@@ -770,6 +814,7 @@ const table = {
   icons: () => cmdIcons(args[0], args[1]),
   secret: () => cmdSecret(args[0], args[1]),
   db: () => cmdDb(...args),
+  setrole: () => cmdSetRole(args[0], args[1], args[2]),
   offline: () => cmdOffline(args[0], true, args.slice(1).join(" ")),
   online: () => cmdOffline(args[0], false),
   license: () => cmdLicense(args[0], true),

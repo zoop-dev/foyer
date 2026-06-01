@@ -54,9 +54,9 @@
       headers: { apikey: SB_ANON, authorization: `Bearer ${SB_ANON}` }
     }).then(r => r.ok ? r.json() : Promise.reject()).then(rows => {
       if (!rows.length) { el.innerHTML = '<p class="state">Nothing here yet.</p>'; return; }
-      // Order lowest → highest by version number (ignore any leading 'v' / non-digits).
+      // Order newest → oldest by version number (ignore any leading 'v' / non-digits).
       const vnum = e => parseInt(String(e.version || '').replace(/[^0-9]/g, ''), 10) || 0;
-      rows.sort((a, b) => vnum(a) - vnum(b));
+      rows.sort((a, b) => vnum(b) - vnum(a));
       el.innerHTML = rows.map(e => {
         const tag = (e.tag||'feature').toLowerCase();
         const d = e.released_at ? new Date(e.released_at).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}) : '';

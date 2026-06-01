@@ -79,6 +79,17 @@
 
     function startVersionPoll() {
 
+
+      const _SB = 'https://tvtfoghrdqwssdwvebuo.supabase.co';
+      const _K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2dGZvZ2hyZHF3c3Nkd3ZlYnVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMzk2ODksImV4cCI6MjA5NTgxNTY4OX0.n_CRdzQQKYNGDHYmoVxyKafFJCfezKKlSiZddx8MXH4';
+      async function sysVersion() {
+        try {
+          const r = await fetch(`${_SB}/rest/v1/foyer_meta?key=eq.latest_version&select=value`, { headers: { apikey: _K, authorization: 'Bearer ' + _K }, cache: 'no-store' });
+          if (r.ok) return (await r.json())[0]?.value || null;
+        } catch {}
+        return null;
+      }
+
       fetch('/api/version').then(r => r.json()).then(data => {
         if (data?.ui_version && !localStorage.getItem(UI_VERSION_KEY)) {
           localStorage.setItem(UI_VERSION_KEY, data.ui_version);
@@ -87,11 +98,18 @@
 
       const id = setInterval(async () => {
         if (_updateShown || _rateLimited) { clearInterval(id); return; }
+
+
+        const sys = await sysVersion();
+        if (sys && sys !== VERSION) {
+          let tried = null; try { tried = sessionStorage.getItem('foyer_sys_reloaded'); } catch {}
+          if (tried !== sys) { try { sessionStorage.setItem('foyer_sys_reloaded', sys); } catch {} showUpdateOverlay(); return; }
+        }
+
         const r = await fetch('/api/version').catch(() => null);
         if (check429(r)) { clearInterval(id); return; }
         const data = await (r ? r.json().catch(() => null) : null);
         if (!data) return;
-        if (data.sys_version && data.sys_version !== VERSION) { showUpdateOverlay(); return; }
         const storedUi = localStorage.getItem(UI_VERSION_KEY);
         if (data.ui_version && storedUi && data.ui_version !== storedUi) { showUpdateOverlay(data.ui_version); return; }
       }, 10000);

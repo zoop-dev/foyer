@@ -44,15 +44,30 @@ create table if not exists foyer_changelog (
 );
 create index if not exists foyer_changelog_released_idx on foyer_changelog (released_at desc);
 
+-- ── 3. global key/value meta (e.g. the canonical current Foyer version) ──
+create table if not exists foyer_meta (
+  key         text primary key,
+  value       text not null default '',
+  updated_at  timestamptz not null default now()
+);
+drop trigger if exists trg_foyer_meta_touch on foyer_meta;
+create trigger trg_foyer_meta_touch before update on foyer_meta
+  for each row execute function foyer_touch_updated_at();
+
 -- ── Row Level Security ──────────────────────────────────────────
 -- anon key (public, used by sites) can READ only. No write policies are
 -- defined for anon, so inserts/updates/deletes require the service_role
 -- key (server-side / your admin tooling only).
 alter table foyer_sites     enable row level security;
 alter table foyer_changelog enable row level security;
+alter table foyer_meta      enable row level security;
 
 drop policy if exists "anon read sites" on foyer_sites;
 create policy "anon read sites" on foyer_sites
+  for select to anon using (true);
+
+drop policy if exists "anon read meta" on foyer_meta;
+create policy "anon read meta" on foyer_meta
   for select to anon using (true);
 
 drop policy if exists "anon read published changelog" on foyer_changelog;
@@ -64,6 +79,10 @@ insert into foyer_sites (domain, name, cf_project, licensed, offline) values
   ('lanson.org', 'Zachary Lanson',     'lanson', true, false),
   ('burzer.org', 'Max-Emanuel Burzer', 'burzer', true, false)
 on conflict (domain) do nothing;
+
+-- ── seed: global meta ───────────────────────────────────────────
+insert into foyer_meta (key, value) values ('latest_version', '75')
+on conflict (key) do nothing;
 
 -- ── seed: changelog (recent Foyer history) ──────────────────────
 insert into foyer_changelog (version, tag, title, body, released_at) values
