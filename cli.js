@@ -589,9 +589,10 @@ async function cmdVersion(next) {
     const n = String(next).replace(/\D/g, "");
     pkg.version = `${n}.0.0`;
     await writeFile(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
-    const pushed = await sbSetMeta("latest_version", n);
-    console.log("\n  " + ok + " version → " + c.bold("v" + n) + c.dim(" (build/deploy to apply)"));
-    console.log("  " + (pushed ? ok : c.yellow("!")) + c.dim(pushed ? " synced global latest_version to Supabase" : " couldn't sync to Supabase (no service key?)") + "\n");
+
+
+
+    console.log("\n  " + ok + " version → " + c.bold("v" + n) + c.dim("  (deploy to ship it — the global sys version updates on deploy)") + "\n");
   } else {
     const local = pkg.version.split(".")[0];
     const global = await sbGetMeta("latest_version");
@@ -723,15 +724,111 @@ async function cmdGitea(msg) {
   console.log("\n  " + ok + c.green(c.bold("  pushed to Gitea")) + c.dim(` · ${message}`) + "\n");
 }
 
+function timeAgo(ts) {
+  if (!ts) return "never";
+  const s = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
+  if (s < 60) return s + "s ago";
+  const m = Math.floor(s / 60); if (m < 60) return m + "m ago";
+  const h = Math.floor(m / 60); if (h < 24) return h + "h ago";
+  return Math.floor(h / 24) + "d ago";
+}
 async function cmdRegistry() {
   const gv = await sbGetMeta("latest_version");
   header(`site registry${gv ? c.dim("  · global latest v" + gv) : ""}`);
   console.log();
-  const r = await fetch(`${SB_URL}/rest/v1/foyer_sites?select=domain,licensed,offline&order=domain`, { headers: sbH(SB_ANON) });
-  if (!r.ok) die("fetch failed (" + r.status + ")");
-  for (const s of await r.json())
-    console.log("    " + (s.offline ? c.yellow("●") : ok) + " " + c.bold(s.domain.padEnd(20)) +
-      (s.licensed ? c.green("licensed") : c.red("unlicensed")) + (s.offline ? c.yellow("  · offline") : ""));
+  const [sr, hr] = await Promise.all([
+    fetch(`${SB_URL}/rest/v1/foyer_sites?select=domain,licensed,offline&order=domain`, { headers: sbH(SB_ANON) }),
+    fetch(`${SB_URL}/rest/v1/foyer_heartbeats?select=domain,live_version,last_seen`, { headers: sbH(SB_ANON) }),
+  ]);
+  if (!sr.ok) die("fetch failed (" + sr.status + ")");
+  const hb = {}; if (hr.ok) (await hr.json()).forEach((h) => { hb[h.domain] = h; });
+  for (const s of await sr.json()) {
+    const h = hb[s.domain];
+    const live = h && (Date.now() - new Date(h.last_seen).getTime() < 10 * 60 * 1000);   // seen <10min ago
+    const dot = s.offline ? c.yellow("●") : (live ? c.green("●") : c.grey("○"));
+    const ver = h?.live_version ? (gv && h.live_version !== gv ? c.yellow("v" + h.live_version + " behind") : c.green("v" + h.live_version)) : c.dim("—");
+    console.log("    " + dot + " " + c.bold(s.domain.padEnd(18)) +
+      (s.licensed ? c.green("licensed") : c.red("unlicensed")) +
+      (s.offline ? c.yellow(" · offline") : "") +
+      "  " + ver + c.dim("  · " + timeAgo(h?.last_seen)));
+  }
+  console.log();
+}
+
+async function cmdAnnounce(scope, ...argv) {
+  const key = await sbServiceKey();
+  if (!key) die("needs the service key in " + c.cyan(".foyer.env") + ".");
+  if (!scope) die('usage: foyer announce <site|all> "<message>" [--warn] [--hide <sec>] [--ends <iso>]  ·  or: clear | list');
+  const target = scope === "all" ? "global" : await toDomain(scope);
+  const sub = argv[0];
+
+  if (sub === "list" || sub === "ls") {
+    header(`announcements · ${c.br(target)}`);
+    const r = await fetch(`${SB_URL}/rest/v1/foyer_announcements?scope=eq.${encodeURIComponent(target)}&order=created_at.desc&select=message,level,active,hide_after,ends_at`, { headers: sbH(key) });
+    const rows = r.ok ? await r.json() : [];
+    if (!rows.length) console.log("    " + c.dim("(none)"));
+    for (const a of rows) console.log("    " + (a.active ? c.green("●") : c.grey("○")) + " " + (a.level === "warn" ? c.yellow("[warn]") : c.dim("[info]")) + " " + a.message + (a.ends_at ? c.dim("  ends " + a.ends_at) : ""));
+    console.log(); return;
+  }
+  if (sub === "clear" || sub === "off") {
+    header(`clear announcements · ${c.br(target)}`);
+    const r = await fetch(`${SB_URL}/rest/v1/foyer_announcements?scope=eq.${encodeURIComponent(target)}`, { method: "PATCH", headers: { ...sbH(key), Prefer: "return=minimal" }, body: JSON.stringify({ active: false }) });
+    console.log("    " + (r.ok ? ok : bad) + (r.ok ? " cleared active announcements" : " failed") + "\n"); return;
+  }
+
+  const flags = {}; const words = [];
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === "--warn") flags.level = "warn";
+    else if (a === "--hide") flags.hide_after = parseInt(argv[++i]) || 0;
+    else if (a === "--ends") flags.ends_at = argv[++i];
+    else words.push(a);
+  }
+  const message = words.join(" ").trim();
+  if (!message) die('a message is required: foyer announce <site|all> "<message>"');
+  header(`announce · ${c.br(target)}`);
+  const rec = { scope: target, message, level: flags.level || "info", active: true, hide_after: flags.hide_after || 0, ...(flags.ends_at ? { ends_at: flags.ends_at } : {}) };
+  const r = await fetch(`${SB_URL}/rest/v1/foyer_announcements`, { method: "POST", headers: { ...sbH(key), Prefer: "return=minimal" }, body: JSON.stringify(rec) });
+  if (!r.ok) { console.log(c.dim("      " + await r.text())); die("insert failed (" + r.status + ")"); }
+  console.log("    " + ok + " banner live on " + c.bold(target === "global" ? "all sites" : target) + (flags.level === "warn" ? c.yellow("  [warn]") : "") + (flags.hide_after ? c.dim(`  · auto-hides after ${flags.hide_after}s`) : "") + c.dim("  (clients pick it up within ~a load)"));
+  console.log();
+}
+
+async function cmdFlag(scope, fkey, value) {
+  const key = await sbServiceKey();
+  if (!key) die("needs the service key in " + c.cyan(".foyer.env") + ".");
+  if (!scope || !fkey) die("usage: foyer flag <site|all> <key> <on|off|value>");
+  const target = scope === "all" ? "global" : await toDomain(scope);
+  const val = value == null ? "on" : (value === "on" || value === "off" ? value : value);
+  header(`flag · ${c.br(target)}`);
+  const r = await fetch(`${SB_URL}/rest/v1/foyer_flags?on_conflict=scope,key`, { method: "POST", headers: { ...sbH(key), Prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify({ scope: target, key: fkey, value: String(val) }) });
+  if (!r.ok) { console.log(c.dim("      " + await r.text())); die("update failed (" + r.status + ")"); }
+  console.log("    " + ok + " " + c.bold(fkey) + c.dim(" = ") + c.cyan(String(val)) + c.dim(" on " + (target === "global" ? "all sites" : target)) + "\n");
+}
+async function cmdFlags(scope) {
+  const target = !scope || scope === "all" ? "global" : await toDomain(scope);
+  header(`flags · ${c.br(target)}`);
+  const r = await fetch(`${SB_URL}/rest/v1/foyer_flags?scope=eq.${encodeURIComponent(target)}&order=key&select=key,value`, { headers: sbH(SB_ANON) });
+  const rows = r.ok ? await r.json() : [];
+  if (!rows.length) console.log("    " + c.dim("(none)"));
+  for (const f of rows) console.log("    " + dot + " " + c.bold(f.key.padEnd(20)) + c.cyan(f.value));
+  console.log();
+}
+
+async function cmdErrors(scope, limit) {
+  const key = await sbServiceKey();   // reading errors requires service_role (anon is insert-only)
+  if (!key) die("needs the service key in " + c.cyan(".foyer.env") + ".");
+  const n = parseInt(limit) || 20;
+  let q = `order=created_at.desc&limit=${n}&select=domain,message,url,created_at`;
+  if (scope && scope !== "all") q = `domain=eq.${encodeURIComponent(await toDomain(scope))}&` + q;
+  header(`error reports${scope && scope !== "all" ? " · " + c.br(scope) : ""}`);
+  console.log();
+  const r = await fetch(`${SB_URL}/rest/v1/foyer_errors?${q}`, { headers: sbH(key) });
+  if (!r.ok) { console.log(c.dim("      " + await r.text())); die("fetch failed (" + r.status + ")"); }
+  const rows = await r.json();
+  if (!rows.length) { console.log("    " + c.dim("no errors reported 🎉") + "\n"); return; }
+  for (const e of rows)
+    console.log("    " + c.red("•") + " " + c.dim(timeAgo(e.created_at).padStart(7)) + "  " + c.grey((e.domain || "").padEnd(14)) + e.message + c.dim("  " + (e.url || "")));
   console.log();
 }
 const CHANGELOG_TAGS = ["feature", "fix", "release", "improvement"];
@@ -789,7 +886,11 @@ function help() {
     ["secret <site> <NAME>", "set a Cloudflare secret"],
     ["db <site> \"<SQL>\"", "run a D1 query (remote)"],
     ["setrole <site> <email> <role>", "set a visitor's role (admin|owner|none)"],
-    ["registry", "list sites in the Foyer control-plane"],
+    ["registry", "list sites: live status, version, last-seen"],
+    ["announce <site|all> <msg>", "push a banner (--warn, --hide <s>, --ends <iso>); clear|list"],
+    ["flag <site|all> <key> <val>", "set a feature flag (on|off|value)"],
+    ["flags <site|all>", "list feature flags"],
+    ["errors <site|all> [n]", "show recent client error reports"],
     ["offline <site> [reason]", "take a site offline (+ message)"],
     ["online <site>", "bring a site back online"],
     ["license <site>", "license a site to run Foyer"],
@@ -822,6 +923,10 @@ const table = {
   bypass: () => cmdBypass(args[0], args[1], args.slice(2).join(" ")),
   gitea: () => cmdGitea(args.join(" ")),
   registry: () => cmdRegistry(),
+  announce: () => cmdAnnounce(args[0], ...args.slice(1)),
+  flag: () => cmdFlag(args[0], args[1], args[2]),
+  flags: () => cmdFlags(args[0]),
+  errors: () => cmdErrors(args[0], args[1]),
   changelog: () => cmdChangelog(...args),
   version: () => cmdVersion(args[0]),
   help: () => help(), "--help": () => help(), "-h": () => help(),

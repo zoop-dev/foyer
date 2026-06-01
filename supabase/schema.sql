@@ -54,13 +54,59 @@ drop trigger if exists trg_foyer_meta_touch on foyer_meta;
 create trigger trg_foyer_meta_touch before update on foyer_meta
   for each row execute function foyer_touch_updated_at();
 
+-- ── 4. heartbeat / telemetry (sites upsert their live version on load) ──
+create table if not exists foyer_heartbeats (
+  domain        text primary key,
+  live_version  text not null default '',
+  last_seen     timestamptz not null default now()
+);
+
+-- ── 5. announcements (live banners pushed to one or all sites) ──
+create table if not exists foyer_announcements (
+  id          uuid primary key default gen_random_uuid(),
+  scope       text not null default 'global',       -- 'global' or a specific domain
+  message     text not null,
+  level       text not null default 'info',          -- info | warn
+  active      boolean not null default true,
+  hide_after  integer not null default 0,            -- auto-hide N seconds after shown (0 = until dismissed/expiry)
+  starts_at   timestamptz,                           -- null = immediately
+  ends_at     timestamptz,                           -- null = no expiry
+  created_at  timestamptz not null default now()
+);
+create index if not exists foyer_ann_scope_idx on foyer_announcements (scope, active);
+
+-- ── 6. feature flags (per-site or global, toggled live) ──
+create table if not exists foyer_flags (
+  scope       text not null default 'global',        -- 'global' or a specific domain
+  key         text not null,
+  value       text not null default 'on',
+  updated_at  timestamptz not null default now(),
+  primary key (scope, key)
+);
+
+-- ── 7. client error reports (sites POST uncaught errors) ──
+create table if not exists foyer_errors (
+  id          uuid primary key default gen_random_uuid(),
+  domain      text not null default '',
+  message     text not null default '',
+  stack       text not null default '',
+  url         text not null default '',
+  ua          text not null default '',
+  created_at  timestamptz not null default now()
+);
+create index if not exists foyer_errors_domain_idx on foyer_errors (domain, created_at desc);
+
 -- ── Row Level Security ──────────────────────────────────────────
 -- anon key (public, used by sites) can READ only. No write policies are
 -- defined for anon, so inserts/updates/deletes require the service_role
 -- key (server-side / your admin tooling only).
-alter table foyer_sites     enable row level security;
-alter table foyer_changelog enable row level security;
-alter table foyer_meta      enable row level security;
+alter table foyer_sites         enable row level security;
+alter table foyer_changelog     enable row level security;
+alter table foyer_meta          enable row level security;
+alter table foyer_heartbeats    enable row level security;
+alter table foyer_announcements enable row level security;
+alter table foyer_flags         enable row level security;
+alter table foyer_errors        enable row level security;
 
 drop policy if exists "anon read sites" on foyer_sites;
 create policy "anon read sites" on foyer_sites
@@ -73,6 +119,25 @@ create policy "anon read meta" on foyer_meta
 drop policy if exists "anon read published changelog" on foyer_changelog;
 create policy "anon read published changelog" on foyer_changelog
   for select to anon using (published = true);
+
+-- Heartbeats: anon may read and upsert (sites report their own status). Low-stakes telemetry.
+drop policy if exists "anon read heartbeats"   on foyer_heartbeats;
+drop policy if exists "anon insert heartbeats" on foyer_heartbeats;
+drop policy if exists "anon update heartbeats" on foyer_heartbeats;
+create policy "anon read heartbeats"   on foyer_heartbeats for select to anon using (true);
+create policy "anon insert heartbeats" on foyer_heartbeats for insert to anon with check (true);
+create policy "anon update heartbeats" on foyer_heartbeats for update to anon using (true) with check (true);
+
+-- Announcements & flags: anon read-only (writes via service_role / CLI).
+drop policy if exists "anon read announcements" on foyer_announcements;
+create policy "anon read announcements" on foyer_announcements
+  for select to anon using (active = true);
+drop policy if exists "anon read flags" on foyer_flags;
+create policy "anon read flags" on foyer_flags for select to anon using (true);
+
+-- Errors: anon may INSERT (report) only; reading requires service_role (CLI).
+drop policy if exists "anon insert errors" on foyer_errors;
+create policy "anon insert errors" on foyer_errors for insert to anon with check (true);
 
 -- ── seed: current Foyer sites ───────────────────────────────────
 insert into foyer_sites (domain, name, cf_project, licensed, offline) values

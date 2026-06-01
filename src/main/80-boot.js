@@ -31,6 +31,74 @@
       }
     }
 
+    function foyerControlPlane() {
+      const SB = 'https://tvtfoghrdqwssdwvebuo.supabase.co';
+      const K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2dGZvZ2hyZHF3c3Nkd3ZlYnVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMzk2ODksImV4cCI6MjA5NTgxNTY4OX0.n_CRdzQQKYNGDHYmoVxyKafFJCfezKKlSiZddx8MXH4';
+      const H = { apikey: K, authorization: 'Bearer ' + K };
+      const host = location.hostname;
+
+      fetch(`${SB}/rest/v1/foyer_heartbeats?on_conflict=domain`, {
+        method: 'POST',
+        headers: { ...H, 'content-type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify({ domain: host, live_version: VERSION, last_seen: new Date().toISOString() }),
+      }).catch(() => {});
+
+      fetch(`${SB}/rest/v1/foyer_flags?scope=in.(global,${encodeURIComponent(host)})&select=key,value`, { headers: H, cache: 'no-store' })
+        .then(r => r.ok ? r.json() : []).then(rows => {
+          const f = {}; (rows || []).forEach(r => { f[r.key] = r.value; });
+          window.foyerFlags = f;
+        }).catch(() => {});
+
+      fetch(`${SB}/rest/v1/foyer_announcements?scope=in.(global,${encodeURIComponent(host)})&active=eq.true&select=id,message,level,hide_after,starts_at,ends_at&order=created_at.desc`, { headers: H, cache: 'no-store' })
+        .then(r => r.ok ? r.json() : []).then(rows => {
+          const now = Date.now();
+          const a = (rows || []).find(x => {
+            if (x.starts_at && new Date(x.starts_at).getTime() > now) return false;
+            if (x.ends_at && new Date(x.ends_at).getTime() < now) return false;
+            try { if (localStorage.getItem('foyer_ann_dismissed_' + x.id) === '1') return false; } catch {}
+            return true;
+          });
+          if (a) renderAnnouncement(a);
+        }).catch(() => {});
+
+      let errCount = 0;
+      const report = (message, stack) => {
+        if (errCount >= 5) return; errCount++;
+        fetch(`${SB}/rest/v1/foyer_errors`, {
+          method: 'POST', headers: { ...H, 'content-type': 'application/json', Prefer: 'return=minimal' },
+          body: JSON.stringify({ domain: host, message: String(message || '').slice(0, 500), stack: String(stack || '').slice(0, 2000), url: location.href.slice(0, 300), ua: navigator.userAgent.slice(0, 300) }),
+        }).catch(() => {});
+      };
+      window.addEventListener('error', e => report(e.message, e.error && e.error.stack));
+      window.addEventListener('unhandledrejection', e => report('unhandledrejection: ' + ((e.reason && e.reason.message) || e.reason), e.reason && e.reason.stack));
+    }
+
+    function renderAnnouncement(a) {
+      if (document.getElementById('foyer-ann')) return;
+      const warn = a.level === 'warn';
+      const bar = document.createElement('div');
+      bar.id = 'foyer-ann';
+      bar.style.cssText = [
+        'position:fixed;top:0;left:0;right:0;z-index:9990;',
+        'display:flex;align-items:center;justify-content:center;gap:1rem;',
+        'padding:.6rem 2.6rem;font-family:\'Josefin Sans\',sans-serif;',
+        'font-weight:200;font-size:.72rem;letter-spacing:.04em;line-height:1.5;text-align:center;',
+        `background:${warn ? 'rgba(230,170,60,.16)' : 'rgba(var(--site-accent-rgb),.14)'};`,
+        `color:rgba(220,245,225,.92);border-bottom:1px solid ${warn ? 'rgba(230,170,60,.4)' : 'rgba(var(--site-accent-rgb),.3)'};`,
+        'backdrop-filter:blur(8px);transition:transform .4s cubic-bezier(.16,1,.3,1),opacity .4s ease;transform:translateY(-100%);',
+      ].join('');
+      const span = document.createElement('span'); span.textContent = a.message; bar.appendChild(span);
+      const x = document.createElement('button');
+      x.textContent = '×'; x.setAttribute('aria-label', 'Dismiss');
+      x.style.cssText = 'position:absolute;right:.9rem;top:50%;transform:translateY(-50%);background:none;border:none;color:inherit;font-size:1.15rem;cursor:pointer;opacity:.6;line-height:1;';
+      const dismiss = () => { bar.style.transform = 'translateY(-100%)'; bar.style.opacity = '0'; setTimeout(() => bar.remove(), 440); };
+      x.addEventListener('click', () => { try { localStorage.setItem('foyer_ann_dismissed_' + a.id, '1'); } catch {} dismiss(); });
+      bar.appendChild(x);
+      document.body.appendChild(bar);
+      requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.transform = 'translateY(0)'; }));
+      if (a.hide_after && a.hide_after > 0) setTimeout(dismiss, a.hide_after * 1000);
+    }
+
     (async function boot() {
 
       try {
@@ -67,6 +135,8 @@
 
         setInterval(async () => { if (await _foyerOffline()) location.replace('/offline'); }, 60000);
       }
+
+      try { foyerControlPlane(); } catch {}
 
       const [cfg, settings] = await Promise.all([
         fetch('/api/config').then(r => r.json()).catch(() => ({})),
