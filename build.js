@@ -38,6 +38,8 @@ const SITE = {
 
 
   publicAccess: cfg.publicAccess === true,
+
+  captcha: (cfg.captcha || "").toLowerCase(),
 };
 const define = {
   __VERSION__: JSON.stringify(VERSION),

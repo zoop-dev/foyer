@@ -1,5 +1,6 @@
 
-import { isLicensedClient, sessionUser, findUser, createUser, verifyPassword, hashPassword, issueCode, createSession, sessionCookie, touchLogin, loginPage } from './_lib.js';
+import { isLicensedClient, sessionUser, findUser, createUser, verifyPassword, hashPassword, issueCode, createSession, sessionCookie, touchLogin, loginPage, consentPage } from './_lib.js';
+const htmlRes = (body, status = 200) => new Response(body, { status, headers: { 'content-type': 'text/html;charset=utf-8' } });
 
 function paramsFrom(get) {
   return {
@@ -41,9 +42,10 @@ export async function onRequestGet({ request, env }) {
   const deny = await denyClient(env, p, url.origin);
   if (deny) return errPage(deny);
   const user = await sessionUser(env, request);
-  if (user) return redirectWithCode(env, user, p);            // SSO — already signed into Foyer
+  const switching = url.searchParams.get('switch') === '1';
+  if (user && !switching) return htmlRes(consentPage({ clientDomain: p.client_id, user, params: p }));  // SSO → consent screen
   const mode = url.searchParams.get('mode') === 'signup' ? 'signup' : 'login';
-  return new Response(loginPage({ clientDomain: p.client_id, params: p, mode }), { headers: { 'content-type': 'text/html;charset=utf-8' } });
+  return htmlRes(loginPage({ clientDomain: p.client_id, params: p, mode }));
 }
 
 export async function onRequestPost({ request, env }) {
@@ -51,6 +53,13 @@ export async function onRequestPost({ request, env }) {
   const p = paramsFrom((k) => form.get(k));
   const deny = await denyClient(env, p, new URL(request.url).origin);
   if (deny) return errPage(deny);
+
+  if (form.get('action') === 'consent') {
+    const u = await sessionUser(env, request);
+    if (!u) return htmlRes(loginPage({ clientDomain: p.client_id, params: p, mode: 'login', error: 'Your session expired — please sign in again.' }));
+    await touchLogin(env, u.id);
+    return redirectWithCode(env, u, p);
+  }
   const action = form.get('action') === 'signup' ? 'signup' : 'login';
   const email = String(form.get('email') || '').trim();
   const password = String(form.get('password') || '');

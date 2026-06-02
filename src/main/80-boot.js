@@ -169,7 +169,16 @@
       _bootClientId   = clientId;
       _bootGithubId   = githubId;
       _bootDiscordId  = discordId;
-      _bootTurnstile  = cfg.turnstile_site_key || '';
+
+      {
+        const _pref = (__SITE__.captcha || '').toLowerCase();
+        const _ts = cfg.turnstile_site_key || '', _rc = cfg.recaptcha_site_key || '';
+        if (_pref === 'recaptcha' && _rc) _bootCaptcha = { provider: 'recaptcha', key: _rc };
+        else if (_pref === 'turnstile' && _ts) _bootCaptcha = { provider: 'turnstile', key: _ts };
+        else if (!_pref && _ts) _bootCaptcha = { provider: 'turnstile', key: _ts };       // auto: turnstile if set
+        else if (!_pref && _rc) _bootCaptcha = { provider: 'recaptcha', key: _rc };        // else recaptcha if set
+        else _bootCaptcha = { provider: '', key: '' };
+      }
       startVersionPoll();
 
       if (settings.theme_bg || settings.theme_accent || settings.theme_text) {

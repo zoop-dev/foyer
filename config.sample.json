@@ -32,6 +32,9 @@
   "publicAccess":         false,
   "// publicAccess":      "Set true to permanently open the site (no OAuth/magic-link gate), regardless of the admin 'site public' toggle. Enforced client-side (boot) and server-side (FOYER_PUBLIC var in wrangler.toml). Omit or false to keep the gate.",
 
+  "captcha":              "turnstile",
+  "// captcha":           "Gate bot-check provider: 'turnstile' (Cloudflare) or 'recaptcha' (Google v2 checkbox). Set the matching site key as a Cloudflare secret — TURNSTILE_SITE_KEY or RECAPTCHA_SITE_KEY. Omit/blank = auto (use whichever key is set).",
+
   "cloudflare": {
     "accountId":          "your-cloudflare-account-id",
     "project":            "your-pages-project-name",

@@ -40,24 +40,16 @@
       gate.style.pointerEvents = 'auto';
 
 
-      if (_bootTurnstile) {
-        const renderTs = () => {
-          try {
-            window.turnstile.render('#turnstile-embed', {
-              sitekey: _bootTurnstile, theme: 'dark',
-              callback: () => unlockGateBtns(settings),
-              'error-callback': () => { const e = document.getElementById('gate-err'); if (e) e.textContent = 'Bot check failed — refresh to retry.'; },
-            });
-          } catch { unlockGateBtns(settings); }
-        };
+      const _capErr = () => { const e = document.getElementById('gate-err'); if (e) e.textContent = 'Bot check failed — refresh to retry.'; };
+      const _embed = document.getElementById('captcha-embed');
+      if (_bootCaptcha.provider === 'turnstile' && _bootCaptcha.key) {
+        const renderTs = () => { try { window.turnstile.render(_embed, { sitekey: _bootCaptcha.key, theme: 'dark', callback: () => unlockGateBtns(settings), 'error-callback': _capErr }); } catch { unlockGateBtns(settings); } };
         if (window.turnstile) renderTs();
-        else {
-          const ts = document.createElement('script');
-          ts.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
-          ts.async = true; ts.defer = true;
-          ts.onload = renderTs; ts.onerror = () => unlockGateBtns(settings);
-          document.head.appendChild(ts);
-        }
+        else { const ts = document.createElement('script'); ts.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'; ts.async = true; ts.defer = true; ts.onload = renderTs; ts.onerror = () => unlockGateBtns(settings); document.head.appendChild(ts); }
+      } else if (_bootCaptcha.provider === 'recaptcha' && _bootCaptcha.key) {
+        const renderRc = () => { try { window.grecaptcha.render(_embed, { sitekey: _bootCaptcha.key, theme: 'dark', callback: () => unlockGateBtns(settings), 'error-callback': _capErr }); } catch { unlockGateBtns(settings); } };
+        if (window.grecaptcha && window.grecaptcha.render) renderRc();
+        else { const rc = document.createElement('script'); rc.src = 'https://www.google.com/recaptcha/api.js?render=explicit'; rc.async = true; rc.defer = true; rc.onload = () => { if (window.grecaptcha && window.grecaptcha.render) renderRc(); else if (window.grecaptcha && window.grecaptcha.ready) window.grecaptcha.ready(renderRc); else unlockGateBtns(settings); }; rc.onerror = () => unlockGateBtns(settings); document.head.appendChild(rc); }
       } else {
         unlockGateBtns(settings);
       }
@@ -107,7 +99,7 @@
     }
 
     let _bootClientId  = '';
-    let _bootTurnstile = '';
+    let _bootCaptcha = { provider: '', key: '' };
     let _bootGithubId  = '';
     let _bootDiscordId = '';
 

@@ -159,3 +159,41 @@ function qs(params, mode) {
   u.set('mode', mode);
   return u.toString();
 }
+
+export function consentPage({ clientDomain, user, params }) {
+  const hidden = ['client_id', 'redirect_uri', 'state', 'code_challenge', 'code_challenge_method']
+    .map(k => `<input type="hidden" name="${k}" value="${esc(params[k] || '')}" />`).join('');
+  const switchUrl = '?' + qs(params, 'login') + '&switch=1';
+  const initial = esc((user.name || user.email || '?').charAt(0).toUpperCase());
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Continue with Foyer</title><meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200;300&family=Josefin+Sans:wght@100;200;300&display=swap" />
+<style>:root{--bg:#0b0e13;--ink:#e8edf2;--muted:#8b94a6;--accent:#7fa6d8}*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:'Josefin Sans',system-ui,sans-serif;font-weight:200;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;-webkit-font-smoothing:antialiased}
+.glow{position:fixed;inset:-30% -10% auto;height:70vh;background:radial-gradient(ellipse 50% 60% at 50% 0%,rgba(127,166,216,.10),transparent 70%);pointer-events:none}
+.card{position:relative;width:100%;max-width:370px;text-align:center}
+.mark{width:52px;margin:0 auto 1.4rem;display:block}
+h1{font-family:'Unbounded',sans-serif;font-weight:200;font-size:1.2rem;letter-spacing:.02em;margin-bottom:.4rem}
+h1 b{color:var(--accent);font-weight:300}
+.sub{font-size:.62rem;letter-spacing:.32em;text-transform:uppercase;color:var(--accent);margin-bottom:1.8rem;font-weight:300}
+.acct{display:flex;align-items:center;gap:.8rem;text-align:left;border:1px solid rgba(170,190,215,.18);border-radius:11px;padding:.8rem 1rem;margin-bottom:1.6rem;background:rgba(127,166,216,.05)}
+.av{width:38px;height:38px;border-radius:50%;background:var(--accent);color:#070a0e;display:flex;align-items:center;justify-content:center;font-weight:400;font-size:1rem;flex-shrink:0}
+.acct .nm{font-weight:300;font-size:.85rem;color:var(--ink)}
+.acct .em{font-weight:200;font-size:.68rem;color:var(--muted);margin-top:.12rem}
+.row{display:flex;gap:.6rem}
+button{flex:1;font-family:inherit;font-weight:300;font-size:.64rem;letter-spacing:.2em;text-transform:uppercase;padding:.8rem;border-radius:9px;cursor:pointer}
+button.go{background:var(--accent);color:#070a0e;border:none}button.go:hover{filter:brightness(1.08)}
+button.cancel{background:transparent;color:rgba(232,237,242,.7);border:1px solid rgba(170,190,215,.2)}button.cancel:hover{border-color:var(--accent)}
+.alt{margin-top:1.4rem;font-size:.66rem;color:var(--muted)}.alt a{color:var(--accent);text-decoration:none}
+.foot{margin-top:2.2rem;font-size:.55rem;letter-spacing:.1em;color:rgba(139,148,166,.5)}</style></head>
+<body><div class="glow"></div><div class="card">
+<svg class="mark" viewBox="0 0 44 50" fill="none" stroke="var(--accent)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg>
+<h1>Continue to <b>${esc(clientDomain)}</b></h1>
+<p class="sub">with your Foyer account</p>
+<div class="acct"><div class="av">${initial}</div><div><div class="nm">${esc(user.name || user.email)}</div><div class="em">${esc(user.email)}</div></div></div>
+<form method="POST" action="/authorize">${hidden}<input type="hidden" name="action" value="consent" />
+<div class="row"><button type="button" class="cancel" onclick="try{window.close()}catch(e){}">Cancel</button><button type="submit" class="go">Continue</button></div></form>
+<p class="alt">Not you? <a href="${esc(switchUrl)}">Use another account</a></p>
+<p class="foot">FOYER · zo0p.dev</p></div></body></html>`;
+}
