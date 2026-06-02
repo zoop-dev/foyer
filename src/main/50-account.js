@@ -53,6 +53,16 @@
             </label>
           </div>
 
+          <div class="acct-sec" id="acctFoyerSec" style="display:none;">
+            <div class="acct-sec-head"><span>User settings <span style="opacity:.45;font-weight:200;">· powered by Foyer</span></span></div>
+            <label class="acct-pref"><span>Display name</span><input type="text" id="acctFoyerName" placeholder="Your name" style="background:rgba(255,255,255,.05);border:1px solid rgba(var(--site-accent-rgb),.2);color:inherit;font:inherit;font-size:.8rem;padding:.4rem .6rem;border-radius:6px;width:165px;outline:none;" /></label>
+            <label class="acct-pref"><span>Avatar URL</span><input type="url" id="acctFoyerAvatar" placeholder="https://…" style="background:rgba(255,255,255,.05);border:1px solid rgba(var(--site-accent-rgb),.2);color:inherit;font:inherit;font-size:.8rem;padding:.4rem .6rem;border-radius:6px;width:165px;outline:none;" /></label>
+            <div style="display:flex;align-items:center;gap:.7rem;margin-top:.55rem;">
+              <button type="button" class="acct-link" id="acctFoyerSave">Save changes</button>
+              <span id="acctFoyerMsg" style="font-size:.66rem;color:rgba(var(--site-muted-rgb),.65);"></span>
+            </div>
+          </div>
+
           <div class="acct-sec">
             <div class="acct-sec-head">
               <span>Active sessions</span>
@@ -78,6 +88,22 @@
         await serverSignOut(getSession());
         localStorage.removeItem(SESSION_KEY);
         location.reload();
+      });
+
+      modal.querySelector('#acctFoyerSave').addEventListener('click', async (e) => {
+        const b = e.currentTarget, msg = document.getElementById('acctFoyerMsg');
+        if (!window.Foyer) { msg.textContent = 'Foyer not loaded.'; return; }
+        b.disabled = true; msg.textContent = 'Saving…';
+        const res = await window.Foyer.updateProfile({
+          name: document.getElementById('acctFoyerName').value.trim(),
+          avatar: document.getElementById('acctFoyerAvatar').value.trim(),
+        }).catch(() => null);
+        b.disabled = false;
+        if (res && res.ok) {
+          msg.textContent = 'Saved ✓';
+          document.getElementById('acctName').textContent = res.name || document.getElementById('acctName').textContent;
+          const a = document.getElementById('acctAvatar'); if (res.avatar) { a.src = res.avatar; a.style.display = ''; }
+        } else { msg.textContent = (res && res.error) || 'Could not save.'; }
       });
 
       modal.querySelector('#acctRevokeOthers').addEventListener('click', async (e) => {
@@ -153,6 +179,15 @@
           `Member since ${relTime(acc.first_seen)} · ${acc.visit_count} visit${acc.visit_count===1?'':'s'}`;
         const adminBtn = document.getElementById('acctAdmin');
         if (acc.role === 'owner' || acc.role === 'admin') { adminBtn.style.display = ''; hookHover(adminBtn); }
+
+        if (acc.provider === 'foyer' && window.Foyer) {
+          document.getElementById('acctFoyerSec').style.display = '';
+          document.getElementById('acctFoyerMsg').textContent = '';
+          window.Foyer.getProfile().then((p) => {
+            document.getElementById('acctFoyerName').value = (p && p.name) || (acc.name !== acc.email.split('@')[0] ? acc.name : '') || '';
+            document.getElementById('acctFoyerAvatar').value = (p && p.avatar) || acc.picture || '';
+          });
+        }
       }
       loadAccountSessions();
     }

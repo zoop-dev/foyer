@@ -114,6 +114,32 @@ export async function sessionUser(env, request) {
   return u.ok ? (await u.json())[0] || null : null;
 }
 
+async function opsSign(env, payload) {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(env.FOYER_OPS_PASSWORD || 'x'), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return b64url(new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload))));
+}
+export async function opsCookie(env, days = 7) {
+  const exp = String(Date.now() + days * 864e5);
+  return `foyer_ops=${exp}.${await opsSign(env, exp)}; Path=/dashboard; HttpOnly; Secure; SameSite=Lax; Max-Age=${days * 86400}`;
+}
+export function opsClear() { return `foyer_ops=; Path=/dashboard; HttpOnly; Secure; SameSite=Lax; Max-Age=0`; }
+export async function opsValid(env, request) {
+  if (!env.FOYER_OPS_PASSWORD) return false;
+  const m = (request.headers.get('cookie') || '').match(/(?:^|; )foyer_ops=([^;]+)/);
+  if (!m) return false;
+  const [exp, sig] = m[1].split('.');
+  if (!exp || !sig || Number(exp) < Date.now()) return false;
+  return (await opsSign(env, exp)) === sig;
+}
+
+export function opsIpAllowed(env, request) {
+  const list = (env.FOYER_OPS_IPS || '').split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
+  if (!list.length) return true;                       // no allowlist → password-only
+  return list.includes(request.headers.get('CF-Connecting-IP') || '');
+}
+
+export function ctEq(a, b) { a = String(a); b = String(b); if (a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; }
+
 const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 export function loginPage({ clientDomain, params, mode = 'login', error = '', name = '', email = '' }) {
   const hidden = ['client_id', 'redirect_uri', 'state', 'code_challenge', 'code_challenge_method']

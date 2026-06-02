@@ -74,5 +74,12 @@
     }).catch(function () {});
   }
 
-  window.Foyer = { signIn: signIn, oneTap: oneTap, PROVIDER: PROVIDER };
+  function getProfile() {
+    return fetch(PROVIDER + '/account', { credentials: 'include' }).then(function (r) { return r.ok ? r.json() : { user: null }; }).then(function (d) { return d.user; }).catch(function () { return null; });
+  }
+  function updateProfile(patch) {
+    return fetch(PROVIDER + '/account', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch || {}) }).then(function (r) { return r.json(); });
+  }
+
+  window.Foyer = { signIn: signIn, oneTap: oneTap, getProfile: getProfile, updateProfile: updateProfile, PROVIDER: PROVIDER };
 })();
