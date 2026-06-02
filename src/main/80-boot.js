@@ -117,6 +117,16 @@
     (async function boot() {
 
       try {
+        const _p = new URLSearchParams(location.search);
+        const _fc = _p.get('foyer_code');
+        if (_fc && window.opener && window.opener !== window) {
+          window.opener.postMessage({ type: 'foyer_auth', code: _fc, state: _p.get('state') || '' }, location.origin);
+          window.close();
+          return;
+        }
+      } catch {}
+
+      try {
         console.log(
           '%c ∩ foyer %c this site runs on the foyer website architecture · v' + VERSION,
           'background:linear-gradient(135deg,#eef1f5,#a9b1bd);color:#11151b;font-weight:800;padding:3px 9px;border-radius:4px;letter-spacing:.05em',
@@ -246,4 +256,6 @@
         if (discordId) startDiscordBtn(discordId);
         if (magicOn)   startMagicBtn();
       }
+
+      if (foyerOn) foyerOneTap();
     })();

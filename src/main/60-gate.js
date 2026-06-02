@@ -173,17 +173,80 @@
 
     const FOYER_AUTH_URL = 'https://foyer.zo0p.dev';
     function _b64url(bytes) { return btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+    async function _foyerAuthUrl() {
+      const verifier = _b64url(crypto.getRandomValues(new Uint8Array(32)));
+      const challenge = _b64url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)));
+      const params = new URLSearchParams({ client_id: location.hostname, redirect_uri: location.origin + '/', state: 'foyer', code_challenge: challenge, code_challenge_method: 'S256', display: 'popup' });
+      return { url: `${FOYER_AUTH_URL}/authorize?${params}`, verifier };
+    }
+    async function foyerSignIn() {
+      const { url, verifier } = await _foyerAuthUrl();
+      const w = 440, h = 620, lft = Math.max(0, (screen.width - w) / 2), tp = Math.max(0, (screen.height - h) / 2);
+      const popup = window.open(url, 'foyer_auth', `width=${w},height=${h},left=${lft},top=${tp}`);
+      if (!popup) {                                    // popup blocked → full-page redirect fallback
+        try { sessionStorage.setItem('foyer_pkce', verifier); } catch {}
+        location.href = url; return;
+      }
+      function onMsg(e) {
+        if (e.origin !== location.origin || !e.data || e.data.type !== 'foyer_auth' || !e.data.code) return;
+        window.removeEventListener('message', onMsg);
+        try { popup.close(); } catch {}
+        finishFoyer(e.data.code, verifier);
+      }
+      window.addEventListener('message', onMsg);
+    }
+    async function finishFoyer(code, verifier) {
+      const data = await fetch('/api/auth/foyer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, code_verifier: verifier }) }).then(r => r.json()).catch(() => null);
+      if (data?.ok) {
+        const session = { email: data.email, name: data.name, picture: data.picture, session_token: data.session_token };
+        setSession(session); dismissGate(); loadAndShow(session);
+      } else {
+        const err = document.getElementById('gate-err');
+        if (err) err.textContent = data?.error === 'account_banned' ? 'Your access to this site has been revoked.' : data?.error === 'not_allowed' ? "This site is invite-only — your email isn't on the guest list." : data?.error === 'vpn_blocked' ? "Sign-ups over a VPN or proxy aren't allowed." : (data?.error || 'Foyer sign-in failed. Try again.');
+      }
+    }
     function startFoyerBtn() {
       const btn = document.getElementById('foyerSignInBtn');
       if (!btn) return;
       btn.style.display = '';
-      btn.addEventListener('click', async () => {
-        const verifier = _b64url(crypto.getRandomValues(new Uint8Array(32)));
-        const challenge = _b64url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)));
-        try { sessionStorage.setItem('foyer_pkce', verifier); } catch {}
-        const params = new URLSearchParams({ client_id: location.hostname, redirect_uri: location.origin + '/', state: 'foyer', code_challenge: challenge, code_challenge_method: 'S256' });
-        location.href = `${FOYER_AUTH_URL}/authorize?${params}`;
-      });
+      btn.addEventListener('click', () => foyerSignIn());
       hookHover(btn);
+    }
+
+    async function foyerOneTap() {
+      if (getSession()) return;
+      let info = null;
+      try {
+        const r = await fetch(`${FOYER_AUTH_URL}/session`, { credentials: 'include' });
+        if (r.ok) info = (await r.json()).user;
+      } catch {}
+      if (!info || document.getElementById('foyer-onetap')) return;
+      const card = document.createElement('div');
+      card.id = 'foyer-onetap';
+      card.style.cssText = [
+        'position:fixed;top:20px;right:20px;z-index:9995;width:300px;',
+        'background:rgba(13,17,23,0.97);border:1px solid rgba(127,166,216,0.28);border-radius:14px;',
+        'box-shadow:0 12px 40px rgba(0,0,0,.45);backdrop-filter:blur(10px);',
+        "font-family:'Josefin Sans',system-ui,sans-serif;color:#e8edf2;padding:1rem 1.1rem;",
+        'transform:translateY(-12px);opacity:0;transition:transform .4s cubic-bezier(.16,1,.3,1),opacity .4s ease;',
+      ].join('');
+      const top = document.createElement('div');
+      top.style.cssText = 'display:flex;align-items:center;gap:.6rem;margin-bottom:.7rem;';
+      top.innerHTML = `<svg width="16" height="18" viewBox="0 0 44 50" fill="none" stroke="#7fa6d8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg><span style="font-size:.56rem;letter-spacing:.26em;text-transform:uppercase;color:#7fa6d8;font-weight:300;">Foyer</span>`;
+      const x = document.createElement('button');
+      x.textContent = '×'; x.setAttribute('aria-label', 'Dismiss');
+      x.style.cssText = 'margin-left:auto;background:none;border:none;color:#8b94a6;font-size:1.1rem;cursor:pointer;line-height:1;';
+      x.addEventListener('click', () => { card.style.opacity = '0'; card.style.transform = 'translateY(-12px)'; setTimeout(() => card.remove(), 380); });
+      top.appendChild(x);
+      const who = document.createElement('p');
+      who.style.cssText = 'font-weight:200;font-size:.82rem;line-height:1.5;color:rgba(232,237,242,.82);margin-bottom:.9rem;';
+      who.textContent = 'Continue as ' + (info.name || info.email);
+      const btn = document.createElement('button');
+      btn.textContent = 'Sign in with Foyer';
+      btn.style.cssText = "width:100%;background:#7fa6d8;color:#070a0e;border:none;font-family:'Josefin Sans',sans-serif;font-weight:300;font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;padding:.7rem;border-radius:8px;cursor:pointer;";
+      btn.addEventListener('click', () => { card.remove(); foyerSignIn(); });
+      card.appendChild(top); card.appendChild(who); card.appendChild(btn);
+      document.body.appendChild(card);
+      requestAnimationFrame(() => requestAnimationFrame(() => { card.style.opacity = '1'; card.style.transform = 'translateY(0)'; }));
     }
 

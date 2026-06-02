@@ -95,10 +95,11 @@ export async function createSession(env, userId) {
   });
   return token;
 }
+
 export function sessionCookie(token, maxAgeDays = 30) {
-  return `${COOKIE}=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAgeDays * 86400}`;
+  return `${COOKIE}=${token}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=${maxAgeDays * 86400}`;
 }
-export function clearCookie() { return `${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`; }
+export function clearCookie() { return `${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=0`; }
 export function readCookie(request) {
   const m = (request.headers.get('cookie') || '').match(new RegExp(`(?:^|; )${COOKIE}=([^;]+)`));
   return m ? m[1] : '';
