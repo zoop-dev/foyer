@@ -11,6 +11,7 @@
   "tagline": "Tutorials, reviews, and guides",
   "description": "Zachary Lanson — tutorials, reviews, and guides. Sign in to explore the latest posts.",
   "keywords": "Zachary Lanson, tutorials, reviews, guides, deals",
+  "captcha": "recaptcha",
   "cloudflare": {
     "accountId": "9e35de18c01b92479f813834c91e4b23",
     "project": "lanson",

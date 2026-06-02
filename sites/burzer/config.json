@@ -11,6 +11,7 @@
   "tagline": "",
   "description": "Max-Emanuel Burzer — tutorials, reviews, and guides. Sign in to explore the latest posts.",
   "keywords": "Max-Emanuel Burzer, tutorials, reviews, guides",
+  "captcha": "turnstile",
   "cloudflare": {
     "accountId": "e260d5177448ffcb908c331e64b932e7",
     "project": "burzer",
