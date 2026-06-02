@@ -220,8 +220,18 @@
       const urlMagic  = urlParams.get('ml');
       const urlFoyer  = urlParams.get('foyer_code');
       if (urlFoyer) {
-        dismissGate();
-        await handleOAuthCallback(urlFoyer, 'foyer');
+        const okFoyer = await handleOAuthCallback(urlFoyer, 'foyer');   // strips ?foyer_code itself
+        if (!okFoyer) {
+
+          dismissLoading();
+          startGate(clientId, settings);
+          if (foyerOn)   startFoyerBtn();
+          if (githubId)  startGithubBtn(githubId);
+          if (discordId) startDiscordBtn(discordId);
+          if (magicOn)   startMagicBtn();
+          const err = document.getElementById('gate-err');
+          if (err && !err.textContent) err.textContent = 'Foyer sign-in failed. Try again.';
+        }
         return;
       }
       if (urlCode) {

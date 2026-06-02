@@ -134,18 +134,19 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       }).then(r => r.json()).catch(() => null);
+      const url = new URL(location.href);
+      url.searchParams.delete('code'); url.searchParams.delete('state'); url.searchParams.delete('foyer_code');
+      history.replaceState(null, '', url.pathname + url.search + url.hash);   // always strip the auth params
       if (data?.ok) {
         const session = { email: data.email, name: data.name, picture: data.picture, session_token: data.session_token };
         setSession(session);
-        const url = new URL(location.href);
-        url.searchParams.delete('code');
-        url.searchParams.delete('state');
-        history.replaceState(null, '', url.toString());
         dismissGate();
         loadAndShow(session);
+        return true;
       } else {
         const err = document.getElementById('gate-err');
         if (err) err.textContent = data?.error === 'account_banned' ? 'Your access to this site has been revoked.' : data?.error === 'not_allowed' ? "This site is invite-only — your email isn't on the guest list." : data?.error === 'vpn_blocked' ? "Sign-ups over a VPN or proxy aren't allowed. Please turn it off and try again." : data?.error === 'signup_limited' ? 'Too many recent sign-ups from your email domain. Please try again later.' : (data?.error || errMsg);
+        return false;
       }
     }
 
