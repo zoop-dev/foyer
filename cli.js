@@ -55,14 +55,14 @@ function die(msg) { console.log("\n  " + bad + " " + msg + "\n"); process.exit(1
 function header(t) { console.log("\n  " + c.bold(c.br("▸ ")) + c.bold(t)); }
 
 
-function run(label, cmd, args, env = process.env, input = null) {
+function run(label, cmd, args, env = process.env, input = null, cwd = ROOT) {
   const frames = ["⠋","⠙","⠹","⠸","⠼","⠴","⠦","⠧","⠇","⠏"];
   return new Promise((resolve, reject) => {
     let i = 0, buf = "";
     const tick = tty ? setInterval(() => {
       process.stdout.write("\r    " + c.br(frames[i++ % frames.length]) + " " + c.dim(label) + "   ");
     }, 80) : null;
-    const p = spawn(cmd, args, { env, cwd: ROOT });
+    const p = spawn(cmd, args, { env, cwd });
     if (input != null) { p.stdin.write(input); p.stdin.end(); }
     p.stdout.on("data", (d) => (buf += d));
     p.stderr.on("data", (d) => (buf += d));
@@ -224,7 +224,13 @@ async function cmdAuthDeploy() {
   header("deploy Foyer platform → " + c.br("foyer.zo0p.dev"));
   const acct = await foyerEnv("FOYER_AUTH_ACCOUNT");
   const env = acct ? { ...process.env, CLOUDFLARE_ACCOUNT_ID: acct } : { ...process.env };
-  const out = await run("publish to Cloudflare Pages", "npx", ["wrangler", "pages", "deploy", "auth", "--project-name=foyer-auth", "--branch=production", "--commit-dirty=true"], env);
+
+
+
+
+  const out = await run("publish to Cloudflare Pages", "npx",
+    ["wrangler", "pages", "deploy", "--project-name=foyer-auth", "--branch=main", "--commit-dirty=true"],
+    env, null, path.join(ROOT, "auth"));
   const url = (out.match(/https:\/\/[a-z0-9]+\.[a-z0-9-]+\.pages\.dev/) || [])[0];
   console.log("    " + dot + c.dim(" live: ") + c.cyan("https://foyer.zo0p.dev") + (url ? c.dim("  (" + url + ")") : ""));
   console.log("\n  " + dot + c.dim(" one-time setup:"));
