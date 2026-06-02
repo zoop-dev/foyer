@@ -162,6 +162,7 @@
       let githubId  = settings.auth_github  !== '0' ? (cfg.github_client_id  || '') : '';
       let discordId = settings.auth_discord !== '0' ? (cfg.discord_client_id || '') : '';
       let magicOn   = settings.auth_magic   !== '0' && !!cfg.magic_enabled;
+      let foyerOn   = settings.auth_foyer   === '1';   // Foyer Auth (opt-in)
       const publicMode = settings.site_public === '1' || __SITE__.publicAccess === true;
 
       try { localStorage.setItem('foyer_public', publicMode ? '1' : '0'); } catch {}
@@ -207,6 +208,12 @@
       const urlCode   = urlParams.get('code');
       const urlState  = urlParams.get('state');
       const urlMagic  = urlParams.get('ml');
+      const urlFoyer  = urlParams.get('foyer_code');
+      if (urlFoyer) {
+        dismissGate();
+        await handleOAuthCallback(urlFoyer, 'foyer');
+        return;
+      }
       if (urlCode) {
         dismissGate();
         await handleOAuthCallback(urlCode, urlState);
@@ -218,6 +225,7 @@
         if (res === true) return;
 
         startGate(clientId, settings);
+        if (foyerOn)   startFoyerBtn();
         if (githubId)  startGithubBtn(githubId);
         if (discordId) startDiscordBtn(discordId);
         if (magicOn)   startMagicBtn();
@@ -228,11 +236,12 @@
 
       const session = getSession();
 
-      if (publicMode || (!clientId && !githubId && !discordId && !magicOn) || session) {
+      if (publicMode || (!clientId && !githubId && !discordId && !magicOn && !foyerOn) || session) {
         dismissGate();
         loadAndShow(session);
       } else {
         startGate(clientId, settings);
+        if (foyerOn)   startFoyerBtn();
         if (githubId)  startGithubBtn(githubId);
         if (discordId) startDiscordBtn(discordId);
         if (magicOn)   startMagicBtn();

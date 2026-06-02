@@ -142,6 +142,21 @@
       margin-top: 0.6rem;
     }
     .gate-email-btn:hover { background: rgba(255,255,255,0.09); border-color: rgba(var(--site-accent-rgb),0.3); }
+    .gate-foyer-btn {
+      position: relative;
+      display: flex; align-items: center; justify-content: center; gap: 0.65rem;
+      width: 100%; background: rgba(127,166,216,0.10); border: 1px solid rgba(127,166,216,0.32);
+      color: rgba(232,237,242,0.9); font-family: 'Josefin Sans', sans-serif;
+      font-weight: 300; font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase;
+      padding: 0.82rem 1.6rem; cursor: pointer; transition: background 0.2s, border-color 0.2s;
+      margin-bottom: 0.6rem;
+    }
+    .gate-foyer-btn:hover { background: rgba(127,166,216,0.18); border-color: rgba(127,166,216,0.55); }
+    .gate-new-tag {
+      position: absolute; top: -7px; right: 10px;
+      background: #7fa6d8; color: #070a0e; font-size: 0.5rem; font-weight: 600;
+      letter-spacing: 0.12em; text-transform: uppercase; padding: 0.12rem 0.4rem; border-radius: 3px;
+    }
 
     
     #ml-modal {

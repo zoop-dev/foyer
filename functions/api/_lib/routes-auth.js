@@ -96,6 +96,7 @@ export async function handleAuth(ctx) {
     const provider = sub.startsWith('email:')   ? 'email'
                    : sub.startsWith('github:')  ? 'github'
                    : sub.startsWith('discord:') ? 'discord'
+                   : sub.startsWith('foyer:')   ? 'foyer'
                    : 'google';
     return respond({
       email: v.email, name: v.name, picture: v.picture, provider,
@@ -395,6 +396,41 @@ export async function handleAuth(ctx) {
       return respond({ status: 'approved', email: row.email, name: nm, picture: '', session_token: row.session_token, needs_name: nm === row.email.split('@')[0] });
     }
     return respond({ status: 'pending' });
+  }
+
+
+  if (route === 'auth/foyer' && method === 'POST') {
+    const enabled = await env.DB.prepare("SELECT value FROM site_settings WHERE key='auth_foyer'").first().catch(() => null);
+    if (enabled?.value === '0') return respond({ error: 'Foyer sign-in is disabled' }, 403);
+    const { code, code_verifier } = await request.json().catch(() => ({}));
+    if (!code) return respond({ error: 'code required' }, 400);
+    const base = (env.FOYER_AUTH_URL || 'https://foyer.zo0p.dev').replace(/\/$/, '');
+    const reqUrl = new URL(request.url);
+
+    const tok = await fetch(`${base}/token`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ code, code_verifier, client_id: reqUrl.hostname, redirect_uri: reqUrl.origin + '/' }),
+    }).then(r => r.json()).catch(() => null);
+    if (!tok || tok.error || !tok.email) return respond({ error: 'foyer sign-in failed' }, 401);
+    const email = String(tok.email).toLowerCase();
+    const sub = `foyer:${tok.sub}`;
+    const name = tok.name || email.split('@')[0];
+    const picture = tok.avatar || '';
+    const denied = await denyAccess(email);
+    if (denied) return respond({ error: denied }, 403);
+    await env.DB.prepare(`
+      INSERT INTO visitors (google_sub, email, name, picture)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(google_sub) DO UPDATE SET
+        email = excluded.email, name = excluded.name, picture = excluded.picture,
+        visit_count = visit_count + 1, last_seen = datetime('now')
+    `).bind(sub, email, name, picture).run();
+    const visitor = await env.DB.prepare(
+      "SELECT id, is_banned FROM visitors WHERE google_sub = ? OR google_sub = 'banned:' || ?"
+    ).bind(sub, sub).first();
+    if (visitor?.is_banned) return respond({ error: 'account_banned' }, 403);
+    const { token: sessionToken } = await newSession(visitor.id);
+    return respond({ ok: true, email, name, picture, session_token: sessionToken });
   }
 
   if (route === 'auth/github' && method === 'POST') {

@@ -3,70 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
   <title>Foyer — Changelog</title>
-  <meta name="description" content="What's new in Foyer." />
-  <link rel="icon" href="/foyer/foyer-mark.svg" type="image/svg+xml" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200;300&family=Josefin+Sans:wght@100;200;300;400&display=swap" />
-  <style>
-    :root { --bg:#0b0e13; --ink:#e8edf2; --muted:#8b94a6; --line:rgba(170,190,215,.12); --accent:#7fa6d8; }
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { background:var(--bg); color:var(--ink); font-family:'Josefin Sans',system-ui,sans-serif; font-weight:200; line-height:1.7; -webkit-font-smoothing:antialiased; }
-    .wrap { max-width:640px; margin:0 auto; padding:4.5rem 1.5rem 5rem; }
-    .back { display:inline-flex; align-items:center; gap:.5rem; color:var(--muted); text-decoration:none; font-size:.62rem; letter-spacing:.24em; text-transform:uppercase; margin-bottom:2.4rem; }
-    .back:hover { color:var(--ink); }
-    .back svg { width:16px; }
-    h1 { font-family:'Unbounded',sans-serif; font-weight:200; font-size:1.8rem; margin-bottom:2.2rem; }
-    .entry { padding:1.3rem 0; border-top:1px solid var(--line); display:flex; gap:1.1rem; }
-    .entry:first-of-type { border-top:none; }
-    .ver { flex-shrink:0; width:54px; }
-    .vnum { font-family:'Unbounded',sans-serif; font-weight:200; font-size:.9rem; color:var(--accent); }
-    .tag { display:inline-block; margin-top:.35rem; font-size:.46rem; letter-spacing:.16em; text-transform:uppercase; font-weight:300; padding:.12rem .4rem; border-radius:3px; border:1px solid var(--line); color:var(--muted); }
-    .tag.release { color:#0b0e13; background:var(--accent); border-color:var(--accent); }
-    .tag.fix { color:#e0b56a; border-color:rgba(224,181,106,.4); }
-    .body-t { flex:1; min-width:0; }
-    .body-t h3 { font-family:'Unbounded',sans-serif; font-weight:200; font-size:.98rem; margin-bottom:.3rem; }
-    .body-t p { color:rgba(232,237,242,.7); font-size:.9rem; }
-    .body-t time { display:block; margin-top:.4rem; font-size:.58rem; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
-    .state { color:var(--muted); font-size:.85rem; padding:2rem 0; }
-    footer { margin-top:3rem; padding-top:1.6rem; border-top:1px solid var(--line); color:var(--muted); font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; }
-    footer a { color:rgba(232,237,242,.7); text-decoration:none; } footer a:hover { color:#fff; }
-  </style>
+  <meta http-equiv="refresh" content="0; url=https://foyer.zo0p.dev/changelog" />
+  <link rel="canonical" href="https://foyer.zo0p.dev/changelog" />
+  <style>body{background:#0b0e13;color:#8b94a6;font-family:system-ui,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center}</style>
 </head>
-<body>
-  <div class="wrap">
-    <a class="back" href="/foyer">
-      <svg viewBox="0 0 44 50" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg>
-      foyer
-    </a>
-    <h1>Changelog</h1>
-    <div id="entries"><p class="state">Loading…</p></div>
-    <footer><a href="/foyer">← Foyer home</a></footer>
-  </div>
-
-  <script>
-    const SB_URL = "https://tvtfoghrdqwssdwvebuo.supabase.co";
-    const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2dGZvZ2hyZHF3c3Nkd3ZlYnVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMzk2ODksImV4cCI6MjA5NTgxNTY4OX0.n_CRdzQQKYNGDHYmoVxyKafFJCfezKKlSiZddx8MXH4";
-    const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    const el = document.getElementById('entries');
-    fetch(`${SB_URL}/rest/v1/foyer_changelog?published=eq.true&select=version,tag,title,body,released_at&order=released_at.desc`, {
-      headers: { apikey: SB_ANON, authorization: `Bearer ${SB_ANON}` }
-    }).then(r => r.ok ? r.json() : Promise.reject()).then(rows => {
-      if (!rows.length) { el.innerHTML = '<p class="state">Nothing here yet.</p>'; return; }
-      // Order newest → oldest by version number (ignore any leading 'v' / non-digits).
-      const vnum = e => parseInt(String(e.version || '').replace(/[^0-9]/g, ''), 10) || 0;
-      rows.sort((a, b) => vnum(b) - vnum(a));
-      el.innerHTML = rows.map(e => {
-        const tag = (e.tag||'feature').toLowerCase();
-        const d = e.released_at ? new Date(e.released_at).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}) : '';
-        return `<div class="entry">
-          <div class="ver">${e.version?`<div class="vnum">v${esc(e.version)}</div>`:''}<span class="tag ${tag}">${esc(tag)}</span></div>
-          <div class="body-t"><h3>${esc(e.title)}</h3>${e.body?`<p>${esc(e.body)}</p>`:''}${d?`<time>${d}</time>`:''}</div>
-        </div>`;
-      }).join('');
-    }).catch(() => { el.innerHTML = '<p class="state">Couldn’t load the changelog right now.</p>'; });
-  </script>
-  <script>try{console.log('%c ∩ foyer %c this site runs on the foyer website architecture · v{{VERSION}}','background:linear-gradient(135deg,#eef1f5,#a9b1bd);color:#11151b;font-weight:800;padding:3px 9px;border-radius:4px;letter-spacing:.05em','color:#8b94a6;font-style:italic;padding-left:6px');}catch(e){}</script>
-</body>
+<body><p>Redirecting to <a href="https://foyer.zo0p.dev/changelog" style="color:#7fa6d8">the Foyer changelog</a>…</p></body>
 </html>

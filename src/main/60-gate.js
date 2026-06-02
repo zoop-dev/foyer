@@ -115,7 +115,12 @@
 
     async function handleOAuthCallback(code, state) {
       let endpoint, body, errMsg;
-      if (state === 'discord') {
+      if (state === 'foyer') {
+        let verifier = ''; try { verifier = sessionStorage.getItem('foyer_pkce') || ''; sessionStorage.removeItem('foyer_pkce'); } catch {}
+        endpoint = '/api/auth/foyer';
+        body = { code, code_verifier: verifier };
+        errMsg = 'Foyer sign-in failed. Try again.';
+      } else if (state === 'discord') {
         endpoint = '/api/auth/discord';
         body = { code, redirect_uri: DISCORD_REDIRECT };
         errMsg = 'Discord sign-in failed. Try again.';
@@ -162,6 +167,22 @@
       btn.addEventListener('click', () => {
         const params = new URLSearchParams({ client_id: discordClientId, redirect_uri: DISCORD_REDIRECT, response_type: 'code', scope: 'identify email', state: 'discord' });
         location.href = `https://discord.com/oauth2/authorize?${params}`;
+      });
+      hookHover(btn);
+    }
+
+    const FOYER_AUTH_URL = 'https://foyer.zo0p.dev';
+    function _b64url(bytes) { return btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+    function startFoyerBtn() {
+      const btn = document.getElementById('foyerSignInBtn');
+      if (!btn) return;
+      btn.style.display = '';
+      btn.addEventListener('click', async () => {
+        const verifier = _b64url(crypto.getRandomValues(new Uint8Array(32)));
+        const challenge = _b64url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)));
+        try { sessionStorage.setItem('foyer_pkce', verifier); } catch {}
+        const params = new URLSearchParams({ client_id: location.hostname, redirect_uri: location.origin + '/', state: 'foyer', code_challenge: challenge, code_challenge_method: 'S256' });
+        location.href = `${FOYER_AUTH_URL}/authorize?${params}`;
       });
       hookHover(btn);
     }

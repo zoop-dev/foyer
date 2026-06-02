@@ -213,6 +213,27 @@ async function cmdDeploy(target) {
   await cmdGitea(`deploy v${v}`).catch((e) => console.log("  " + c.yellow("!") + c.dim(" gitea push skipped: " + e.message)));
 }
 
+async function foyerEnv(key) {
+  if (process.env[key]) return process.env[key];
+  const env = await readFile(path.join(ROOT, ".foyer.env"), "utf8").catch(() => "");
+  const m = env.match(new RegExp(key + "\\s*=\\s*(.+)"));
+  return m ? m[1].trim() : null;
+}
+
+async function cmdAuthDeploy() {
+  header("deploy Foyer platform → " + c.br("foyer.zo0p.dev"));
+  const acct = await foyerEnv("FOYER_AUTH_ACCOUNT");
+  const env = acct ? { ...process.env, CLOUDFLARE_ACCOUNT_ID: acct } : { ...process.env };
+  const out = await run("publish to Cloudflare Pages", "npx", ["wrangler", "pages", "deploy", "auth", "--project-name=foyer-auth", "--branch=production", "--commit-dirty=true"], env);
+  const url = (out.match(/https:\/\/[a-z0-9]+\.[a-z0-9-]+\.pages\.dev/) || [])[0];
+  console.log("    " + dot + c.dim(" live: ") + c.cyan("https://foyer.zo0p.dev") + (url ? c.dim("  (" + url + ")") : ""));
+  console.log("\n  " + dot + c.dim(" one-time setup:"));
+  console.log("    " + dot + c.dim(" • run ") + c.cyan("supabase/auth-schema.sql") + c.dim(" in Supabase"));
+  console.log("    " + dot + c.dim(" • set the service key: ") + c.cyan("npx wrangler pages secret put SUPABASE_SERVICE_KEY --project-name=foyer-auth"));
+  console.log("    " + dot + c.dim(" • attach the ") + c.cyan("foyer.zo0p.dev") + c.dim(" custom domain to the foyer-auth Pages project"));
+  console.log("    " + dot + c.dim(" • (optional) put ") + c.cyan("FOYER_AUTH_ACCOUNT=<cf-account-id>") + c.dim(" in .foyer.env to target a specific account") + "\n");
+}
+
 async function cmdDev(name) {
   if (!name) die("usage: foyer dev <site>");
   await getSite(name);
@@ -889,6 +910,7 @@ function help() {
     ["secret <site> <NAME>", "set a Cloudflare secret"],
     ["db <site> \"<SQL>\"", "run a D1 query (remote)"],
     ["setrole <site> <email> <role>", "set a visitor's role (admin|owner|none)"],
+    ["auth", "deploy the Foyer platform + Auth provider (foyer.zo0p.dev)"],
     ["registry", "list sites: live status, version, last-seen"],
     ["announce <site|all> <msg>", "push a banner (--warn,--hide,--ends); clear|remove|list"],
     ["flag <site|all> <key> <val>", "set a feature flag (on|off|value)"],
@@ -919,6 +941,7 @@ const table = {
   secret: () => cmdSecret(args[0], args[1]),
   db: () => cmdDb(...args),
   setrole: () => cmdSetRole(args[0], args[1], args[2]),
+  auth: () => cmdAuthDeploy(),
   offline: () => cmdOffline(args[0], true, args.slice(1).join(" ")),
   online: () => cmdOffline(args[0], false),
   license: () => cmdLicense(args[0], true),

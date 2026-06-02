@@ -1,0 +1,67 @@
+
+import { isLicensedClient, sessionUser, findUser, createUser, verifyPassword, hashPassword, issueCode, createSession, sessionCookie, touchLogin, loginPage } from './_lib.js';
+
+function paramsFrom(get) {
+  return {
+    client_id: get('client_id') || '', redirect_uri: get('redirect_uri') || '',
+    state: get('state') || '', code_challenge: get('code_challenge') || '', code_challenge_method: get('code_challenge_method') || '',
+  };
+}
+function validRedirect(clientId, redirectUri) {
+  try { const u = new URL(redirectUri); return u.protocol === 'https:' && u.hostname === clientId; } catch { return false; }
+}
+async function denyClient(env, p) {
+  if (!p.client_id || !p.redirect_uri) return 'Missing client_id or redirect_uri.';
+  if (!validRedirect(p.client_id, p.redirect_uri)) return 'redirect_uri must be an https URL on the client_id domain.';
+  if (!(await isLicensedClient(env, p.client_id))) return 'This site is not a licensed Foyer site.';
+  return null;
+}
+function errPage(msg) {
+  return new Response(`<!DOCTYPE html><meta charset=utf-8><meta name=robots content=noindex><body style="background:#0b0e13;color:#e8edf2;font-family:system-ui,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;text-align:center;padding:2rem"><div><h1 style="font-weight:300;letter-spacing:.04em">Foyer Auth</h1><p style="color:#8b94a6;margin-top:1rem;line-height:1.7">${msg}</p></div>`, { status: 400, headers: { 'content-type': 'text/html;charset=utf-8' } });
+}
+async function redirectWithCode(env, user, p, extraHeaders = {}) {
+  const code = await issueCode(env, { userId: user.id, clientId: p.client_id, redirectUri: p.redirect_uri, codeChallenge: p.code_challenge });
+  if (!code) return errPage('Could not issue an authorization code.');
+  const u = new URL(p.redirect_uri);
+  u.searchParams.set('foyer_code', code);
+  if (p.state) u.searchParams.set('state', p.state);
+  await touchLogin(env, user.id);
+  return new Response(null, { status: 302, headers: { location: u.toString(), ...extraHeaders } });
+}
+
+export async function onRequestGet({ request, env }) {
+  const url = new URL(request.url);
+  const p = paramsFrom((k) => url.searchParams.get(k));
+  const deny = await denyClient(env, p);
+  if (deny) return errPage(deny);
+  const user = await sessionUser(env, request);
+  if (user) return redirectWithCode(env, user, p);            // SSO — already signed into Foyer
+  const mode = url.searchParams.get('mode') === 'signup' ? 'signup' : 'login';
+  return new Response(loginPage({ clientDomain: p.client_id, params: p, mode }), { headers: { 'content-type': 'text/html;charset=utf-8' } });
+}
+
+export async function onRequestPost({ request, env }) {
+  const form = await request.formData();
+  const p = paramsFrom((k) => form.get(k));
+  const deny = await denyClient(env, p);
+  if (deny) return errPage(deny);
+  const action = form.get('action') === 'signup' ? 'signup' : 'login';
+  const email = String(form.get('email') || '').trim();
+  const password = String(form.get('password') || '');
+  const name = String(form.get('name') || '').trim();
+  const back = (mode, error) => new Response(loginPage({ clientDomain: p.client_id, params: p, mode, error, name, email }), { status: 400, headers: { 'content-type': 'text/html;charset=utf-8' } });
+
+  if (!email || !password) return back(action, 'Email and password are required.');
+  const user0 = await findUser(env, email.toLowerCase());
+  let user = user0;
+  if (action === 'signup') {
+    if (user0) return back('signup', 'An account with that email already exists.');
+    if (password.length < 8) return back('signup', 'Password must be at least 8 characters.');
+    user = await createUser(env, { email, name, passwordHash: await hashPassword(password) });
+    if (!user) return back('signup', 'Could not create the account. Try again.');
+  } else {
+    if (!user0 || !(await verifyPassword(password, user0.password_hash))) return back('login', 'Incorrect email or password.');
+  }
+  const token = await createSession(env, user.id);
+  return redirectWithCode(env, user, p, { 'set-cookie': sessionCookie(token) });
+}

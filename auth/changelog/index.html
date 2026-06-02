@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Foyer — Changelog</title>
+  <meta name="description" content="What's new in Foyer." />
+  <link rel="icon" href="/foyer-mark.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200;300;400&family=Josefin+Sans:wght@100;200;300&display=swap" />
+  <style>
+    :root{--bg:#0b0e13;--ink:#e8edf2;--muted:#8b94a6;--accent:#7fa6d8}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:var(--bg);color:var(--ink);font-family:'Josefin Sans',system-ui,sans-serif;font-weight:200;-webkit-font-smoothing:antialiased}
+    a{color:inherit;text-decoration:none}
+    .glow{position:fixed;inset:-20% -10% auto;height:80vh;background:radial-gradient(ellipse 45% 55% at 50% 0%,rgba(127,166,216,.10),transparent 70%);pointer-events:none;z-index:0}
+    .wrap{max-width:680px;margin:0 auto;padding:0 1.6rem}
+    nav{position:sticky;top:0;z-index:10;backdrop-filter:blur(12px);background:rgba(11,14,19,.6);border-bottom:1px solid rgba(127,166,216,.1)}
+    nav .wrap{display:flex;align-items:center;justify-content:space-between;height:62px}
+    .brand{display:flex;align-items:center;gap:.6rem;font-family:'Unbounded',sans-serif;font-weight:300;font-size:1.05rem}
+    .brand svg{width:20px;height:23px}
+    nav a.back{font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(232,237,242,.7)}
+    header{position:relative;z-index:1;text-align:center;padding:5rem 0 3rem}
+    h1{font-family:'Unbounded',sans-serif;font-weight:200;font-size:clamp(2rem,6vw,3rem);margin-bottom:.6rem}
+    .sub{font-size:.6rem;letter-spacing:.4em;text-transform:uppercase;color:var(--accent);font-weight:300}
+    main{position:relative;z-index:1;padding-bottom:6rem}
+    .entry{display:grid;grid-template-columns:96px 1fr;gap:1.4rem;padding:1.6rem 0;border-top:1px solid rgba(127,166,216,.1)}
+    .ver{display:flex;flex-direction:column;gap:.5rem;align-items:flex-start}
+    .vnum{font-family:'Unbounded',sans-serif;font-weight:300;font-size:.9rem;color:rgba(232,237,242,.85)}
+    .tag{font-size:.5rem;letter-spacing:.16em;text-transform:uppercase;font-weight:400;padding:.16rem .45rem;border-radius:4px}
+    .tag.feature{background:rgba(127,166,216,.18);color:#bcd0ee}
+    .tag.fix{background:rgba(230,177,90,.18);color:#e6c08a}
+    .tag.release{background:rgba(120,210,150,.18);color:#8fdca8}
+    .tag.improvement{background:rgba(169,182,255,.18);color:#c2caff}
+    .body-t h3{font-weight:300;font-size:1rem;letter-spacing:.01em;margin-bottom:.4rem}
+    .body-t p{font-size:.82rem;font-weight:200;line-height:1.8;color:rgba(232,237,242,.55)}
+    .body-t time{display:block;margin-top:.6rem;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(139,148,166,.5)}
+    .state{text-align:center;color:var(--muted);font-size:.8rem;padding:3rem 0}
+    @media (max-width:540px){.entry{grid-template-columns:1fr;gap:.6rem}}
+  </style>
+</head>
+<body>
+  <div class="glow"></div>
+  <nav><div class="wrap">
+    <a class="brand" href="/"><svg viewBox="0 0 44 50" fill="none" stroke="var(--accent)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg>Foyer</a>
+    <a class="back" href="/">← Home</a>
+  </div></nav>
+  <header><div class="wrap"><p class="sub">Changelog</p><h1>What's new</h1></div></header>
+  <main><div class="wrap" id="entries"><p class="state">Loading…</p></div></main>
+
+  <script>
+    (function(){
+      var SB="https://tvtfoghrdqwssdwvebuo.supabase.co";
+      var K="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2dGZvZ2hyZHF3c3Nkd3ZlYnVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMzk2ODksImV4cCI6MjA5NTgxNTY4OX0.n_CRdzQQKYNGDHYmoVxyKafFJCfezKKlSiZddx8MXH4";
+      var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');};
+      var el=document.getElementById('entries');
+      fetch(SB+'/rest/v1/foyer_changelog?published=eq.true&select=version,tag,title,body,released_at',{headers:{apikey:K,authorization:'Bearer '+K}})
+        .then(function(r){return r.ok?r.json():Promise.reject();}).then(function(rows){
+          if(!rows.length){el.innerHTML='<p class="state">Nothing here yet.</p>';return;}
+          var vnum=function(e){return parseInt(String(e.version||'').replace(/[^0-9]/g,''),10)||0;};
+          rows.sort(function(a,b){return vnum(b)-vnum(a);});
+          el.innerHTML=rows.map(function(e){
+            var tag=(e.tag||'feature').toLowerCase();
+            var d=e.released_at?new Date(e.released_at).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):'';
+            return '<div class="entry"><div class="ver">'+(e.version?'<div class="vnum">v'+esc(e.version)+'</div>':'')+'<span class="tag '+tag+'">'+esc(tag)+'</span></div><div class="body-t"><h3>'+esc(e.title)+'</h3>'+(e.body?'<p>'+esc(e.body)+'</p>':'')+(d?'<time>'+d+'</time>':'')+'</div></div>';
+          }).join('');
+        }).catch(function(){el.innerHTML='<p class="state">Couldn’t load the changelog right now.</p>';});
+    })();
+  </script>
+  <script>try{console.log('%c ∩ foyer %c the gated-site platform · foyer.zo0p.dev','background:linear-gradient(135deg,#eef1f5,#a9b1bd);color:#11151b;font-weight:800;padding:3px 9px;border-radius:4px;letter-spacing:.05em','color:#8b94a6;font-style:italic;padding-left:6px');}catch(e){}</script>
+</body>
+</html>

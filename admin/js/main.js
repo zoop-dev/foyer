@@ -64,6 +64,7 @@ async function fetchSettings() {
   if (s.theme_bg)     document.getElementById('sThemeBg').value=s.theme_bg;
   if (s.theme_accent) document.getElementById('sThemeAccent').value=s.theme_accent;
   if (s.theme_text)   document.getElementById('sThemeText').value=s.theme_text;
+  document.getElementById('sAuthFoyer').checked   = s.auth_foyer   === '1';
   document.getElementById('sAuthGoogle').checked  = s.auth_google  !== '0';
   document.getElementById('sAuthGithub').checked  = s.auth_github  !== '0';
   document.getElementById('sAuthDiscord').checked = s.auth_discord !== '0';
@@ -96,6 +97,7 @@ document.getElementById('saveSettingsBtn').addEventListener('click', async () =>
       theme_bg:document.getElementById('sThemeBg').value,
       theme_accent:document.getElementById('sThemeAccent').value,
       theme_text:document.getElementById('sThemeText').value,
+      auth_foyer:document.getElementById('sAuthFoyer').checked?'1':'0',
       auth_google:document.getElementById('sAuthGoogle').checked?'1':'0',
       auth_github:document.getElementById('sAuthGithub').checked?'1':'0',
       auth_discord:document.getElementById('sAuthDiscord').checked?'1':'0',
