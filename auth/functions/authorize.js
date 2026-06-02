@@ -7,12 +7,18 @@ function paramsFrom(get) {
     state: get('state') || '', code_challenge: get('code_challenge') || '', code_challenge_method: get('code_challenge_method') || '',
   };
 }
-function validRedirect(clientId, redirectUri) {
-  try { const u = new URL(redirectUri); return u.protocol === 'https:' && u.hostname === clientId; } catch { return false; }
+function validRedirect(clientId, redirectUri, selfOrigin) {
+  try {
+    const u = new URL(redirectUri);
+    if (u.protocol !== 'https:') return false;
+    if (u.hostname === clientId) return true;                            // back to the site itself
+    if (selfOrigin && redirectUri === selfOrigin + '/popup-callback') return true;  // the SDK's popup callback (this provider)
+    return false;
+  } catch { return false; }
 }
-async function denyClient(env, p) {
+async function denyClient(env, p, selfOrigin) {
   if (!p.client_id || !p.redirect_uri) return 'Missing client_id or redirect_uri.';
-  if (!validRedirect(p.client_id, p.redirect_uri)) return 'redirect_uri must be an https URL on the client_id domain.';
+  if (!validRedirect(p.client_id, p.redirect_uri, selfOrigin)) return 'redirect_uri must be on the client_id domain (or the Foyer popup callback).';
   if (!(await isLicensedClient(env, p.client_id))) return 'This site is not a licensed Foyer site.';
   return null;
 }
@@ -32,7 +38,7 @@ async function redirectWithCode(env, user, p, extraHeaders = {}) {
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
   const p = paramsFrom((k) => url.searchParams.get(k));
-  const deny = await denyClient(env, p);
+  const deny = await denyClient(env, p, url.origin);
   if (deny) return errPage(deny);
   const user = await sessionUser(env, request);
   if (user) return redirectWithCode(env, user, p);            // SSO — already signed into Foyer
@@ -43,7 +49,7 @@ export async function onRequestGet({ request, env }) {
 export async function onRequestPost({ request, env }) {
   const form = await request.formData();
   const p = paramsFrom((k) => form.get(k));
-  const deny = await denyClient(env, p);
+  const deny = await denyClient(env, p, new URL(request.url).origin);
   if (deny) return errPage(deny);
   const action = form.get('action') === 'signup' ? 'signup' : 'login';
   const email = String(form.get('email') || '').trim();

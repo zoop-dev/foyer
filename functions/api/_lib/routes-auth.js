@@ -402,14 +402,16 @@ export async function handleAuth(ctx) {
   if (route === 'auth/foyer' && method === 'POST') {
     const enabled = await env.DB.prepare("SELECT value FROM site_settings WHERE key='auth_foyer'").first().catch(() => null);
     if (enabled?.value === '0') return respond({ error: 'Foyer sign-in is disabled' }, 403);
-    const { code, code_verifier } = await request.json().catch(() => ({}));
+    const { code, code_verifier, redirect_uri } = await request.json().catch(() => ({}));
     if (!code) return respond({ error: 'code required' }, 400);
     const base = (env.FOYER_AUTH_URL || 'https://foyer.zo0p.dev').replace(/\/$/, '');
     const reqUrl = new URL(request.url);
 
+
+
     const tok = await fetch(`${base}/token`, {
       method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ code, code_verifier, client_id: reqUrl.hostname, redirect_uri: reqUrl.origin + '/' }),
+      body: JSON.stringify({ code, code_verifier, client_id: reqUrl.hostname, redirect_uri: redirect_uri || (reqUrl.origin + '/') }),
     }).then(r => r.json()).catch(() => null);
     if (!tok || tok.error || !tok.email) return respond({ error: 'foyer sign-in failed' }, 401);
     const email = String(tok.email).toLowerCase();

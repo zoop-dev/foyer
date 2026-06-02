@@ -1,0 +1,18 @@
+
+
+
+export async function onRequestGet({ request }) {
+  const url = new URL(request.url);
+  const code = url.searchParams.get('foyer_code') || '';
+  const target = url.searchParams.get('state') || '';   // the site origin (set by the SDK)
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="robots" content="noindex"><title>Foyer</title>
+<style>html,body{margin:0;height:100%;background:#0b0e13}</style></head><body><script>
+(function(){
+  var code=${JSON.stringify(code)}, target=${JSON.stringify(target)};
+  try { if (window.opener) window.opener.postMessage({ type:'foyer_auth', code: code }, target || '*'); } catch(e){}
+  try { window.close(); } catch(e){}
+  setTimeout(function(){ try{ window.close(); }catch(e){} }, 50);
+})();
+</script></body></html>`;
+  return new Response(html, { headers: { 'content-type': 'text/html;charset=utf-8', 'cache-control': 'no-store' } });
+}

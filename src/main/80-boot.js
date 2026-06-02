@@ -117,16 +117,6 @@
     (async function boot() {
 
       try {
-        const _p = new URLSearchParams(location.search);
-        const _fc = _p.get('foyer_code');
-        if (_fc && window.opener && window.opener !== window) {
-          window.opener.postMessage({ type: 'foyer_auth', code: _fc, state: _p.get('state') || '' }, location.origin);
-          window.close();
-          return;
-        }
-      } catch {}
-
-      try {
         console.log(
           '%c ∩ foyer %c this site runs on the foyer website architecture · v' + VERSION,
           'background:linear-gradient(135deg,#eef1f5,#a9b1bd);color:#11151b;font-weight:800;padding:3px 9px;border-radius:4px;letter-spacing:.05em',
@@ -218,22 +208,6 @@
       const urlCode   = urlParams.get('code');
       const urlState  = urlParams.get('state');
       const urlMagic  = urlParams.get('ml');
-      const urlFoyer  = urlParams.get('foyer_code');
-      if (urlFoyer) {
-        const okFoyer = await handleOAuthCallback(urlFoyer, 'foyer');   // strips ?foyer_code itself
-        if (!okFoyer) {
-
-          dismissLoading();
-          startGate(clientId, settings);
-          if (foyerOn)   startFoyerBtn();
-          if (githubId)  startGithubBtn(githubId);
-          if (discordId) startDiscordBtn(discordId);
-          if (magicOn)   startMagicBtn();
-          const err = document.getElementById('gate-err');
-          if (err && !err.textContent) err.textContent = 'Foyer sign-in failed. Try again.';
-        }
-        return;
-      }
       if (urlCode) {
         dismissGate();
         await handleOAuthCallback(urlCode, urlState);
@@ -267,5 +241,5 @@
         if (magicOn)   startMagicBtn();
       }
 
-      if (foyerOn) foyerOneTap();
+      if (foyerOn && !getSession() && window.Foyer) window.Foyer.oneTap({ onSignedIn: _foyerSession });
     })();
