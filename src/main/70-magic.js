@@ -148,7 +148,7 @@
 
       const requestLink = (email) => fetch('/api/auth/magic-link', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, captcha_token: _captchaToken }),
       }).then(r => r.json()).catch(() => null);
 
       const open  = () => { modal.classList.add('show'); setTimeout(() => input.focus(), 120); };
@@ -233,7 +233,7 @@
           if (data.request_id) startPoll(data.request_id);
         } else {
           send.disabled = false; send.textContent = 'Send sign-in link';
-          err.textContent = data?.error === 'account_banned' ? 'Your access to this site has been revoked.' : data?.error === 'not_allowed' ? "This site is invite-only — your email isn't on the guest list." : data?.error === 'vpn_blocked' ? "Sign-ups over a VPN or proxy aren't allowed. Please turn it off and try again." : data?.error === 'signup_limited' ? 'Too many recent sign-ups from your email domain. Please try again later.' : (data?.error || 'Could not send link. Try again.');
+          err.textContent = data?.error === 'account_banned' ? 'Your access to this site has been revoked.' : data?.error === 'not_allowed' ? "This site is invite-only — your email isn't on the guest list." : data?.error === 'vpn_blocked' ? "Sign-ups over a VPN or proxy aren't allowed. Please turn it off and try again." : data?.error === 'signup_limited' ? 'Too many recent sign-ups from your email domain. Please try again later.' : data?.error === 'captcha_failed' ? 'Bot check failed — please complete the captcha and try again.' : (data?.error || 'Could not send link. Try again.');
         }
       });
     }

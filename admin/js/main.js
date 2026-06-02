@@ -49,6 +49,7 @@ async function fetchSettings() {
   const res=await fetch('/api/settings'); if (!res.ok) return;
   const s=await res.json();
   document.getElementById('sName').value=s.name||'';
+  document.getElementById('sCaptchaProvider').value=s.captcha_provider||'';
   document.getElementById('sGateTitle').value=s.gate_title||'';
   if (s.gate_title_font) document.getElementById('sGateTitleFont').value=s.gate_title_font;
   document.getElementById('sGateSub').value=s.gate_sub||'';
@@ -83,6 +84,7 @@ document.getElementById('saveSettingsBtn').addEventListener('click', async () =>
   sp.style.display='block'; btn.disabled=true; ss.textContent='';
   const res=await fetch('/api/settings',{method:'PUT',headers:{...authHeaders(),'Content-Type':'application/json'},
     body:JSON.stringify({name:document.getElementById('sName').value.trim(),
+      captcha_provider:document.getElementById('sCaptchaProvider').value,
       gate_title:document.getElementById('sGateTitle').value.trim(),
       gate_title_font:document.getElementById('sGateTitleFont').value,
       gate_sub:document.getElementById('sGateSub').value.trim(),

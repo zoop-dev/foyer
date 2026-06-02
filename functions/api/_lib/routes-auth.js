@@ -50,6 +50,28 @@ export async function handleAuth(ctx) {
     } catch { return false; }
   }
 
+
+
+  async function captchaOk(token) {
+    const setRow = await env.DB.prepare("SELECT value FROM site_settings WHERE key='captcha_provider'").first().catch(() => null);
+    let prov = (setRow?.value || '').toLowerCase();
+    const rcSecret = env.RECAPTCHA_SECRET_KEY, tsSecret = env.TURNSTILE_SECRET_KEY;
+    if (prov === 'none') return true;
+    if (prov !== 'turnstile' && prov !== 'recaptcha') prov = rcSecret ? 'recaptcha' : (tsSecret ? 'turnstile' : '');
+    if (!prov) return true;                                  // no captcha configured
+    const secret = prov === 'recaptcha' ? rcSecret : tsSecret;
+    if (!secret) return true;                                // can't verify → don't block
+    if (!token) return false;                                // captcha required, none sent → bot
+    const url = prov === 'recaptcha' ? 'https://www.google.com/recaptcha/api/siteverify' : 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+    try {
+      const body = new URLSearchParams({ secret, response: token });
+      const ip = request.headers.get('CF-Connecting-IP') || '';
+      if (ip) body.set('remoteip', ip);
+      const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body });
+      return !!(await r.json()).success;
+    } catch { return true; }                                 // verifier unreachable → fail open
+  }
+
   async function denyAccess(email) {
     await env.DB.prepare(CREATE_BANNED_EMAILS).run();
     if (await env.DB.prepare('SELECT 1 FROM banned_emails WHERE email = ?').bind(email).first()) return 'account_banned';
@@ -205,9 +227,10 @@ export async function handleAuth(ctx) {
     if (mlEnabled?.value === '0') return respond({ error: 'email sign-in is disabled' }, 403);
     if (!env.RESEND_API_KEY) return respond({ error: 'email auth not configured' }, 503);
 
-    const { email: rawEmail, redirect } = await request.json().catch(() => ({}));
+    const { email: rawEmail, redirect, captcha_token } = await request.json().catch(() => ({}));
     const email = (rawEmail || '').trim().toLowerCase();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return respond({ error: 'enter a valid email' }, 400);
+    if (!(await captchaOk(captcha_token))) return respond({ error: 'captcha_failed' }, 403);
 
 
     const denied = await denyAccess(email);

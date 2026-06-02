@@ -172,6 +172,15 @@
       <div class="settings-group">
         <p class="settings-group-title">Gate</p>
         <p style="font-weight:100;font-size:.66rem;color:var(--muted);line-height:1.8;margin-bottom:1.2rem;">Set <code style="font-size:.8em;background:var(--panel);padding:.1em .35em;border:1px solid var(--border)">GOOGLE_CLIENT_ID</code> in <code style="font-size:.8em;background:var(--panel);padding:.1em .35em;border:1px solid var(--border)">wrangler.toml</code> to enable Google sign-in.</p>
+        <div class="field"><label>Bot check (captcha)</label>
+          <select id="sCaptchaProvider" style="background:var(--panel);border:1px solid var(--border);color:var(--white);font-size:.82rem;padding:.6rem .75rem;outline:none;width:100%;">
+            <option value="">Auto (use site config)</option>
+            <option value="none">None</option>
+            <option value="turnstile">Cloudflare Turnstile</option>
+            <option value="recaptcha">Google reCAPTCHA</option>
+          </select>
+          <p style="font-weight:100;font-size:.6rem;color:var(--muted);margin-top:.4rem;line-height:1.7;">Needs the matching site key secret (TURNSTILE_SITE_KEY / RECAPTCHA_SITE_KEY). "None" disables the bot check; "Auto" uses the site config.</p>
+        </div>
         <div class="field"><label>Title <span style="opacity:.5">(inside card — defaults to site name)</span></label><input type="text" id="sGateTitle" placeholder="{{NAME}}" /></div>
         <div class="field"><label>Title Font</label>
           <select id="sGateTitleFont" style="background:var(--panel);border:1px solid var(--border);color:var(--white);font-size:.82rem;padding:.6rem .75rem;outline:none;width:100%;">

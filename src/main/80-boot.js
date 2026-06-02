@@ -170,10 +170,13 @@
       _bootGithubId   = githubId;
       _bootDiscordId  = discordId;
 
+
       {
-        const _pref = (__SITE__.captcha || '').toLowerCase();
+        const _set = (settings.captcha_provider || '').toLowerCase();
+        const _pref = (_set === 'turnstile' || _set === 'recaptcha' || _set === 'none') ? _set : (__SITE__.captcha || '').toLowerCase();
         const _ts = cfg.turnstile_site_key || '', _rc = cfg.recaptcha_site_key || '';
-        if (_pref === 'recaptcha' && _rc) _bootCaptcha = { provider: 'recaptcha', key: _rc };
+        if (_pref === 'none') _bootCaptcha = { provider: '', key: '' };
+        else if (_pref === 'recaptcha' && _rc) _bootCaptcha = { provider: 'recaptcha', key: _rc };
         else if (_pref === 'turnstile' && _ts) _bootCaptcha = { provider: 'turnstile', key: _ts };
         else if (!_pref && _ts) _bootCaptcha = { provider: 'turnstile', key: _ts };       // auto: turnstile if set
         else if (!_pref && _rc) _bootCaptcha = { provider: 'recaptcha', key: _rc };        // else recaptcha if set
