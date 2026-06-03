@@ -92,7 +92,7 @@
 
       modal.querySelector('#acctFoyerSave').addEventListener('click', async (e) => {
         const b = e.currentTarget, msg = document.getElementById('acctFoyerMsg');
-        if (!window.Foyer) { msg.textContent = 'Foyer not loaded.'; return; }
+        if (!window.Foyer || typeof window.Foyer.updateProfile !== 'function') { msg.textContent = 'Foyer is still loading — refresh and try again.'; return; }
         b.disabled = true; msg.textContent = 'Saving…';
         const res = await window.Foyer.updateProfile({
           name: document.getElementById('acctFoyerName').value.trim(),
@@ -180,7 +180,7 @@
         const adminBtn = document.getElementById('acctAdmin');
         if (acc.role === 'owner' || acc.role === 'admin') { adminBtn.style.display = ''; hookHover(adminBtn); }
 
-        if (acc.provider === 'foyer' && window.Foyer) {
+        if (acc.provider === 'foyer' && window.Foyer && typeof window.Foyer.getProfile === 'function') {
           document.getElementById('acctFoyerSec').style.display = '';
           document.getElementById('acctFoyerMsg').textContent = '';
           window.Foyer.getProfile().then((p) => {

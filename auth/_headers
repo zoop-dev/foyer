@@ -1,0 +1,4 @@
+# The hosted SDK must never get stuck stale in a browser cache — always revalidate.
+/auth.js
+  Cache-Control: no-cache, must-revalidate
+  Access-Control-Allow-Origin: *

@@ -55,6 +55,21 @@ h2{font-family:'Unbounded',sans-serif;font-weight:200;font-size:1rem;margin:1.6r
 #login .s{font-size:.56rem;letter-spacing:.34em;text-transform:uppercase;color:var(--accent);margin-bottom:2rem}
 #login input{width:100%;margin-bottom:.7rem;text-align:center}
 #login button{width:100%}#login .e{color:#e0608a;font-size:.62rem;min-height:.9rem;margin-bottom:.5rem}
+
+#toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,16px);z-index:40;background:var(--panel);border:1px solid var(--line);color:var(--ink);font-size:.74rem;font-weight:300;letter-spacing:.04em;padding:.7rem 1.1rem;border-radius:9px;box-shadow:0 12px 36px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;max-width:80vw}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast.err{border-color:rgba(224,96,138,.5);color:#f0a8be}
+
+#modal{position:fixed;inset:0;z-index:50;background:rgba(6,9,14,.72);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:1.5rem}
+#modal.show{display:flex}
+#modal .mbox{width:100%;max-width:360px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1.4rem;box-shadow:0 20px 60px rgba(0,0,0,.55)}
+#modal .mt{font-family:'Unbounded',sans-serif;font-weight:200;font-size:.92rem;margin-bottom:1rem}
+#modal input{width:100%;margin-bottom:1rem}
+#modal .mrow{display:flex;gap:.5rem;justify-content:flex-end}
+
+.ann-edit{display:flex;flex-direction:column;gap:.55rem;margin-top:.6rem}
+.ann-edit .row{gap:.5rem}
+.ann-edit input{flex:1;min-width:140px}
 </style></head>
 <body>
 <div id="login"><div class="box">
@@ -76,13 +91,38 @@ h2{font-family:'Unbounded',sans-serif;font-weight:200;font-size:1rem;margin:1.6r
   <div id="view"></div>
 </div></div>
 
+<div id="toast"></div>
+<div id="modal"><div class="mbox">
+  <div class="mt" id="modalTitle"></div>
+  <input id="modalInput" />
+  <div class="mrow"><button class="btn" id="modalCancel">Cancel</button><button class="btn go" id="modalOk">OK</button></div>
+</div></div>
+
 <script>
 var D = null, TAB = 'sites';
 var esc = function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
 function timeAgo(ts){ if(!ts) return 'never'; var s=Math.floor((Date.now()-new Date(ts).getTime())/1000); if(s<60)return s+'s ago'; var m=Math.floor(s/60); if(m<60)return m+'m ago'; var h=Math.floor(m/60); if(h<24)return h+'h ago'; return Math.floor(h/24)+'d ago'; }
 function hbOf(domain){ return (D.heartbeats||[]).find(function(h){return h.domain===domain;}); }
 function api(path, body){ return fetch('/dashboard/'+path, body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{}).then(function(r){return r.json().then(function(j){return {status:r.status,j:j};});}); }
-function act(payload){ return api('action', payload).then(function(r){ if(r.status!==200||!r.j.ok){ alert('Failed: '+(r.j.error||r.status)); } return load(); }); }
+
+var _toastT;
+function toast(msg, isErr){ var t=document.getElementById('toast'); t.textContent=msg; t.className='show'+(isErr?' err':''); clearTimeout(_toastT); _toastT=setTimeout(function(){ t.className=''; }, 2600); }
+
+function modal(title, opts){ opts=opts||{}; return new Promise(function(resolve){
+  var m=document.getElementById('modal'), inp=document.getElementById('modalInput');
+  document.getElementById('modalTitle').textContent=title;
+  inp.style.display=opts.input?'':'none'; inp.value=opts.value||''; inp.placeholder=opts.placeholder||'';
+  document.getElementById('modalOk').textContent=opts.ok||'OK';
+  m.classList.add('show'); if(opts.input) setTimeout(function(){inp.focus();},30);
+  function done(val){ m.classList.remove('show'); document.getElementById('modalOk').onclick=null; document.getElementById('modalCancel').onclick=null; inp.onkeydown=null; resolve(val); }
+  document.getElementById('modalOk').onclick=function(){ done(opts.input?inp.value:true); };
+  document.getElementById('modalCancel').onclick=function(){ done(opts.input?null:false); };
+  inp.onkeydown=function(e){ if(e.key==='Enter') done(inp.value); if(e.key==='Escape') done(null); };
+}); }
+function modalPrompt(title, o){ o=o||{}; o.input=true; return modal(title, o); }
+function modalConfirm(title, o){ return modal(title, o||{}); }
+
+function act(payload){ return api('action', payload).then(function(r){ if(r.status!==200||!r.j.ok){ toast('Failed: '+(r.j.error||r.status), true); } return load(); }); }
 
 function load(){
   return api('data').then(function(r){
@@ -133,12 +173,16 @@ function renderAnn(){
     '<input id="annHide" type="number" min="0" placeholder="hide after (s)" style="width:130px" />'+
     '<button class="btn go" id="annAdd">Push</button></div>';
   var list=(D.announcements||[]).length? (D.announcements||[]).map(function(a){
-    return '<div class="card"><div class="row"><span class="badge '+(a.active?'b-ok':'b-dim')+'">'+(a.active?'active':'off')+'</span>'+
+    return '<div class="card" id="ann-'+esc(a.id)+'"><div class="row"><span class="badge '+(a.active?'b-ok':'b-dim')+'">'+(a.active?'active':'off')+'</span>'+
       '<span class="badge '+(a.level==='warn'?'b-warn':'b-dim')+'">'+esc(a.level)+'</span>'+
       '<span class="badge b-dim">'+esc(a.scope==='global'?'all sites':a.scope)+'</span>'+
-      '<span class="spacer"></span></div><div style="margin-top:.5rem;font-size:.85rem;font-weight:200">'+esc(a.message)+'</div></div>';
+      '<span class="spacer"></span>'+
+      '<button class="btn" data-anntoggle="'+esc(a.id)+'" data-val="'+(a.active?'0':'1')+'">'+(a.active?'Deactivate':'Activate')+'</button>'+
+      '<button class="btn" data-annedit="'+esc(a.id)+'">Edit</button>'+
+      '<button class="btn danger" data-anndel="'+esc(a.id)+'">Delete</button>'+
+      '</div><div class="ann-body" style="margin-top:.5rem;font-size:.85rem;font-weight:200">'+esc(a.message)+'</div></div>';
   }).join(''):'<p class="empty">No announcements.</p>';
-  var clr='<div class="row" style="margin-top:.4rem"><button class="btn" data-annclear="global">Clear all-sites</button> <button class="btn danger" data-annremove="global">Remove all-sites</button></div>';
+  var clr='<div class="row" style="margin-top:.4rem"><button class="btn" data-annclear="global">Deactivate all-sites</button> <button class="btn danger" data-annremove="global">Remove all-sites</button></div>';
   return '<h2>Push announcement</h2>'+form+'<h2>Recent</h2>'+list+clr;
 }
 function renderFlags(){
@@ -159,16 +203,47 @@ function renderErrors(){
   }).join('')+'</div>';
 }
 
+function annById(id){ return (D.announcements||[]).find(function(a){return String(a.id)===String(id);}); }
+function openAnnEdit(id){
+  var a=annById(id); if(!a) return;
+  var card=document.getElementById('ann-'+id); if(!card) return;
+  card.querySelector('.ann-body').style.display='none';
+  if(card.querySelector('.ann-edit')) return;
+  var box=document.createElement('div'); box.className='ann-edit';
+  box.innerHTML='<div class="row"><input class="ae-msg" /></div>'+
+    '<div class="row"><select class="ae-scope">'+siteOptions()+'</select>'+
+    '<select class="ae-level"><option value="info">Info</option><option value="warn">Warn</option></select>'+
+    '<input class="ae-hide" type="number" min="0" placeholder="hide after (s)" style="width:130px" /></div>'+
+    '<div class="row"><button class="btn go ae-save">Save</button><button class="btn ae-cancel">Cancel</button></div>';
+  card.appendChild(box);
+  box.querySelector('.ae-msg').value=a.message||'';
+  box.querySelector('.ae-scope').value=a.scope||'global';
+  box.querySelector('.ae-level').value=a.level||'info';
+  box.querySelector('.ae-hide').value=a.hide_after||'';
+  box.querySelector('.ae-save').onclick=function(){
+    act({type:'announce_edit', id:id, message:box.querySelector('.ae-msg').value.trim(),
+      scope:box.querySelector('.ae-scope').value, level:box.querySelector('.ae-level').value,
+      hide_after:parseInt(box.querySelector('.ae-hide').value,10)||0}).then(function(){ toast('Announcement updated'); });
+  };
+  box.querySelector('.ae-cancel').onclick=function(){ box.remove(); card.querySelector('.ann-body').style.display=''; };
+}
+
 function wire(){
   document.querySelectorAll('[data-act]').forEach(function(b){ b.onclick=function(){
     var t=b.dataset.act, dom=b.dataset.dom, val=b.dataset.val==='1';
-    var reason=''; if((t==='offline'&&val)||(t==='license'&&!val)){ reason=prompt((t==='offline'?'Offline':'Unlicensed')+' message (optional):')||''; }
-    act({type:t, domain:dom, value:val, reason:reason});
+    if((t==='offline'&&val)||(t==='license'&&!val)){
+      modalPrompt((t==='offline'?'Offline':'Unlicensed')+' message for '+dom+' (optional):', {ok:'Apply'}).then(function(reason){
+        if(reason===null) return; act({type:t, domain:dom, value:val, reason:reason||''});
+      });
+    } else { act({type:t, domain:dom, value:val, reason:''}); }
   };});
-  var aa=document.getElementById('annAdd'); if(aa) aa.onclick=function(){ act({type:'announce', scope:document.getElementById('annScope').value, message:document.getElementById('annMsg').value.trim(), level:document.getElementById('annLevel').value, hide_after:parseInt(document.getElementById('annHide').value,10)||0}); };
-  document.querySelectorAll('[data-annclear]').forEach(function(b){ b.onclick=function(){ act({type:'announce_clear', scope:b.dataset.annclear}); }; });
-  document.querySelectorAll('[data-annremove]').forEach(function(b){ b.onclick=function(){ if(confirm('Permanently remove all-sites announcements?')) act({type:'announce_remove', scope:b.dataset.annremove}); }; });
-  var fa=document.getElementById('flAdd'); if(fa) fa.onclick=function(){ act({type:'flag', scope:document.getElementById('flScope').value, key:document.getElementById('flKey').value.trim(), value:document.getElementById('flVal').value.trim()||'on'}); };
+  var aa=document.getElementById('annAdd'); if(aa) aa.onclick=function(){ var msg=document.getElementById('annMsg').value.trim(); if(!msg){ toast('Message required', true); return; } act({type:'announce', scope:document.getElementById('annScope').value, message:msg, level:document.getElementById('annLevel').value, hide_after:parseInt(document.getElementById('annHide').value,10)||0}).then(function(){ toast('Announcement pushed'); }); };
+  document.querySelectorAll('[data-anntoggle]').forEach(function(b){ b.onclick=function(){ act({type:'announce_edit', id:b.dataset.anntoggle, active:b.dataset.val==='1'}); }; });
+  document.querySelectorAll('[data-annedit]').forEach(function(b){ b.onclick=function(){ openAnnEdit(b.dataset.annedit); }; });
+  document.querySelectorAll('[data-anndel]').forEach(function(b){ b.onclick=function(){ modalConfirm('Permanently delete this announcement?', {ok:'Delete'}).then(function(ok){ if(ok) act({type:'announce_delete', id:b.dataset.anndel}).then(function(){ toast('Deleted'); }); }); }; });
+  document.querySelectorAll('[data-annclear]').forEach(function(b){ b.onclick=function(){ act({type:'announce_clear', scope:b.dataset.annclear}).then(function(){ toast('Deactivated'); }); }; });
+  document.querySelectorAll('[data-annremove]').forEach(function(b){ b.onclick=function(){ modalConfirm('Permanently remove all-sites announcements?', {ok:'Remove'}).then(function(ok){ if(ok) act({type:'announce_remove', scope:b.dataset.annremove}); }); }; });
+  var fa=document.getElementById('flAdd'); if(fa) fa.onclick=function(){ var k=document.getElementById('flKey').value.trim(); if(!k){ toast('Key required', true); return; } act({type:'flag', scope:document.getElementById('flScope').value, key:k, value:document.getElementById('flVal').value.trim()||'on'}); };
   document.querySelectorAll('[data-flrm]').forEach(function(b){ b.onclick=function(){ var p=b.dataset.flrm.split('|'); act({type:'flag_remove', scope:p[0], key:p[1]}); }; });
 }
 
