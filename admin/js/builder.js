@@ -8,6 +8,90 @@ function bRgb(hex, a) {
   return `rgba(${r},${g},${b},${a})`;
 }
 
+
+
+const BLOCK_CATALOG = [
+
+  { t:'hero', l:'Hero', c:'Headers', i:'⛰️', k:'title name intro' },
+  { t:'banner', l:'Banner', c:'Headers', i:'🎯', k:'cta call to action splash cover' },
+  { t:'sectionhead', l:'Section header', c:'Headers', i:'🪧', k:'eyebrow subtitle' },
+
+  { t:'heading', l:'Heading', c:'Text', i:'🔠', k:'title' },
+  { t:'text', l:'Text', c:'Text', i:'¶', k:'paragraph body markdown' },
+  { t:'lead', l:'Lead', c:'Text', i:'🅛', k:'intro large paragraph' },
+  { t:'bio', l:'Bio', c:'Text', i:'👤', k:'about' },
+  { t:'quote', l:'Quote', c:'Text', i:'❝', k:'blockquote' },
+  { t:'callout', l:'Callout', c:'Text', i:'💡', k:'notice tip warning alert info' },
+  { t:'code', l:'Code', c:'Text', i:'⌨️', k:'snippet pre monospace' },
+
+  { t:'cards', l:'Cards', c:'Cards & grids', i:'🃏', k:'grid' },
+  { t:'features', l:'Features', c:'Cards & grids', i:'✦', k:'benefits icons grid' },
+  { t:'steps', l:'Steps', c:'Cards & grids', i:'🔢', k:'process how it works' },
+  { t:'collection', l:'Collection', c:'Cards & grids', i:'🗂️', k:'items shop grid' },
+  { t:'specs', l:'Specs', c:'Cards & grids', i:'📋', k:'key value details list' },
+  { t:'timeline', l:'Timeline', c:'Cards & grids', i:'🪜', k:'history events dated' },
+  { t:'tabs', l:'Tabs', c:'Cards & grids', i:'🗃️', k:'tabbed panels' },
+
+  { t:'links', l:'Links', c:'Lists & links', i:'🔗', k:'list' },
+  { t:'link', l:'Button', c:'Lists & links', i:'➡️', k:'link cta' },
+  { t:'buttongroup', l:'Button group', c:'Lists & links', i:'🔘', k:'cta row buttons' },
+  { t:'toc', l:'Table of contents', c:'Lists & links', i:'🧭', k:'jump menu anchors nav' },
+
+  { t:'image', l:'Image', c:'Media', i:'🖼️', k:'photo' },
+  { t:'gallery', l:'Gallery', c:'Media', i:'🌃', k:'photos grid' },
+  { t:'masonry', l:'Masonry', c:'Media', i:'🧱', k:'pinterest gallery' },
+  { t:'carousel', l:'Carousel', c:'Media', i:'🎠', k:'slider slideshow' },
+  { t:'imgtext', l:'Image + Text', c:'Media', i:'🔲', k:'split media' },
+  { t:'compare', l:'Before / After', c:'Media', i:'🪞', k:'slider compare image' },
+  { t:'video', l:'Video', c:'Media', i:'▶️', k:'youtube vimeo' },
+  { t:'fileprev', l:'File Preview', c:'Media', i:'📄', k:'pdf embed' },
+  { t:'filedown', l:'File Download', c:'Media', i:'⬇️', k:'pdf download' },
+
+  { t:'cta', l:'CTA', c:'Conversion', i:'📣', k:'call to action button' },
+  { t:'pricing', l:'Pricing', c:'Conversion', i:'💲', k:'plans tiers' },
+  { t:'testimonials', l:'Testimonials', c:'Conversion', i:'💬', k:'quotes reviews social proof' },
+  { t:'testimonial', l:'Featured quote', c:'Conversion', i:'🗯️', k:'big testimonial' },
+  { t:'rating', l:'Rating', c:'Conversion', i:'⭐', k:'stars score reviews' },
+  { t:'logos', l:'Logo Strip', c:'Conversion', i:'🏷️', k:'brands trusted by partners' },
+  { t:'countdown', l:'Countdown', c:'Conversion', i:'⏳', k:'timer launch event' },
+  { t:'badges', l:'Trust badges', c:'Conversion', i:'🛡️', k:'guarantee secure' },
+  { t:'stats', l:'Stats', c:'Conversion', i:'📊', k:'numbers metrics counter' },
+
+  { t:'contact', l:'Contact', c:'People & contact', i:'✉️', k:'email phone' },
+  { t:'social', l:'Social', c:'People & contact', i:'🌐', k:'links icons' },
+  { t:'team', l:'Team', c:'People & contact', i:'👥', k:'members staff people' },
+  { t:'vcard', l:'Contact card', c:'People & contact', i:'🪪', k:'vcard profile' },
+  { t:'availability', l:'Availability', c:'People & contact', i:'🟢', k:'open to work status' },
+
+  { t:'skills', l:'Skills', c:'Portfolio', i:'🧩', k:'tech stack tags badges' },
+  { t:'progress', l:'Progress bars', c:'Portfolio', i:'📶', k:'skill meters levels' },
+  { t:'resume', l:'Resume timeline', c:'Portfolio', i:'📜', k:'experience education cv' },
+  { t:'qrcode', l:'QR code', c:'Portfolio', i:'🔳', k:'qr link' },
+
+  { t:'accordion', l:'Accordion', c:'Interactive', i:'🪗', k:'faq collapse' },
+  { t:'toggle', l:'Toggle', c:'Interactive', i:'🔽', k:'show hide spoiler' },
+  { t:'copyfield', l:'Copy field', c:'Interactive', i:'📋', k:'clipboard copy' },
+  { t:'marquee', l:'Marquee', c:'Interactive', i:'🎞️', k:'scrolling ticker' },
+
+  { t:'embed', l:'Embed', c:'Embeds', i:'🧷', k:'iframe codepen figma loom' },
+  { t:'audio', l:'Audio', c:'Embeds', i:'🎵', k:'spotify soundcloud podcast' },
+  { t:'socialpost', l:'Social post', c:'Embeds', i:'🐦', k:'twitter x instagram tiktok' },
+  { t:'map', l:'Map', c:'Embeds', i:'📍', k:'google maps location' },
+  { t:'booking', l:'Booking', c:'Embeds', i:'📅', k:'calendly cal scheduling' },
+
+  { t:'newsletter', l:'Newsletter', c:'Forms', i:'📨', k:'email signup subscribe' },
+  { t:'contactform', l:'Contact form', c:'Forms', i:'📝', k:'message form email' },
+
+  { t:'tutorials', l:'Tutorials', c:'Dynamic', i:'🎓', k:'list' },
+  { t:'reviews', l:'Reviews', c:'Dynamic', i:'⭐', k:'list' },
+
+  { t:'divider', l:'Divider', c:'Layout', i:'➖', k:'rule line separator' },
+  { t:'spacer', l:'Spacer', c:'Layout', i:'⬚', k:'gap whitespace' },
+  { t:'group', l:'Collapsible', c:'Layout', i:'📦', k:'group sections' },
+];
+const BLK_LABEL = Object.fromEntries(BLOCK_CATALOG.map(b => [b.t, b.l]));
+const BLK_CATS = [...new Set(BLOCK_CATALOG.map(b => b.c))];
+
 function bRender(s, theme) {
   const { accent=__SITE__.accent, text=__SITE__.text, font='Josefin Sans', bg=__SITE__.bg } = theme;
   const ff = `font-family:'${font}',sans-serif;`;
@@ -415,6 +499,185 @@ function bXtra(s, h) {
       const run = one.repeat(8);
       return `<div style="${f}${c}overflow:hidden;white-space:nowrap;background:${rgb(accent, .07)};border-top:1px solid ${rgb(accent, .12)};border-bottom:1px solid ${rgb(accent, .12)};padding:.85rem 0;font-size:.95rem;font-weight:300;letter-spacing:.04em;"><style>@keyframes foyer-marq{from{transform:translateX(0)}to{transform:translateX(-50%)}}</style><div style="display:inline-block;animation:foyer-marq ${sp} linear infinite;">${run}${run}</div></div>`;
     }
+    case 'sectionhead': return wrap(cont(secHead(s.align || 'center'), '720px'));
+    case 'lead': {
+      const ta = s.align || 'center';
+      return wrap(cont(`<p style="font-size:clamp(1.1rem,2.5vw,1.5rem);font-weight:200;line-height:1.6;color:${rgb(text, .8)};text-align:${ta};margin:0;">${E(s.text || '')}</p>`, '680px'));
+    }
+    case 'callout': {
+      const v = s.variant || 'info';
+      const col = v === 'warn' ? '#e6b15a' : v === 'success' ? '#6cd49a' : v === 'tip' ? accent : '#7fa6d8';
+      const ic = s.icon || (v === 'warn' ? '⚠️' : v === 'success' ? '✅' : v === 'tip' ? '💡' : 'ℹ️');
+      return wrap(cont(`<div style="display:flex;gap:.9rem;border:1px solid ${rgb(text, .1)};border-left:3px solid ${col};background:${rgb(text, .03)};border-radius:10px;padding:1.1rem 1.3rem;"><div style="font-size:1.2rem;line-height:1.3;flex-shrink:0;">${E(ic)}</div><div>${s.title ? `<div style="font-weight:400;font-size:.95rem;margin-bottom:.3rem;color:${col};">${E(s.title)}</div>` : ''}<div class="md-content" style="font-size:.88rem;font-weight:200;line-height:1.7;color:${rgb(text, .72)};">${md(s.body)}</div></div></div>`, '720px'));
+    }
+    case 'code': {
+      return wrap(cont(`<div style="border:1px solid ${rgb(accent, .14)};border-radius:10px;overflow:hidden;background:rgba(0,0,0,.35);">${s.lang ? `<div style="padding:.45rem .9rem;border-bottom:1px solid ${rgb(accent, .1)};font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:${rgb(text, .45)};">${E(s.lang)}</div>` : ''}<pre style="margin:0;padding:1rem 1.1rem;overflow-x:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.82rem;line-height:1.6;color:${rgb(text, .85)};white-space:pre;">${E(s.code || '')}</pre></div>`, '760px'));
+    }
+    case 'specs': {
+      const rows = items.map(it => `<div style="display:flex;justify-content:space-between;gap:1.5rem;padding:.7rem 0;border-bottom:1px solid ${rgb(accent, .1)};"><span style="font-size:.85rem;font-weight:200;color:${rgb(text, .55)};">${E(it.label || '')}</span><span style="font-size:.85rem;font-weight:300;color:${rgb(text, .9)};text-align:right;">${E(it.value || '')}</span></div>`).join('');
+      return wrap(cont((s.heading ? `<h3 style="font-size:1.1rem;font-weight:300;margin-bottom:1rem;">${E(s.heading)}</h3>` : '') + `<div>${rows}</div>`, '620px'));
+    }
+    case 'timeline': {
+      const rows = items.map(it => `<div style="display:flex;gap:1.1rem;padding-bottom:1.8rem;">
+        <div style="flex-shrink:0;width:90px;text-align:right;font-size:.72rem;font-weight:300;letter-spacing:.05em;color:${accent};padding-top:.1rem;">${E(it.date || '')}</div>
+        <div style="flex-shrink:0;width:1px;background:${rgb(accent, .25)};position:relative;"><span style="position:absolute;top:.2rem;left:-4px;width:9px;height:9px;border-radius:50%;background:${accent};"></span></div>
+        <div><div style="font-size:.98rem;font-weight:400;margin-bottom:.25rem;">${E(it.title || '')}</div>${it.text ? `<div style="font-size:.85rem;font-weight:200;line-height:1.7;color:${rgb(text, .6)};">${E(it.text)}</div>` : ''}</div>
+      </div>`).join('');
+      return wrap(cont(secHead('left') + `<div>${rows}</div>`, '640px'));
+    }
+    case 'tabs': {
+      const id = 'tb' + String(s.id || 'x').replace(/[^a-z0-9]/gi, '');
+      const radios = items.map((_, i) => `<input type="radio" name="${id}" id="${id}-${i}"${i === 0 ? ' checked' : ''} style="position:absolute;opacity:0;pointer-events:none;">`).join('');
+      const bar = `<div class="${id}-bar" style="display:flex;gap:.3rem;border-bottom:1px solid ${rgb(accent, .15)};overflow-x:auto;">${items.map((it, i) => `<label for="${id}-${i}" style="cursor:pointer;padding:.6rem 1rem;font-size:.8rem;font-weight:300;color:${rgb(text, .5)};border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;">${E(it.label || ('Tab ' + (i + 1)))}</label>`).join('')}</div>`;
+      const pan = `<div class="${id}-pan">${items.map(it => `<div style="display:none;padding-top:1.1rem;"><div class="md-content" style="font-size:.9rem;font-weight:200;line-height:1.75;color:${rgb(text, .75)};">${md(it.body)}</div></div>`).join('')}</div>`;
+      const css = `<style>${items.map((_, i) => `#${id}-${i}:checked~.${id}-bar label:nth-of-type(${i + 1}){color:${text};border-bottom-color:${accent}}#${id}-${i}:checked~.${id}-pan>div:nth-of-type(${i + 1}){display:block}`).join('')}</style>`;
+      return wrap(cont(`<div style="position:relative;">${radios}${bar}${pan}${css}</div>`, '760px'));
+    }
+    case 'buttongroup': {
+      const ai = s.align === 'left' ? 'flex-start' : s.align === 'right' ? 'flex-end' : 'center';
+      const bs = items.map(it => btn(it.label, it.url, it.style === 'outline' ? 'outline' : 'solid')).join('');
+      return wrap(cont(`<div style="display:flex;flex-wrap:wrap;gap:.7rem;justify-content:${ai};">${bs}</div>`, '760px'));
+    }
+    case 'toc': {
+      const links = items.map(it => `<a href="#${A(it.anchor || '')}" style="display:block;padding:.5rem .2rem;border-bottom:1px solid ${rgb(accent, .08)};font-size:.88rem;font-weight:200;color:${rgb(text, .75)};text-decoration:none;">${E(it.label || '')}</a>`).join('');
+      return wrap(cont((s.heading ? `<div style="font-size:.65rem;letter-spacing:.2em;text-transform:uppercase;color:${rgb(accent, .6)};margin-bottom:.8rem;font-weight:300;">${E(s.heading)}</div>` : '') + `<nav>${links}</nav>`, '560px'));
+    }
+    case 'masonry': {
+      const cc = s.cols === '2' ? 2 : s.cols === '4' ? 4 : 3;
+      const cells = items.map(it => it.img ? `<div style="break-inside:avoid;margin-bottom:.7rem;"><img src="${A(it.img)}" alt="${A(it.caption || '')}" style="width:100%;border-radius:10px;display:block;" />${it.caption ? `<div style="font-size:.7rem;font-weight:200;color:${rgb(text, .5)};margin-top:.3rem;">${E(it.caption)}</div>` : ''}</div>` : '').join('');
+      return wrap(cont(`<div style="column-count:${cc};column-gap:.7rem;">${cells}</div>`));
+    }
+    case 'compare': {
+      const hh = s.height === 'sm' ? '260px' : s.height === 'lg' ? '520px' : '380px';
+      if (!s.before || !s.after) return wrap(cont(`<div style="height:${hh};background:${rgb(accent, .06)};border:1px dashed ${rgb(accent, .2)};border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:${rgb(text, .4)};">Add a before and after image</div>`, '760px'));
+      const cid = 'cmp' + String(s.id || 'x').replace(/[^a-z0-9]/gi, '');
+      return wrap(cont(`<div style="position:relative;height:${hh};border-radius:12px;overflow:hidden;">
+        <img src="${A(s.after)}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" />
+        <img id="${cid}" src="${A(s.before)}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;clip-path:inset(0 50% 0 0);" />
+        <input type="range" min="0" max="100" value="50" oninput="document.getElementById('${cid}').style.clipPath='inset(0 '+(100-this.value)+'% 0 0)'" style="position:absolute;bottom:14px;left:5%;width:90%;cursor:ew-resize;" />
+      </div>`, '760px'));
+    }
+    case 'testimonial': {
+      return wrap(cont(`<figure style="text-align:center;margin:0;">
+        <blockquote style="font-size:clamp(1.2rem,3vw,1.7rem);font-weight:200;font-style:italic;line-height:1.5;color:${rgb(text, .85)};margin:0 0 1.4rem;">&ldquo;${E(s.quote || '')}&rdquo;</blockquote>
+        <figcaption style="display:flex;align-items:center;justify-content:center;gap:.7rem;">${s.avatar ? `<img src="${A(s.avatar)}" alt="" style="width:44px;height:44px;border-radius:50%;object-fit:cover;" />` : ''}<div style="text-align:left;"><div style="font-weight:400;font-size:.9rem;">${E(s.name || '')}</div>${s.role ? `<div style="font-size:.75rem;font-weight:200;color:${rgb(accent, .6)};">${E(s.role)}</div>` : ''}</div></figcaption>
+      </figure>`, '680px'));
+    }
+    case 'rating': {
+      const mx = parseInt(s.max, 10) || 5;
+      const score = parseFloat(s.score) || 0;
+      let stars = '';
+      for (let i = 1; i <= mx; i++) { const fill = Math.max(0, Math.min(1, score - (i - 1))); stars += `<span style="position:relative;display:inline-block;color:${rgb(text, .18)};">★<span style="position:absolute;left:0;top:0;width:${fill * 100}%;overflow:hidden;color:${accent};">★</span></span>`; }
+      const ta = s.align || 'center';
+      return wrap(cont(`<div style="text-align:${ta};"><div style="font-size:1.5rem;letter-spacing:.1em;">${stars}</div><div style="margin-top:.5rem;font-size:.85rem;font-weight:200;color:${rgb(text, .65)};">${E(s.score || '')}${s.count ? ` · ${E(s.count)} reviews` : ''}${s.label ? ` · ${E(s.label)}` : ''}</div></div>`, '480px'));
+    }
+    case 'countdown': {
+      const ta = s.align || 'center';
+      const jc = ta === 'left' ? 'flex-start' : ta === 'right' ? 'flex-end' : 'center';
+      const unit = (l) => `<div style="text-align:center;min-width:62px;"><div class="cd-n" style="font-size:clamp(1.8rem,5vw,2.8rem);font-weight:200;font-variant-numeric:tabular-nums;line-height:1;">--</div><div style="font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;color:${rgb(accent, .6)};margin-top:.35rem;">${l}</div></div>`;
+      return wrap(cont(`${s.heading ? `<div style="text-align:${ta};font-size:1.1rem;font-weight:300;margin-bottom:1.2rem;">${E(s.heading)}</div>` : ''}<div data-foyer-cd="${A(s.target || '')}" data-done="${A(s.done_text || '')}" style="display:flex;gap:1.2rem;justify-content:${jc};flex-wrap:wrap;">${unit('Days')}${unit('Hours')}${unit('Mins')}${unit('Secs')}</div>`, '560px'));
+    }
+    case 'badges': {
+      const ai = s.align === 'left' ? 'flex-start' : s.align === 'right' ? 'flex-end' : 'center';
+      const bs = items.map(it => `<div style="display:flex;align-items:center;gap:.5rem;border:1px solid ${rgb(accent, .15)};border-radius:30px;padding:.5rem 1rem;"><span style="font-size:1rem;">${E(it.icon || '✔')}</span><span style="font-size:.78rem;font-weight:300;color:${rgb(text, .75)};">${E(it.label || '')}</span></div>`).join('');
+      return wrap(cont(`<div style="display:flex;flex-wrap:wrap;gap:.7rem;justify-content:${ai};">${bs}</div>`, '760px'));
+    }
+    case 'vcard': {
+      const rows = items.map(it => `<a href="${A(it.href || '#')}" style="display:flex;justify-content:space-between;gap:1rem;padding:.6rem 0;border-bottom:1px solid ${rgb(accent, .1)};text-decoration:none;"><span style="font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:${rgb(accent, .55)};">${E(it.label || '')}</span><span style="font-size:.85rem;font-weight:300;color:${rgb(text, .85)};">${E(it.val || '')}</span></a>`).join('');
+      return wrap(cont(`<div style="border:1px solid ${rgb(accent, .14)};background:${rgb(accent, .03)};border-radius:16px;padding:2rem;text-align:center;">
+        ${s.photo ? `<img src="${A(s.photo)}" alt="" style="width:88px;height:88px;border-radius:50%;object-fit:cover;margin:0 auto 1rem;display:block;" />` : ''}
+        <div style="font-size:1.3rem;font-weight:300;">${E(s.name || '')}</div>${s.role ? `<div style="font-size:.85rem;font-weight:200;color:${rgb(accent, .65)};margin-top:.2rem;">${E(s.role)}</div>` : ''}${s.tagline ? `<p style="font-size:.85rem;font-weight:200;line-height:1.7;color:${rgb(text, .6)};margin:.9rem 0 0;">${E(s.tagline)}</p>` : ''}
+        <div style="margin-top:1.3rem;text-align:left;">${rows}</div>
+      </div>`, '440px'));
+    }
+    case 'availability': {
+      const on = s.status !== 'busy' && s.status !== 'unavailable';
+      const col = on ? '#6cd49a' : '#e6b15a';
+      const ai = s.align === 'left' ? 'flex-start' : s.align === 'right' ? 'flex-end' : 'center';
+      return wrap(cont(`<div style="display:flex;justify-content:${ai};"><div style="display:inline-flex;align-items:center;gap:.55rem;border:1px solid ${rgb(text, .12)};background:${rgb(text, .03)};border-radius:30px;padding:.5rem 1.1rem;"><span style="position:relative;width:9px;height:9px;"><span style="position:absolute;inset:0;border-radius:50%;background:${col};"></span><span style="position:absolute;inset:0;border-radius:50%;background:${col};animation:fyrping 1.8s ease-out infinite;"></span></span><span style="font-size:.8rem;font-weight:300;letter-spacing:.04em;color:${rgb(text, .8)};">${E(s.text || '')}</span></div></div><style>@keyframes fyrping{0%{transform:scale(1);opacity:.7}100%{transform:scale(2.6);opacity:0}}</style>`, '560px'));
+    }
+    case 'skills': {
+      const ai = s.align === 'left' ? 'flex-start' : s.align === 'right' ? 'flex-end' : 'center';
+      const tags = items.map(it => `<span style="border:1px solid ${rgb(accent, .25)};background:${rgb(accent, .05)};color:${rgb(text, .8)};border-radius:7px;padding:.4rem .85rem;font-size:.8rem;font-weight:300;">${E(it.label || '')}</span>`).join('');
+      return wrap(cont((s.heading ? `<div style="text-align:${ai === 'center' ? 'center' : 'left'};font-size:1.05rem;font-weight:300;margin-bottom:1.1rem;">${E(s.heading)}</div>` : '') + `<div style="display:flex;flex-wrap:wrap;gap:.5rem;justify-content:${ai};">${tags}</div>`, '680px'));
+    }
+    case 'progress': {
+      const rows = items.map(it => { const p = Math.max(0, Math.min(100, parseInt(it.pct, 10) || 0)); return `<div style="margin-bottom:1rem;"><div style="display:flex;justify-content:space-between;font-size:.82rem;font-weight:300;margin-bottom:.4rem;"><span>${E(it.label || '')}</span><span style="color:${rgb(accent, .7)};">${p}%</span></div><div style="height:7px;border-radius:4px;background:${rgb(accent, .1)};overflow:hidden;"><div style="height:100%;width:${p}%;background:${accent};border-radius:4px;"></div></div></div>`; }).join('');
+      return wrap(cont((s.heading ? `<h3 style="font-size:1.1rem;font-weight:300;margin-bottom:1.1rem;">${E(s.heading)}</h3>` : '') + rows, '620px'));
+    }
+    case 'resume': {
+      const rows = items.map(it => `<div style="display:flex;gap:1.2rem;padding-bottom:1.6rem;">
+        <div style="flex-shrink:0;width:110px;font-size:.74rem;font-weight:300;color:${rgb(accent, .65)};padding-top:.15rem;">${E(it.date || '')}</div>
+        <div><div style="font-size:.98rem;font-weight:400;">${E(it.title || '')}${it.org ? ` <span style="font-weight:200;color:${rgb(text, .5)};">· ${E(it.org)}</span>` : ''}</div>${it.text ? `<div style="font-size:.85rem;font-weight:200;line-height:1.7;color:${rgb(text, .6)};margin-top:.3rem;">${E(it.text)}</div>` : ''}</div>
+      </div>`).join('');
+      return wrap(cont((s.heading ? `<h3 style="font-size:1.1rem;font-weight:300;margin-bottom:1.3rem;">${E(s.heading)}</h3>` : '') + rows, '660px'));
+    }
+    case 'qrcode': {
+      const sz = s.size === 'sm' ? 140 : s.size === 'lg' ? 260 : 200;
+      const ta = s.align || 'center';
+      const data = s.data || '';
+      const img = data ? `<img src="https://api.qrserver.com/v1/create-qr-code/?size=${sz}x${sz}&margin=0&data=${encodeURIComponent(data)}" alt="QR code" width="${sz}" height="${sz}" style="border-radius:8px;background:#fff;padding:8px;" />` : `<div style="width:${sz}px;height:${sz}px;background:${rgb(accent, .06)};border:1px dashed ${rgb(accent, .2)};border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:.7rem;color:${rgb(text, .4)};">Enter a URL</div>`;
+      return wrap(cont(`<div style="text-align:${ta};">${img}${s.caption ? `<div style="font-size:.75rem;font-weight:200;color:${rgb(text, .55)};margin-top:.6rem;">${E(s.caption)}</div>` : ''}</div>`, '480px'));
+    }
+    case 'toggle': {
+      return wrap(cont(`<details style="border:1px solid ${rgb(accent, .15)};border-radius:10px;padding:.2rem .3rem;"><summary style="cursor:pointer;padding:.8rem 1rem;font-size:.9rem;font-weight:300;color:${rgb(text, .85)};list-style:none;">${E(s.label || 'Show more')}</summary><div class="md-content" style="padding:.2rem 1rem 1rem;font-size:.88rem;font-weight:200;line-height:1.7;color:${rgb(text, .7)};">${md(s.body)}</div></details>`, '680px'));
+    }
+    case 'copyfield': {
+      const val = s.value || '';
+      return wrap(cont(`<div style="max-width:420px;margin:0 auto;">${s.label ? `<div style="font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:${rgb(accent, .6)};margin-bottom:.4rem;">${E(s.label)}</div>` : ''}<button type="button" data-v="${A(val)}" onclick="navigator.clipboard&&navigator.clipboard.writeText(this.getAttribute('data-v'));var b=this;b.lastChild.textContent='Copied';setTimeout(function(){b.lastChild.textContent='Copy'},1400)" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:1rem;border:1px solid ${rgb(accent, .25)};background:${rgb(accent, .04)};border-radius:9px;padding:.7rem 1rem;cursor:pointer;font-family:inherit;"><span style="font-family:ui-monospace,monospace;font-size:.85rem;color:${rgb(text, .85)};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${E(val)}</span><span style="font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:${accent};flex-shrink:0;">Copy</span></button></div>`, '480px'));
+    }
+    case 'embed': {
+      const hh = s.height === 'sm' ? '320px' : s.height === 'lg' ? '640px' : '460px';
+      const u = s.url || '';
+      if (!u) return wrap(cont(`<div style="height:${hh};background:${rgb(accent, .06)};border:1px dashed ${rgb(accent, .2)};border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:${rgb(text, .4)};">Paste an embed URL (CodePen, Figma, Loom, …)</div>`));
+      return wrap(cont(`<iframe src="${A(u)}" style="width:100%;height:${hh};border:0;border-radius:12px;" loading="lazy" allowfullscreen></iframe>`));
+    }
+    case 'audio': {
+      const u = s.url || ''; let embed = '', hh = '152px', m;
+      if ((m = u.match(/open\.spotify\.com\/(track|playlist|album|episode|show)\/([A-Za-z0-9]+)/))) { embed = 'https://open.spotify.com/embed/' + m[1] + '/' + m[2]; hh = (m[1] === 'track' || m[1] === 'episode') ? '152px' : '352px'; }
+      else if (/soundcloud\.com\//.test(u)) { embed = 'https://w.soundcloud.com/player/?url=' + encodeURIComponent(u) + '&visual=false'; hh = '166px'; }
+      else if (/spotify|podcasts\.apple|player\./.test(u)) { embed = u; }
+      if (!embed) return wrap(cont(`<div style="height:120px;background:${rgb(accent, .06)};border:1px dashed ${rgb(accent, .2)};border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:${rgb(text, .4)};">Paste a Spotify or SoundCloud link</div>`, '620px'));
+      return wrap(cont(`<iframe src="${A(embed)}" style="width:100%;height:${hh};border:0;border-radius:12px;" loading="lazy" allow="encrypted-media"></iframe>`, '620px'));
+    }
+    case 'socialpost': {
+      const u = s.url || '';
+      if (!u) return wrap(cont(`<div style="height:120px;background:${rgb(accent, .06)};border:1px dashed ${rgb(accent, .2)};border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:${rgb(text, .4)};">Paste a post URL (X, Instagram, TikTok)</div>`, '520px'));
+      let host = ''; try { host = new URL(u).hostname.replace('www.', ''); } catch (_) {}
+      return wrap(cont(`<a href="${A(u)}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:.8rem;border:1px solid ${rgb(accent, .18)};background:${rgb(accent, .04)};border-radius:12px;padding:1rem 1.2rem;text-decoration:none;"><span style="font-size:1.4rem;">🔗</span><div style="min-width:0;"><div style="font-size:.85rem;font-weight:300;color:${rgb(text, .85)};">View post on ${E(host || 'the web')}</div><div style="font-size:.7rem;font-weight:200;color:${rgb(text, .45)};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${E(u)}</div></div></a>`, '520px'));
+    }
+    case 'booking': {
+      const hh = s.height === 'sm' ? '520px' : s.height === 'lg' ? '820px' : '680px';
+      const u = s.url || '';
+      if (!u) return wrap(cont(`<div style="height:${hh};background:${rgb(accent, .06)};border:1px dashed ${rgb(accent, .2)};border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:${rgb(text, .4)};">Paste a Calendly or Cal.com link</div>`));
+      return wrap(cont(`<iframe src="${A(u)}" style="width:100%;height:${hh};border:0;border-radius:12px;" loading="lazy"></iframe>`));
+    }
+    case 'newsletter': {
+      const ist = `background:${rgb(text, .05)};border:1px solid ${rgb(accent, .2)};color:${text};font-family:inherit;font-size:.9rem;padding:.7rem .9rem;border-radius:8px;outline:none;`;
+      return wrap(cont(`<div style="text-align:center;max-width:460px;margin:0 auto;">
+        ${s.heading ? `<h3 style="font-size:1.3rem;font-weight:300;margin:0 0 .4rem;">${E(s.heading)}</h3>` : ''}
+        ${s.sub ? `<p style="font-size:.9rem;font-weight:200;line-height:1.6;color:${rgb(text, .6)};margin:0;">${E(s.sub)}</p>` : ''}
+        <form data-w3 data-done="You’re subscribed — thanks!" onsubmit="return false" style="display:flex;gap:.5rem;margin-top:1.2rem;flex-wrap:wrap;">
+          <input type="hidden" name="_subject" value="New newsletter signup" />
+          <input type="checkbox" name="botcheck" style="display:none;" tabindex="-1" autocomplete="off" />
+          <input type="email" name="email" required placeholder="${A(s.placeholder || 'you@email.com')}" style="flex:1;min-width:180px;${ist}" />
+          <button type="submit" style="background:${accent};color:${bg};border:none;font-family:inherit;font-weight:400;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;padding:.7rem 1.4rem;border-radius:8px;cursor:pointer;">${E(s.button || 'Subscribe')}</button>
+        </form>
+      </div>`, '520px'));
+    }
+    case 'contactform': {
+      const ist = `width:100%;background:${rgb(text, .05)};border:1px solid ${rgb(accent, .2)};color:${text};font-family:inherit;font-size:.9rem;padding:.7rem .9rem;border-radius:8px;outline:none;margin-bottom:.7rem;`;
+      return wrap(cont(`<div style="max-width:520px;margin:0 auto;">${secHead('center')}
+        <form data-w3 data-done="Thanks — I’ll be in touch soon." onsubmit="return false">
+          <input type="hidden" name="_subject" value="New contact message" />
+          <input type="checkbox" name="botcheck" style="display:none;" tabindex="-1" autocomplete="off" />
+          <input type="text" name="name" required placeholder="Your name" style="${ist}" />
+          <input type="email" name="email" required placeholder="you@email.com" style="${ist}" />
+          <textarea name="message" required rows="5" placeholder="Your message" style="${ist}resize:vertical;"></textarea>
+          <button type="submit" style="width:100%;background:${accent};color:${bg};border:none;font-family:inherit;font-weight:400;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;padding:.8rem;border-radius:8px;cursor:pointer;">${E(s.button || 'Send message')}</button>
+        </form>
+      </div>`, '560px'));
+    }
     default: return '';
   }
 }
@@ -457,6 +720,35 @@ function bDefault(type) {
     case 'video':   return { id, type, url:'', caption:'', max_w:'normal', pad:'md' };
     case 'map':     return { id, type, query:'', height:'md', pad:'md' };
     case 'marquee': return { id, type, text:'Announcement — limited time offer', separator:'•', speed:'normal' };
+    case 'sectionhead': return { id, type, eyebrow:'', heading:'Section heading', sub:'', align:'center', pad:'md' };
+    case 'lead':    return { id, type, text:'A short, larger introduction that sets up what follows.', align:'center', pad:'md' };
+    case 'callout': return { id, type, variant:'info', title:'', body:'Heads up — something worth noting goes here.', icon:'', pad:'md' };
+    case 'code':    return { id, type, code:'console.log("hello")', lang:'', pad:'md' };
+    case 'specs':   return { id, type, heading:'', items:[{label:'Label',value:'Value'},{label:'Label',value:'Value'}], pad:'md' };
+    case 'timeline':return { id, type, eyebrow:'', heading:'', sub:'', items:[{date:'2024',title:'Something happened',text:''},{date:'2025',title:'Then this',text:''}], pad:'md' };
+    case 'tabs':    return { id, type, items:[{label:'Tab one',body:'First panel.'},{label:'Tab two',body:'Second panel.'}], pad:'md' };
+    case 'buttongroup': return { id, type, items:[{label:'Primary',url:'',style:'solid'},{label:'Secondary',url:'',style:'outline'}], align:'center', pad:'md' };
+    case 'toc':     return { id, type, heading:'On this page', items:[{label:'Section one',anchor:''},{label:'Section two',anchor:''}], pad:'md' };
+    case 'masonry': return { id, type, items:[{img:'',caption:''},{img:'',caption:''},{img:'',caption:''}], cols:'3', pad:'md' };
+    case 'compare': return { id, type, before:'', after:'', height:'md', pad:'md' };
+    case 'testimonial': return { id, type, quote:'A single, featured testimonial that carries the section on its own.', name:'', role:'', avatar:'', pad:'md' };
+    case 'rating':  return { id, type, score:'4.9', max:'5', count:'', label:'', align:'center', pad:'md' };
+    case 'countdown': return { id, type, heading:'', target:'', done_text:'It’s here!', align:'center', pad:'md' };
+    case 'badges':  return { id, type, items:[{icon:'🔒',label:'Secure checkout'},{icon:'↩️',label:'30-day returns'},{icon:'⭐',label:'Top rated'}], align:'center', pad:'md' };
+    case 'vcard':   return { id, type, photo:'', name:'Your Name', role:'', tagline:'', items:[{label:'Email',val:'',href:''},{label:'Website',val:'',href:''}], pad:'md' };
+    case 'availability': return { id, type, status:'available', text:'Available for new work', align:'center', pad:'md' };
+    case 'skills':  return { id, type, heading:'', items:[{label:'JavaScript'},{label:'Design'},{label:'Cloudflare'}], align:'center', pad:'md' };
+    case 'progress':return { id, type, heading:'', items:[{label:'Design',pct:'90'},{label:'Code',pct:'75'}], pad:'md' };
+    case 'resume':  return { id, type, heading:'', items:[{date:'2022 — now',title:'Role',org:'Company',text:''},{date:'2019 — 2022',title:'Role',org:'Company',text:''}], pad:'md' };
+    case 'qrcode':  return { id, type, data:'', caption:'', size:'md', align:'center', pad:'md' };
+    case 'toggle':  return { id, type, label:'Show more', body:'Hidden content revealed on click.', pad:'md' };
+    case 'copyfield': return { id, type, label:'', value:'hello@example.com', pad:'md' };
+    case 'embed':   return { id, type, url:'', height:'md', pad:'md' };
+    case 'audio':   return { id, type, url:'', pad:'md' };
+    case 'socialpost': return { id, type, url:'', pad:'md' };
+    case 'booking': return { id, type, url:'', height:'lg', pad:'md' };
+    case 'newsletter': return { id, type, heading:'Subscribe', sub:'Get new posts in your inbox.', button:'Subscribe', placeholder:'you@email.com', pad:'md' };
+    case 'contactform': return { id, type, eyebrow:'', heading:'Get in touch', sub:'', button:'Send message', pad:'md' };
   }
 }
 
@@ -477,7 +769,7 @@ function bPadRow(cur) {
 }
 
 function bEditorFields(s) {
-  const typeLabels={hero:'Hero',bio:'Bio',links:'Links',link:'Link',contact:'Contact',social:'Social',cta:'CTA',quote:'Quote',heading:'Heading',text:'Text',image:'Image',stats:'Stats',divider:'Divider',spacer:'Spacer',cards:'Cards',collection:'Collection',gallery:'Gallery',imgtext:'Image + Text',accordion:'Accordion',carousel:'Carousel',group:'Collapsible Group',fileprev:'File Preview',filedown:'File Download',tutorials:'Tutorials',reviews:'Reviews',banner:'Banner',features:'Features',steps:'Steps',pricing:'Pricing',testimonials:'Testimonials',team:'Team',logos:'Logo Strip',video:'Video',map:'Map',marquee:'Marquee'};
+  const typeLabels=BLK_LABEL;
   let f='';
 
   const ehs=`<div class="bld-ef"><label>Eyebrow <span style="opacity:.5">(small text above)</span></label><input type="text" data-f="eyebrow" value="${bA(s.eyebrow||'')}" /></div>
@@ -817,6 +1109,123 @@ function bEditorFields(s) {
     f=`<div class="bld-ef"><label>Text</label><input type="text" data-f="text" value="${bA(s.text||'')}" /></div>
        <div class="bld-ef"><label>Separator</label><input type="text" data-f="separator" value="${bA(s.separator||'•')}" /></div>
        <div class="bld-ef"><label>Speed</label><select data-f="speed"><option value="slow"${s.speed==='slow'?' selected':''}>Slow</option><option value="normal"${(!s.speed||s.speed==='normal')?' selected':''}>Normal</option><option value="fast"${s.speed==='fast'?' selected':''}>Fast</option></select></div>`;
+  } else if (s.type==='sectionhead') {
+    f=`${ehs}${bAlignRow(s.align)}${bPadRow(s.pad)}`;
+  } else if (s.type==='lead') {
+    f=`<div class="bld-ef"><label>Text</label><textarea data-f="text" rows="3">${bE(s.text||'')}</textarea></div>${bAlignRow(s.align)}${bPadRow(s.pad)}`;
+  } else if (s.type==='callout') {
+    f=`<div class="bld-ef"><label>Style</label><select data-f="variant"><option value="info"${(!s.variant||s.variant==='info')?' selected':''}>Info</option><option value="tip"${s.variant==='tip'?' selected':''}>Tip</option><option value="success"${s.variant==='success'?' selected':''}>Success</option><option value="warn"${s.variant==='warn'?' selected':''}>Warning</option></select></div>
+       <div class="bld-ef"><label>Icon <span style="opacity:.5">(optional, emoji)</span></label><input type="text" data-f="icon" value="${bA(s.icon||'')}" placeholder="💡" /></div>
+       <div class="bld-ef"><label>Title <span style="opacity:.5">(optional)</span></label><input type="text" data-f="title" value="${bA(s.title||'')}" /></div>
+       <div class="bld-ef"><label>Body <span style="opacity:.45">(Markdown)</span></label><textarea data-f="body" rows="3">${bE(s.body||'')}</textarea></div>${bPadRow(s.pad)}`;
+  } else if (s.type==='code') {
+    f=`<div class="bld-ef"><label>Language label <span style="opacity:.5">(optional)</span></label><input type="text" data-f="lang" value="${bA(s.lang||'')}" placeholder="javascript" /></div>
+       <div class="bld-ef"><label>Code</label><textarea data-f="code" rows="8" style="font-family:ui-monospace,monospace;">${bE(s.code||'')}</textarea></div>${bPadRow(s.pad)}`;
+  } else if (s.type==='specs') {
+    const items=s.items||[];
+    f=`<div class="bld-ef"><label>Heading <span style="opacity:.5">(optional)</span></label><input type="text" data-f="heading" value="${bA(s.heading||'')}" /></div>
+       <div id="bSPEC">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button><div class="bld-ef"><label>Label</label><input type="text" data-ci="${i}" data-cf="label" value="${bA(it.label||'')}" /></div><div class="bld-ef"><label>Value</label><input type="text" data-ci="${i}" data-cf="value" value="${bA(it.value||'')}" /></div></div>`).join('')}</div>
+       <button class="bld-add-li bld-add-item" data-shape='{"label":"","value":""}'>+ Add row</button>${bPadRow(s.pad)}`;
+  } else if (s.type==='timeline') {
+    const items=s.items||[];
+    f=`${ehs}<div id="bTL">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button><div class="bld-ef"><label>Date</label><input type="text" data-ci="${i}" data-cf="date" value="${bA(it.date||'')}" placeholder="2024" /></div><div class="bld-ef"><label>Title</label><input type="text" data-ci="${i}" data-cf="title" value="${bA(it.title||'')}" /></div><div class="bld-ef"><label>Text</label><textarea data-ci="${i}" data-cf="text" rows="2">${bE(it.text||'')}</textarea></div></div>`).join('')}</div>
+       <button class="bld-add-li bld-add-item" data-shape='{"date":"","title":"","text":""}'>+ Add event</button>${bPadRow(s.pad)}`;
+  } else if (s.type==='tabs') {
+    const items=s.items||[];
+    f=`<div id="bTABS">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button><div class="bld-ef"><label>Tab label</label><input type="text" data-ci="${i}" data-cf="label" value="${bA(it.label||'')}" /></div><div class="bld-ef"><label>Content <span style="opacity:.45">(Markdown)</span></label><textarea data-ci="${i}" data-cf="body" rows="3">${bE(it.body||'')}</textarea></div></div>`).join('')}</div>
+       <button class="bld-add-li bld-add-item" data-shape='{"label":"Tab","body":""}'>+ Add tab</button>${bPadRow(s.pad)}`;
+  } else if (s.type==='buttongroup') {
+    const items=s.items||[];
+    f=`<div id="bBG">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button><div class="bld-ef"><label>Label</label><input type="text" data-ci="${i}" data-cf="label" value="${bA(it.label||'')}" /></div><div class="bld-ef"><label>URL</label><input type="url" data-ci="${i}" data-cf="url" value="${bA(it.url||'')}" /></div><div class="bld-ef"><label>Style</label><select data-ci="${i}" data-cf="style"><option value="solid"${it.style!=='outline'?' selected':''}>Solid</option><option value="outline"${it.style==='outline'?' selected':''}>Outline</option></select></div></div>`).join('')}</div>
+       <button class="bld-add-li bld-add-item" data-shape='{"label":"Button","url":"","style":"solid"}'>+ Add button</button>${bAlignRow(s.align)}${bPadRow(s.pad)}`;
+  } else if (s.type==='toc') {
+    const items=s.items||[];
+    f=`<div class="bld-ef"><label>Heading <span style="opacity:.5">(optional)</span></label><input type="text" data-f="heading" value="${bA(s.heading||'')}" /></div>
+       <div id="bTOC">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button><div class="bld-ef"><label>Label</label><input type="text" data-ci="${i}" data-cf="label" value="${bA(it.label||'')}" /></div><div class="bld-ef"><label>Anchor ID <span style="opacity:.45">(set on a block below)</span></label><input type="text" data-ci="${i}" data-cf="anchor" value="${bA(it.anchor||'')}" placeholder="about" /></div></div>`).join('')}</div>
+       <button class="bld-add-li bld-add-item" data-shape='{"label":"","anchor":""}'>+ Add link</button>${bPadRow(s.pad)}`;
+  } else if (s.type==='masonry') {
+    const items=s.items||[];
+    f=`<div id="bMAS">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button><div class="bld-ef"><label>Image</label><div style="display:flex;gap:.4rem;"><input type="url" data-ci="${i}" data-cf="img" value="${bA(it.img||'')}" style="flex:1;" /><button class="btn btn-sm bld-img-pick" data-target-ci="${i}" data-target-cf="img">Pick</button></div></div><div class="bld-ef"><label>Caption</label><input type="text" data-ci="${i}" data-cf="caption" value="${bA(it.caption||'')}" /></div></div>`).join('')}</div>
+       <button class="bld-add-li bld-add-item" data-shape='{"img":"","caption":""}'>+ Add image</button>
+       <div class="bld-ef"><label>Columns</label><select data-f="cols"><option value="2"${s.cols==='2'?' selected':''}>2</option><option value="3"${(!s.cols||s.cols==='3')?' selected':''}>3</option><option value="4"${s.cols==='4'?' selected':''}>4</option></select></div>${bPadRow(s.pad)}`;
+  } else if (s.type==='compare') {
+    f=`<div class="bld-ef"><label>Before image</label><div style="display:flex;gap:.4rem;"><input type="url" data-f="before" value="${bA(s.before||'')}" style="flex:1;" /><button class="btn btn-sm bld-img-pick" data-target-f="before">Pick</button></div></div>
+       <div class="bld-ef"><label>After image</label><div style="display:flex;gap:.4rem;"><input type="url" data-f="after" value="${bA(s.after||'')}" style="flex:1;" /><button class="btn btn-sm bld-img-pick" data-target-f="after">Pick</button></div></div>
+       <div class="bld-ef"><label>Height</label><select data-f="height"><option value="sm"${s.height==='sm'?' selected':''}>Short</option><option value="md"${(!s.height||s.height==='md')?' selected':''}>Medium</option><option value="lg"${s.height==='lg'?' selected':''}>Tall</option></select></div>${bPadRow(s.pad)}`;
+  } else if (s.type==='testimonial') {
+    f=`<div class="bld-ef"><label>Quote</label><textarea data-f="quote" rows="3">${bE(s.quote||'')}</textarea></div>
+       <div class="bld-ef"><label>Name</label><input type="text" data-f="name" value="${bA(s.name||'')}" /></div>
+       <div class="bld-ef"><label>Role / company</label><input type="text" data-f="role" value="${bA(s.role||'')}" /></div>
+       <div class="bld-ef"><label>Avatar <span style="opacity:.5">(optional)</span></label><div style="display:flex;gap:.4rem;"><input type="url" data-f="avatar" value="${bA(s.avatar||'')}" style="flex:1;" /><button class="btn btn-sm bld-img-pick" data-target-f="avatar">Pick</button></div></div>${bPadRow(s.pad)}`;
+  } else if (s.type==='rating') {
+    f=`<div class="bld-ef"><label>Score</label><input type="text" data-f="score" value="${bA(s.score||'')}" placeholder="4.9" /></div>
+       <div class="bld-ef"><label>Out of</label><input type="text" data-f="max" value="${bA(s.max||'5')}" placeholder="5" /></div>
+       <div class="bld-ef"><label>Review count <span style="opacity:.5">(optional)</span></label><input type="text" data-f="count" value="${bA(s.count||'')}" placeholder="120" /></div>
+       <div class="bld-ef"><label>Label <span style="opacity:.5">(optional)</span></label><input type="text" data-f="label" value="${bA(s.label||'')}" placeholder="on Google" /></div>${bAlignRow(s.align)}${bPadRow(s.pad)}`;
+  } else if (s.type==='countdown') {
+    f=`<div class="bld-ef"><label>Heading <span style="opacity:.5">(optional)</span></label><input type="text" data-f="heading" value="${bA(s.heading||'')}" /></div>
+       <div class="bld-ef"><label>Target date &amp; time</label><input type="datetime-local" data-f="target" value="${bA(s.target||'')}" /></div>
+       <div class="bld-ef"><label>Message when done</label><input type="text" data-f="done_text" value="${bA(s.done_text||'')}" /></div>${bAlignRow(s.align)}${bPadRow(s.pad)}`;
+  } else if (s.type==='badges') {
+    const items=s.items||[];
+    f=`<div id="bBADGE">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button><div class="bld-ef"><label>Icon <span style="opacity:.5">(emoji)</span></label><input type="text" data-ci="${i}" data-cf="icon" value="${bA(it.icon||'')}" /></div><div class="bld-ef"><label>Label</label><input type="text" data-ci="${i}" data-cf="label" value="${bA(it.label||'')}" /></div></div>`).join('')}</div>
+       <button class="bld-add-li bld-add-item" data-shape='{"icon":"✔","label":""}'>+ Add badge</button>${bAlignRow(s.align)}${bPadRow(s.pad)}`;
+  } else if (s.type==='vcard') {
+    const items=s.items||[];
+    f=`<div class="bld-ef"><label>Photo <span style="opacity:.5">(optional)</span></label><div style="display:flex;gap:.4rem;"><input type="url" data-f="photo" value="${bA(s.photo||'')}" style="flex:1;" /><button class="btn btn-sm bld-img-pick" data-target-f="photo">Pick</button></div></div>
+       <div class="bld-ef"><label>Name</label><input type="text" data-f="name" value="${bA(s.name||'')}" /></div>
+       <div class="bld-ef"><label>Role</label><input type="text" data-f="role" value="${bA(s.role||'')}" /></div>
+       <div class="bld-ef"><label>Tagline</label><input type="text" data-f="tagline" value="${bA(s.tagline||'')}" /></div>
+       <div id="bVC">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button><div class="bld-ef"><label>Label</label><input type="text" data-ci="${i}" data-cf="label" value="${bA(it.label||'')}" /></div><div class="bld-ef"><label>Value</label><input type="text" data-ci="${i}" data-cf="val" value="${bA(it.val||'')}" /></div><div class="bld-ef"><label>Link</label><input type="text" data-ci="${i}" data-cf="href" value="${bA(it.href||'')}" placeholder="mailto:…" /></div></div>`).join('')}</div>
+       <button class="bld-add-li bld-add-item" data-shape='{"label":"","val":"","href":""}'>+ Add link</button>${bPadRow(s.pad)}`;
+  } else if (s.type==='availability') {
+    f=`<div class="bld-ef"><label>Status</label><select data-f="status"><option value="available"${s.status!=='busy'&&s.status!=='unavailable'?' selected':''}>Available (green)</option><option value="busy"${s.status==='busy'?' selected':''}>Busy (amber)</option></select></div>
+       <div class="bld-ef"><label>Text</label><input type="text" data-f="text" value="${bA(s.text||'')}" /></div>${bAlignRow(s.align)}${bPadRow(s.pad)}`;
+  } else if (s.type==='skills') {
+    const items=s.items||[];
+    f=`<div class="bld-ef"><label>Heading <span style="opacity:.5">(optional)</span></label><input type="text" data-f="heading" value="${bA(s.heading||'')}" /></div>
+       <div id="bSKILL">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button><div class="bld-ef"><label>Skill</label><input type="text" data-ci="${i}" data-cf="label" value="${bA(it.label||'')}" /></div></div>`).join('')}</div>
+       <button class="bld-add-li bld-add-item" data-shape='{"label":""}'>+ Add skill</button>${bAlignRow(s.align)}${bPadRow(s.pad)}`;
+  } else if (s.type==='progress') {
+    const items=s.items||[];
+    f=`<div class="bld-ef"><label>Heading <span style="opacity:.5">(optional)</span></label><input type="text" data-f="heading" value="${bA(s.heading||'')}" /></div>
+       <div id="bPROG">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button><div class="bld-ef"><label>Label</label><input type="text" data-ci="${i}" data-cf="label" value="${bA(it.label||'')}" /></div><div class="bld-ef"><label>Percent (0–100)</label><input type="number" min="0" max="100" data-ci="${i}" data-cf="pct" value="${bA(it.pct||'')}" /></div></div>`).join('')}</div>
+       <button class="bld-add-li bld-add-item" data-shape='{"label":"","pct":"50"}'>+ Add bar</button>${bPadRow(s.pad)}`;
+  } else if (s.type==='resume') {
+    const items=s.items||[];
+    f=`<div class="bld-ef"><label>Heading <span style="opacity:.5">(optional)</span></label><input type="text" data-f="heading" value="${bA(s.heading||'')}" /></div>
+       <div id="bRES">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button><div class="bld-ef"><label>Dates</label><input type="text" data-ci="${i}" data-cf="date" value="${bA(it.date||'')}" placeholder="2022 — now" /></div><div class="bld-ef"><label>Title</label><input type="text" data-ci="${i}" data-cf="title" value="${bA(it.title||'')}" /></div><div class="bld-ef"><label>Org</label><input type="text" data-ci="${i}" data-cf="org" value="${bA(it.org||'')}" /></div><div class="bld-ef"><label>Text</label><textarea data-ci="${i}" data-cf="text" rows="2">${bE(it.text||'')}</textarea></div></div>`).join('')}</div>
+       <button class="bld-add-li bld-add-item" data-shape='{"date":"","title":"","org":"","text":""}'>+ Add entry</button>${bPadRow(s.pad)}`;
+  } else if (s.type==='qrcode') {
+    f=`<div class="bld-ef"><label>URL or text</label><input type="text" data-f="data" value="${bA(s.data||'')}" placeholder="https://…" /></div>
+       <div class="bld-ef"><label>Caption <span style="opacity:.5">(optional)</span></label><input type="text" data-f="caption" value="${bA(s.caption||'')}" /></div>
+       <div class="bld-ef"><label>Size</label><select data-f="size"><option value="sm"${s.size==='sm'?' selected':''}>Small</option><option value="md"${(!s.size||s.size==='md')?' selected':''}>Medium</option><option value="lg"${s.size==='lg'?' selected':''}>Large</option></select></div>${bAlignRow(s.align)}${bPadRow(s.pad)}`;
+  } else if (s.type==='toggle') {
+    f=`<div class="bld-ef"><label>Label</label><input type="text" data-f="label" value="${bA(s.label||'')}" /></div>
+       <div class="bld-ef"><label>Hidden content <span style="opacity:.45">(Markdown)</span></label><textarea data-f="body" rows="4">${bE(s.body||'')}</textarea></div>${bPadRow(s.pad)}`;
+  } else if (s.type==='copyfield') {
+    f=`<div class="bld-ef"><label>Label <span style="opacity:.5">(optional)</span></label><input type="text" data-f="label" value="${bA(s.label||'')}" /></div>
+       <div class="bld-ef"><label>Value to copy</label><input type="text" data-f="value" value="${bA(s.value||'')}" /></div>${bPadRow(s.pad)}`;
+  } else if (s.type==='embed') {
+    f=`<div class="bld-ef"><label>Embed URL <span style="opacity:.5">(CodePen, Figma, Loom, …)</span></label><input type="url" data-f="url" value="${bA(s.url||'')}" /></div>
+       <div class="bld-ef"><label>Height</label><select data-f="height"><option value="sm"${s.height==='sm'?' selected':''}>Short</option><option value="md"${(!s.height||s.height==='md')?' selected':''}>Medium</option><option value="lg"${s.height==='lg'?' selected':''}>Tall</option></select></div>${bPadRow(s.pad)}`;
+  } else if (s.type==='audio') {
+    f=`<div class="bld-ef"><label>Spotify or SoundCloud URL</label><input type="url" data-f="url" value="${bA(s.url||'')}" placeholder="https://open.spotify.com/…" /></div>${bPadRow(s.pad)}`;
+  } else if (s.type==='socialpost') {
+    f=`<div class="bld-ef"><label>Post URL <span style="opacity:.5">(X, Instagram, TikTok…)</span></label><input type="url" data-f="url" value="${bA(s.url||'')}" /></div>${bPadRow(s.pad)}`;
+  } else if (s.type==='booking') {
+    f=`<div class="bld-ef"><label>Calendly / Cal.com URL</label><input type="url" data-f="url" value="${bA(s.url||'')}" /></div>
+       <div class="bld-ef"><label>Height</label><select data-f="height"><option value="sm"${s.height==='sm'?' selected':''}>Short</option><option value="md"${s.height==='md'?' selected':''}>Medium</option><option value="lg"${(!s.height||s.height==='lg')?' selected':''}>Tall</option></select></div>${bPadRow(s.pad)}`;
+  } else if (s.type==='newsletter') {
+    f=`<div class="bld-ef" style="font-size:.62rem;color:var(--muted);line-height:1.6;border:1px solid var(--border);padding:.6rem .7rem;border-radius:6px;">Emails are delivered via Web3Forms. Set the <code>WEB3FORMS_APIKEY</code> secret on this site in Cloudflare for it to work.</div>
+       <div class="bld-ef"><label>Heading</label><input type="text" data-f="heading" value="${bA(s.heading||'')}" /></div>
+       <div class="bld-ef"><label>Subtext</label><input type="text" data-f="sub" value="${bA(s.sub||'')}" /></div>
+       <div class="bld-ef"><label>Email placeholder</label><input type="text" data-f="placeholder" value="${bA(s.placeholder||'')}" /></div>
+       <div class="bld-ef"><label>Button label</label><input type="text" data-f="button" value="${bA(s.button||'')}" /></div>${bPadRow(s.pad)}`;
+  } else if (s.type==='contactform') {
+    f=`<div class="bld-ef" style="font-size:.62rem;color:var(--muted);line-height:1.6;border:1px solid var(--border);padding:.6rem .7rem;border-radius:6px;">Messages are delivered via Web3Forms. Set the <code>WEB3FORMS_APIKEY</code> secret on this site in Cloudflare for it to work.</div>
+       ${ehs}
+       <div class="bld-ef"><label>Button label</label><input type="text" data-f="button" value="${bA(s.button||'')}" /></div>${bPadRow(s.pad)}`;
   }
 
   if (!['divider','spacer'].includes(s.type)) {
@@ -974,8 +1383,9 @@ function bBindEditor(panel, s, onUpdate) {
   const addGrpSec=panel.querySelector('#bGrpAddSec');
   if (addGrpSec) addGrpSec.addEventListener('click', () => {
     const type=panel.querySelector('#bGrpAddType')?.value; if (!type) return;
+    const d=bDefault(type); if (!d) { toast('That block is coming soon.', true); return; }
     if (!s.sections) s.sections=[];
-    s.sections.push(bDefault(type));
+    s.sections.push(d);
     onUpdate(s,'re-editor');
   });
 
@@ -1095,11 +1505,64 @@ function bSetupDnD(canvasEl, sections, onDone) {
 }
 
 function bSetupBlockDrag(blocksEl) {
+  if (!blocksEl) return;
   blocksEl.querySelectorAll('.bld-blk').forEach(btn=>{
     btn.setAttribute('draggable','true');
     btn.addEventListener('dragstart',e=>{ bDragNew=btn.dataset.type; bDragId=null; e.dataTransfer.effectAllowed='copy'; });
     btn.addEventListener('dragend',()=>{ bDragNew=null; });
   });
+}
+
+let bldPickerCat='all', bldPickerQ='';
+function pickCard(b){ return `<button class="bld-pick" data-type="${bA(b.t)}" title="${bA(b.l)}"><span class="bld-pick-ic">${b.i||'▫'}</span><span class="bld-pick-l">${bE(b.l)}</span></button>`; }
+function bldRenderPicker(){
+  const grid=document.getElementById('bldPickerGrid'); if(!grid) return;
+  let list=BLOCK_CATALOG;
+  if(bldPickerCat!=='all') list=list.filter(b=>b.c===bldPickerCat);
+  if(bldPickerQ) list=list.filter(b=>(b.l+' '+b.t+' '+(b.k||'')).toLowerCase().includes(bldPickerQ));
+  if(!list.length){ grid.innerHTML=`<p class="bld-picker-empty">No blocks match “${bE(bldPickerQ)}”.</p>`; return; }
+  let html='';
+  if(bldPickerCat==='all' && !bldPickerQ){
+    for(const cat of BLK_CATS){ const items=list.filter(b=>b.c===cat); if(!items.length) continue; html+=`<div class="bld-picker-cathead">${bE(cat)}</div>`+items.map(pickCard).join(''); }
+  } else { html=list.map(pickCard).join(''); }
+  grid.innerHTML=html;
+  grid.querySelectorAll('.bld-pick').forEach(b=>b.addEventListener('click',()=>bldAddBlock(b.dataset.type)));
+}
+function bldBuildPicker(){
+  if(document.getElementById('bldPickerOv')) return;
+  const ov=document.createElement('div'); ov.id='bldPickerOv'; ov.className='bld-picker-ov';
+  ov.innerHTML=`<div class="bld-picker">
+    <div class="bld-picker-head"><h3>Add a section</h3><input class="bld-picker-search" id="bldPickerSearch" placeholder="Search blocks…" autocomplete="off" /><button class="bld-picker-x" id="bldPickerX" aria-label="Close">×</button></div>
+    <div class="bld-picker-body"><div class="bld-picker-cats" id="bldPickerCats"></div><div class="bld-picker-grid" id="bldPickerGrid"></div></div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click',e=>{ if(e.target===ov) bldClosePicker(); });
+  const cats=document.getElementById('bldPickerCats');
+  cats.innerHTML=`<button class="bld-picker-cat on" data-cat="all">All blocks</button>`+BLK_CATS.map(c=>`<button class="bld-picker-cat" data-cat="${bA(c)}">${bE(c)}</button>`).join('');
+  cats.querySelectorAll('.bld-picker-cat').forEach(b=>b.addEventListener('click',()=>{ cats.querySelectorAll('.bld-picker-cat').forEach(x=>x.classList.remove('on')); b.classList.add('on'); bldPickerCat=b.dataset.cat; bldRenderPicker(); }));
+  document.getElementById('bldPickerX').addEventListener('click',bldClosePicker);
+  const search=document.getElementById('bldPickerSearch');
+  search.addEventListener('input',()=>{ bldPickerQ=search.value.toLowerCase().trim(); bldRenderPicker(); });
+  search.addEventListener('keydown',e=>{ if(e.key==='Escape') bldClosePicker(); });
+}
+function bldOpenPicker(){
+  if(!bldPageId){ toast('Select or create a page first.', true); return; }
+  bldBuildPicker();
+  bldPickerCat='all'; bldPickerQ='';
+  const s=document.getElementById('bldPickerSearch'); if(s) s.value='';
+  document.getElementById('bldPickerCats').querySelectorAll('.bld-picker-cat').forEach(x=>x.classList.toggle('on',x.dataset.cat==='all'));
+  bldRenderPicker();
+  document.getElementById('bldPickerOv').classList.add('open');
+  setTimeout(()=>{ const s2=document.getElementById('bldPickerSearch'); if(s2) s2.focus(); },40);
+}
+function bldClosePicker(){ document.getElementById('bldPickerOv')?.classList.remove('open'); }
+function bldAddBlock(type){
+  const sec=bDefault(type);
+  if(!sec){ toast('That block is coming soon.', true); return; }
+  bldState.sections.push(sec); bldSel=sec.id;
+  bldClosePicker(); bldDrawCanvas(); bldDrawEditor();
+  const col=document.getElementById('bldCanvasCol');
+  if(col) setTimeout(()=>col.scrollTo({top:col.scrollHeight,behavior:'smooth'}),60);
 }
 
 function groupRows(sections) {
@@ -1431,16 +1894,8 @@ async function bldBoot() {
   document.getElementById('bldBgOverlay').addEventListener('input',e=>{bldState.bg_overlay=e.target.value;bldDrawCanvas();});
   document.getElementById('bldBgAnim').addEventListener('change',e=>{bldState.bg_anim=e.target.checked;bldDrawCanvas();});
 
-  bSetupBlockDrag(document.getElementById('bldBlocks'));
-  document.getElementById('bldBlocks').querySelectorAll('.bld-blk').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      if (!bldPageId) { toast('Select or create a page first.', true); return; }
-      const sec=bDefault(btn.dataset.type); bldState.sections.push(sec); bldSel=sec.id;
-      bldDrawCanvas(); bldDrawEditor();
-      const col=document.getElementById('bldCanvasCol');
-      setTimeout(()=>col.scrollTo({top:col.scrollHeight,behavior:'smooth'}),60);
-    });
-  });
+  document.getElementById('bldOpenPicker').addEventListener('click', bldOpenPicker);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') bldClosePicker(); });
 
   document.getElementById('bldAddPageBtn').addEventListener('click',()=>{
     const f=document.getElementById('bldNewPageForm');
