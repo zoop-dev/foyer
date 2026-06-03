@@ -269,6 +269,159 @@ document.getElementById('themePresets').addEventListener('click', e => {
 
 let _imgPickerCallback = null;
 
+
+
+function cropImage(file) {
+  return new Promise(resolve => {
+    if (!/^image\//.test(file.type)) { resolve(file); return; }
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const ov = document.createElement('div');
+      ov.className = 'crop-overlay';
+      ov.style.cssText = 'position:fixed;inset:0;z-index:9000;background:rgba(6,12,8,.92);backdrop-filter:blur(6px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;padding:1.5rem;';
+      ov.innerHTML = `
+        <div style="font-weight:200;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);">Crop · ${escHtml(file.name)}</div>
+        <div class="crop-stage" style="position:relative;line-height:0;max-width:90vw;max-height:62vh;box-shadow:0 20px 60px rgba(0,0,0,.6);touch-action:none;user-select:none;">
+          <img class="crop-img" draggable="false" style="display:block;max-width:90vw;max-height:62vh;width:auto;height:auto;" />
+          <div class="crop-box" style="position:absolute;border:1px solid rgba(255,255,255,.9);box-shadow:0 0 0 9999px rgba(6,12,8,.6);cursor:move;">
+            ${['nw','ne','sw','se','n','s','e','w'].map(h=>`<div class="crop-h" data-h="${h}" style="position:absolute;width:14px;height:14px;background:var(--accent);border:1px solid rgba(0,0,0,.4);"></div>`).join('')}
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;justify-content:center;">
+          ${[['free','Free'],['1','1:1'],['1.7778','16:9'],['1.3333','4:3'],['0.75','3:4']].map(([v,l],i)=>`<button class="crop-ar${i===0?' on':''}" data-ar="${v}" style="font-family:inherit;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;font-weight:200;padding:.35rem .7rem;border:1px solid var(--border);background:${i===0?'rgba(var(--accent-rgb),.18)':'transparent'};color:var(--white);cursor:pointer;">${l}</button>`).join('')}
+        </div>
+        <div style="display:flex;gap:.6rem;align-items:center;">
+          <button class="crop-skip" style="font-family:inherit;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;font-weight:200;padding:.5rem 1rem;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;">Use full image</button>
+          <button class="crop-cancel" style="font-family:inherit;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;font-weight:200;padding:.5rem 1rem;border:1px solid rgba(200,60,60,.3);background:transparent;color:rgba(200,90,90,.8);cursor:pointer;">Cancel</button>
+          <button class="crop-apply" style="font-family:inherit;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;font-weight:200;padding:.5rem 1.3rem;border:1px solid var(--accent);background:rgba(var(--accent-rgb),.2);color:var(--white);cursor:pointer;">Apply crop</button>
+        </div>`;
+      document.body.appendChild(ov);
+
+      const elImg = ov.querySelector('.crop-img');
+      elImg.src = url;
+      const box = ov.querySelector('.crop-box');
+      let dispW, dispH, ar = 'free';
+
+      let cx, cy, cw, ch;
+
+      function clamp() {
+        cw = Math.max(20, Math.min(cw, dispW));
+        ch = Math.max(20, Math.min(ch, dispH));
+        cx = Math.max(0, Math.min(cx, dispW - cw));
+        cy = Math.max(0, Math.min(cy, dispH - ch));
+      }
+      function draw() {
+        box.style.left = cx + 'px'; box.style.top = cy + 'px';
+        box.style.width = cw + 'px'; box.style.height = ch + 'px';
+      }
+      function place(h, x, y) {
+        const m = -7, mid = 'calc(50% - 7px)', end = 'calc(100% - 7px)';
+        box.querySelector(`[data-h="${h}"]`).style.cssText += `;${
+          ({nw:`left:${m}px;top:${m}px;cursor:nwse-resize`,
+            ne:`right:${m}px;top:${m}px;cursor:nesw-resize`,
+            sw:`left:${m}px;bottom:${m}px;cursor:nesw-resize`,
+            se:`right:${m}px;bottom:${m}px;cursor:nwse-resize`,
+            n:`left:${mid};top:${m}px;cursor:ns-resize`,
+            s:`left:${mid};bottom:${m}px;cursor:ns-resize`,
+            e:`right:${m}px;top:${mid};cursor:ew-resize`,
+            w:`left:${m}px;top:${mid};cursor:ew-resize`})[h]}`;
+      }
+      ['nw','ne','sw','se','n','s','e','w'].forEach(h => place(h));
+
+      function init() {
+        const r = elImg.getBoundingClientRect();
+        dispW = r.width; dispH = r.height;
+        cw = dispW; ch = dispH; cx = 0; cy = 0;
+        applyAr(); draw();
+      }
+      function applyAr() {
+        if (ar === 'free') return;
+        const a = parseFloat(ar);
+
+        let nw = cw, nh = nw / a;
+        if (nh > ch) { nh = ch; nw = nh * a; }
+        cx += (cw - nw) / 2; cy += (ch - nh) / 2; cw = nw; ch = nh;
+        clamp();
+      }
+
+      let drag = null;
+      function down(e, mode) {
+        e.preventDefault();
+        const p = 'touches' in e ? e.touches[0] : e;
+        drag = { mode, sx: p.clientX, sy: p.clientY, cx, cy, cw, ch };
+      }
+      function move(e) {
+        if (!drag) return;
+        const p = 'touches' in e ? e.touches[0] : e;
+        let dx = p.clientX - drag.sx, dy = p.clientY - drag.sy;
+        if (drag.mode === 'move') { cx = drag.cx + dx; cy = drag.cy + dy; clamp(); draw(); return; }
+        let L = drag.cx, T = drag.cy, R = drag.cx + drag.cw, B = drag.cy + drag.ch;
+        const m = drag.mode;
+        if (m.includes('w')) L = drag.cx + dx;
+        if (m.includes('e')) R = drag.cx + drag.cw + dx;
+        if (m.includes('n')) T = drag.cy + dy;
+        if (m.includes('s')) B = drag.cy + drag.ch + dy;
+        L = Math.max(0, Math.min(L, R - 20)); T = Math.max(0, Math.min(T, B - 20));
+        R = Math.min(dispW, Math.max(R, L + 20)); B = Math.min(dispH, Math.max(B, T + 20));
+        cx = L; cy = T; cw = R - L; ch = B - T;
+        if (ar !== 'free') {
+          const a = parseFloat(ar);
+          if (m === 'n' || m === 's') cw = ch * a; else ch = cw / a;
+          clamp();
+        }
+        draw();
+      }
+      function up() { drag = null; }
+
+      box.addEventListener('mousedown', e => { if (e.target === box) down(e, 'move'); });
+      box.addEventListener('touchstart', e => { if (e.target === box) down(e, 'move'); }, { passive: false });
+      box.querySelectorAll('.crop-h').forEach(h => {
+        h.addEventListener('mousedown', e => { e.stopPropagation(); down(e, h.dataset.h); });
+        h.addEventListener('touchstart', e => { e.stopPropagation(); down(e, h.dataset.h); }, { passive: false });
+      });
+      window.addEventListener('mousemove', move);
+      window.addEventListener('touchmove', move, { passive: false });
+      window.addEventListener('mouseup', up);
+      window.addEventListener('touchend', up);
+
+      ov.querySelectorAll('.crop-ar').forEach(b => {
+        b.addEventListener('click', () => {
+          ov.querySelectorAll('.crop-ar').forEach(o => { o.classList.remove('on'); o.style.background = 'transparent'; });
+          b.classList.add('on'); b.style.background = 'rgba(var(--accent-rgb),.18)';
+          ar = b.dataset.ar; applyAr(); draw();
+        });
+      });
+
+      function teardown() {
+        window.removeEventListener('mousemove', move); window.removeEventListener('touchmove', move);
+        window.removeEventListener('mouseup', up); window.removeEventListener('touchend', up);
+        URL.revokeObjectURL(url); ov.remove();
+      }
+      ov.querySelector('.crop-cancel').addEventListener('click', () => { teardown(); resolve(null); });
+      ov.querySelector('.crop-skip').addEventListener('click', () => { teardown(); resolve(file); });
+      ov.querySelector('.crop-apply').addEventListener('click', () => {
+        const scale = img.naturalWidth / dispW;
+        const sx = Math.round(cx * scale), sy = Math.round(cy * scale);
+        const sw = Math.max(1, Math.round(cw * scale)), sh = Math.max(1, Math.round(ch * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = sw; canvas.height = sh;
+        canvas.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+        canvas.toBlob(blob => {
+          teardown();
+          if (!blob) { resolve(file); return; }
+          resolve(new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' }));
+        }, 'image/jpeg', 0.92);
+      });
+
+      if (elImg.complete && elImg.naturalWidth) requestAnimationFrame(init);
+      else elImg.onload = () => requestAnimationFrame(init);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
 async function compressImage(file, maxPx=1200, quality=0.75) {
   return new Promise(resolve => {
     const reader = new FileReader();
@@ -363,7 +516,9 @@ function renderImgTabGallery() {
 }
 
 async function uploadFiles(files, nameOverride) {
-  for (const file of files) {
+  for (const original of files) {
+    const file = await cropImage(original);   // admin frames each image; null = cancelled
+    if (!file) { toast(`Skipped ${original.name}`); continue; }
     const { data, size, mime } = await compressImage(file);
     if (size > 900000) { toast(`${file.name} too large after compression (${fmtBytes(size)})`, true); continue; }
     const name = nameOverride || file.name.replace(/\.[^.]+$/, '');
