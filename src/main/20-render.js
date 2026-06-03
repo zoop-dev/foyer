@@ -293,6 +293,139 @@
             <p style="font-size:.62rem;letter-spacing:.18em;color:${pgRgb(accent,.3)};text-align:center;">Loading reviews…</p>
           </div>`;
         }
+        default: return bXtra(s, { E: pgE, A: escAttr, rgb: pgRgb, md, accent, text, bg, font });
+      }
+    }
+
+
+
+    function bXtra(s, h) {
+      const { E, A, rgb, md, accent, text, bg, font } = h;
+      const f = `font-family:'${font}',sans-serif;`;
+      const c = `color:${text};`;
+      const PAD = (p) => p === 'sm' ? '2.25rem' : p === 'lg' ? '5.5rem' : '3.75rem';
+      const wrap = (inner, extra = '') => `<div style="${f}${c}padding:${PAD(s.pad)} 1.5rem;${extra}">${inner}</div>`;
+      const cont = (inner, mw = '1080px') => `<div style="max-width:${mw};margin:0 auto;">${inner}</div>`;
+      const btn = (label, url, style) => {
+        if (!label) return '';
+        const base = 'display:inline-block;text-decoration:none;font-weight:400;font-size:.76rem;letter-spacing:.12em;text-transform:uppercase;padding:.8rem 1.7rem;border-radius:8px;';
+        const sty = style === 'outline' ? `border:1px solid ${rgb(accent, .55)};color:${accent};` : `background:${accent};color:${bg};border:1px solid ${accent};`;
+        return `<a href="${A(url || '#')}" style="${base}${sty}">${E(label)}</a>`;
+      };
+      const secHead = (align = 'center') => {
+        if (!s.eyebrow && !s.heading && !s.sub) return '';
+        return `<div style="text-align:${align};margin-bottom:2.6rem;">
+          ${s.eyebrow ? `<div style="font-size:.7rem;letter-spacing:.3em;text-transform:uppercase;color:${accent};font-weight:400;margin-bottom:.85rem;">${E(s.eyebrow)}</div>` : ''}
+          ${s.heading ? `<h2 style="font-size:clamp(1.6rem,4vw,2.4rem);font-weight:300;letter-spacing:-.01em;line-height:1.15;margin:0;">${E(s.heading)}</h2>` : ''}
+          ${s.sub ? `<p style="font-size:1rem;font-weight:200;line-height:1.7;color:${rgb(text, .6)};max-width:560px;margin:.9rem ${align === 'center' ? 'auto' : '0'} 0;">${E(s.sub)}</p>` : ''}
+        </div>`;
+      };
+      const items = s.items || [];
+
+      switch (s.type) {
+        case 'banner': {
+          const mh = s.min_h === 'sm' ? '42vh' : s.min_h === 'lg' ? '82vh' : s.min_h === 'full' ? '100vh' : '60vh';
+          const align = s.align || 'center';
+          const ai = align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center';
+          const ov = s.overlay || '0.5';
+          const bgStyle = s.bg_img
+            ? `background-image:linear-gradient(rgba(0,0,0,${ov}),rgba(0,0,0,${ov})),url('${A(s.bg_img)}');background-size:cover;background-position:center;`
+            : `background:${rgb(accent, .06)};`;
+          const onImg = !!s.bg_img;
+          return `<div style="${f}${c}${bgStyle}min-height:${mh};display:flex;flex-direction:column;align-items:${ai};justify-content:center;text-align:${align};padding:4.5rem 1.5rem;">
+            <div style="max-width:760px;">
+            ${s.eyebrow ? `<div style="font-size:.72rem;letter-spacing:.32em;text-transform:uppercase;font-weight:400;margin-bottom:1.1rem;color:${onImg ? 'rgba(255,255,255,.88)' : accent};">${E(s.eyebrow)}</div>` : ''}
+            <h1 style="font-size:clamp(2.2rem,6vw,4rem);font-weight:300;line-height:1.05;letter-spacing:-.02em;margin:0;color:${onImg ? '#fff' : text};">${E(s.heading || 'Headline')}</h1>
+            ${s.subheading ? `<p style="font-size:clamp(1rem,2vw,1.22rem);font-weight:200;line-height:1.6;margin:1.2rem 0 0;color:${onImg ? 'rgba(255,255,255,.85)' : rgb(text, .62)};">${E(s.subheading)}</p>` : ''}
+            ${(s.btn_label || s.btn2_label) ? `<div style="display:flex;gap:.8rem;flex-wrap:wrap;justify-content:${ai};margin-top:2rem;">${btn(s.btn_label, s.btn_url, 'solid')}${btn(s.btn2_label, s.btn2_url, 'outline')}</div>` : ''}
+            </div></div>`;
+        }
+        case 'features': {
+          const min = s.cols === '4' ? '200px' : s.cols === '2' ? '300px' : '240px';
+          const ca = s.card_align || 'left';
+          const cards = items.map(it => `<div style="text-align:${ca};">
+            ${it.icon ? `<div style="font-size:2rem;line-height:1;margin-bottom:1rem;">${E(it.icon)}</div>` : ''}
+            <div style="font-size:1.05rem;font-weight:400;letter-spacing:.01em;margin-bottom:.5rem;">${E(it.title || '')}</div>
+            <div style="font-size:.9rem;font-weight:200;line-height:1.7;color:${rgb(text, .6)};">${E(it.text || '')}</div>
+          </div>`).join('');
+          return wrap(cont(secHead() + `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(${min},1fr));gap:2.2rem;">${cards}</div>`));
+        }
+        case 'steps': {
+          const cards = items.map((it, i) => `<div style="display:flex;gap:1rem;align-items:flex-start;">
+            <div style="flex-shrink:0;width:42px;height:42px;border-radius:50%;border:1px solid ${rgb(accent, .4)};color:${accent};display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:300;">${i + 1}</div>
+            <div><div style="font-size:1.02rem;font-weight:400;margin-bottom:.35rem;">${E(it.title || '')}</div><div style="font-size:.9rem;font-weight:200;line-height:1.7;color:${rgb(text, .6)};">${E(it.text || '')}</div></div>
+          </div>`).join('');
+          const grid = s.layout === 'row' ? 'grid-template-columns:repeat(auto-fit,minmax(220px,1fr));' : 'grid-template-columns:1fr;max-width:620px;margin:0 auto;';
+          return wrap(cont(secHead() + `<div style="display:grid;${grid}gap:2rem;">${cards}</div>`));
+        }
+        case 'pricing': {
+          const cards = items.map(it => {
+            const feat = String(it.features || '').split('\n').filter(Boolean).map(ln => `<li style="font-size:.86rem;font-weight:200;line-height:1.5;color:${rgb(text, .7)};padding:.45rem 0;border-bottom:1px solid ${rgb(accent, .08)};list-style:none;">${E(ln)}</li>`).join('');
+            const fe = it.featured === 'yes';
+            return `<div style="border:1px solid ${fe ? rgb(accent, .5) : rgb(accent, .14)};background:${fe ? rgb(accent, .07) : rgb(accent, .03)};border-radius:16px;padding:2rem 1.6rem;display:flex;flex-direction:column;">
+              ${fe ? `<div style="align-self:flex-start;font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;background:${accent};color:${bg};padding:.25rem .6rem;border-radius:5px;margin-bottom:1rem;font-weight:400;">${E(it.badge || 'Popular')}</div>` : ''}
+              <div style="font-size:.92rem;font-weight:400;letter-spacing:.05em;text-transform:uppercase;color:${rgb(text, .7)};margin-bottom:.6rem;">${E(it.name || '')}</div>
+              <div style="display:flex;align-items:baseline;gap:.3rem;margin-bottom:1.3rem;"><span style="font-size:2.4rem;font-weight:300;letter-spacing:-.02em;">${E(it.price || '')}</span>${it.period ? `<span style="font-size:.8rem;font-weight:200;color:${rgb(text, .5)};">${E(it.period)}</span>` : ''}</div>
+              <ul style="margin:0 0 1.6rem;padding:0;flex:1;">${feat}</ul>
+              ${btn(it.btn_label || 'Choose', it.btn_url, fe ? 'solid' : 'outline')}
+            </div>`;
+          }).join('');
+          return wrap(cont(secHead() + `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.4rem;align-items:stretch;">${cards}</div>`));
+        }
+        case 'testimonials': {
+          const cards = items.map(it => `<div style="border:1px solid ${rgb(accent, .12)};background:${rgb(accent, .03)};border-radius:14px;padding:1.6rem;display:flex;flex-direction:column;gap:1rem;">
+            <div style="font-size:.95rem;font-weight:200;line-height:1.75;color:${rgb(text, .8)};font-style:italic;">&ldquo;${E(it.quote || '')}&rdquo;</div>
+            <div style="display:flex;align-items:center;gap:.7rem;margin-top:auto;">
+              ${it.avatar ? `<img src="${A(it.avatar)}" alt="" style="width:38px;height:38px;border-radius:50%;object-fit:cover;" />` : ''}
+              <div><div style="font-size:.85rem;font-weight:400;">${E(it.name || '')}</div>${it.role ? `<div style="font-size:.72rem;font-weight:200;color:${rgb(accent, .6)};">${E(it.role)}</div>` : ''}</div>
+            </div></div>`).join('');
+          return wrap(cont(secHead() + `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.4rem;">${cards}</div>`));
+        }
+        case 'team': {
+          const min = s.cols === '4' ? '160px' : s.cols === '2' ? '240px' : '200px';
+          const cards = items.map(it => {
+            const inner = `${it.photo ? `<img src="${A(it.photo)}" alt="" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:14px;display:block;margin-bottom:.9rem;" />` : `<div style="width:100%;aspect-ratio:1;background:${rgb(accent, .08)};border-radius:14px;margin-bottom:.9rem;"></div>`}
+              <div style="font-size:1rem;font-weight:400;">${E(it.name || '')}</div>${it.role ? `<div style="font-size:.8rem;font-weight:200;color:${rgb(accent, .6)};margin-top:.2rem;">${E(it.role)}</div>` : ''}`;
+            return it.url ? `<a href="${A(it.url)}" style="text-decoration:none;color:inherit;display:block;">${inner}</a>` : `<div>${inner}</div>`;
+          }).join('');
+          return wrap(cont(secHead() + `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(${min},1fr));gap:1.6rem;text-align:${s.card_align || 'left'};">${cards}</div>`));
+        }
+        case 'logos': {
+          const mh = s.size === 'lg' ? '56px' : s.size === 'sm' ? '32px' : '44px';
+          const logos = items.map(it => {
+            const img = it.img
+              ? `<img src="${A(it.img)}" alt="${A(it.label || '')}" style="max-height:${mh};max-width:150px;object-fit:contain;opacity:.7;filter:${s.mono === 'yes' ? 'grayscale(1)' : 'none'};" />`
+              : `<span style="font-size:1.05rem;font-weight:300;color:${rgb(text, .5)};">${E(it.label || '')}</span>`;
+            return it.url ? `<a href="${A(it.url)}" style="display:flex;align-items:center;">${img}</a>` : `<div style="display:flex;align-items:center;">${img}</div>`;
+          }).join('');
+          const head = s.heading ? `<div style="text-align:center;font-size:.72rem;letter-spacing:.24em;text-transform:uppercase;color:${rgb(text, .45)};margin-bottom:1.8rem;font-weight:300;">${E(s.heading)}</div>` : '';
+          return wrap(cont(head + `<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:2.6rem;">${logos}</div>`, '860px'));
+        }
+        case 'video': {
+          const u = s.url || ''; let embed = ''; let m;
+          if ((m = u.match(/(?:youtube\.com\/.*[?&]v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/))) embed = 'https://www.youtube.com/embed/' + m[1];
+          else if ((m = u.match(/vimeo\.com\/(?:video\/)?(\d+)/))) embed = 'https://player.vimeo.com/video/' + m[1];
+          const mw = s.max_w === 'narrow' ? '640px' : s.max_w === 'full' ? '100%' : '860px';
+          const frame = embed
+            ? `<div style="position:relative;width:100%;aspect-ratio:16/9;border-radius:14px;overflow:hidden;"><iframe src="${A(embed)}" style="position:absolute;inset:0;width:100%;height:100%;border:0;" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen></iframe></div>`
+            : `<div style="aspect-ratio:16/9;background:${rgb(accent, .06)};border:1px dashed ${rgb(accent, .2)};border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:${rgb(text, .4)};">Paste a YouTube or Vimeo URL</div>`;
+          return wrap(cont(frame + (s.caption ? `<p style="text-align:center;font-size:.78rem;font-weight:200;color:${rgb(text, .5)};margin-top:.9rem;">${E(s.caption)}</p>` : ''), mw));
+        }
+        case 'map': {
+          const q = s.query || '';
+          const src = /^https?:\/\//.test(q) ? q : 'https://maps.google.com/maps?q=' + encodeURIComponent(q) + '&output=embed';
+          const ht = s.height === 'sm' ? '280px' : s.height === 'lg' ? '520px' : '400px';
+          const frame = q
+            ? `<iframe src="${A(src)}" style="width:100%;height:${ht};border:0;border-radius:14px;display:block;" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`
+            : `<div style="height:${ht};background:${rgb(accent, .06)};border:1px dashed ${rgb(accent, .2)};border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:${rgb(text, .4)};">Enter an address or Google Maps embed URL</div>`;
+          return wrap(cont(frame));
+        }
+        case 'marquee': {
+          const sp = s.speed === 'slow' ? '40s' : s.speed === 'fast' ? '14s' : '24s';
+          const one = `<span style="padding:0 1.5rem;">${E(s.text || 'Announcement')}</span><span style="opacity:.4;">${E(s.separator || '•')}</span>`;
+          const run = one.repeat(8);
+          return `<div style="${f}${c}overflow:hidden;white-space:nowrap;background:${rgb(accent, .07)};border-top:1px solid ${rgb(accent, .12)};border-bottom:1px solid ${rgb(accent, .12)};padding:.85rem 0;font-size:.95rem;font-weight:300;letter-spacing:.04em;"><style>@keyframes foyer-marq{from{transform:translateX(0)}to{transform:translateX(-50%)}}</style><div style="display:inline-block;animation:foyer-marq ${sp} linear infinite;">${run}${run}</div></div>`;
+        }
         default: return '';
       }
     }

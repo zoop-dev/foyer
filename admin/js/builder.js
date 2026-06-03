@@ -282,6 +282,139 @@ function bRender(s, theme) {
       const styleNote=s.rev_style==='list'?'List':'Cards';
       return `<div style="${ff}${fc}padding:${p};">${headingHtml}<div style="border:1px dashed ${bRgb(accent,.12)};padding:2rem;text-align:center;font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:${bRgb(accent,.32)};font-weight:100;">Reviews — ${styleNote}${maxNote}</div></div>`;
     }
+    default: return bXtra(s, { E: bE, A: bA, rgb: bRgb, md, accent, text, bg, font });
+  }
+}
+
+
+
+function bXtra(s, h) {
+  const { E, A, rgb, md, accent, text, bg, font } = h;
+  const f = `font-family:'${font}',sans-serif;`;
+  const c = `color:${text};`;
+  const PAD = (p) => p === 'sm' ? '2.25rem' : p === 'lg' ? '5.5rem' : '3.75rem';
+  const wrap = (inner, extra = '') => `<div style="${f}${c}padding:${PAD(s.pad)} 1.5rem;${extra}">${inner}</div>`;
+  const cont = (inner, mw = '1080px') => `<div style="max-width:${mw};margin:0 auto;">${inner}</div>`;
+  const btn = (label, url, style) => {
+    if (!label) return '';
+    const base = 'display:inline-block;text-decoration:none;font-weight:400;font-size:.76rem;letter-spacing:.12em;text-transform:uppercase;padding:.8rem 1.7rem;border-radius:8px;';
+    const sty = style === 'outline' ? `border:1px solid ${rgb(accent, .55)};color:${accent};` : `background:${accent};color:${bg};border:1px solid ${accent};`;
+    return `<a href="${A(url || '#')}" style="${base}${sty}">${E(label)}</a>`;
+  };
+  const secHead = (align = 'center') => {
+    if (!s.eyebrow && !s.heading && !s.sub) return '';
+    return `<div style="text-align:${align};margin-bottom:2.6rem;">
+      ${s.eyebrow ? `<div style="font-size:.7rem;letter-spacing:.3em;text-transform:uppercase;color:${accent};font-weight:400;margin-bottom:.85rem;">${E(s.eyebrow)}</div>` : ''}
+      ${s.heading ? `<h2 style="font-size:clamp(1.6rem,4vw,2.4rem);font-weight:300;letter-spacing:-.01em;line-height:1.15;margin:0;">${E(s.heading)}</h2>` : ''}
+      ${s.sub ? `<p style="font-size:1rem;font-weight:200;line-height:1.7;color:${rgb(text, .6)};max-width:560px;margin:.9rem ${align === 'center' ? 'auto' : '0'} 0;">${E(s.sub)}</p>` : ''}
+    </div>`;
+  };
+  const items = s.items || [];
+
+  switch (s.type) {
+    case 'banner': {
+      const mh = s.min_h === 'sm' ? '42vh' : s.min_h === 'lg' ? '82vh' : s.min_h === 'full' ? '100vh' : '60vh';
+      const align = s.align || 'center';
+      const ai = align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center';
+      const ov = s.overlay || '0.5';
+      const bgStyle = s.bg_img
+        ? `background-image:linear-gradient(rgba(0,0,0,${ov}),rgba(0,0,0,${ov})),url('${A(s.bg_img)}');background-size:cover;background-position:center;`
+        : `background:${rgb(accent, .06)};`;
+      const onImg = !!s.bg_img;
+      return `<div style="${f}${c}${bgStyle}min-height:${mh};display:flex;flex-direction:column;align-items:${ai};justify-content:center;text-align:${align};padding:4.5rem 1.5rem;">
+        <div style="max-width:760px;">
+        ${s.eyebrow ? `<div style="font-size:.72rem;letter-spacing:.32em;text-transform:uppercase;font-weight:400;margin-bottom:1.1rem;color:${onImg ? 'rgba(255,255,255,.88)' : accent};">${E(s.eyebrow)}</div>` : ''}
+        <h1 style="font-size:clamp(2.2rem,6vw,4rem);font-weight:300;line-height:1.05;letter-spacing:-.02em;margin:0;color:${onImg ? '#fff' : text};">${E(s.heading || 'Headline')}</h1>
+        ${s.subheading ? `<p style="font-size:clamp(1rem,2vw,1.22rem);font-weight:200;line-height:1.6;margin:1.2rem 0 0;color:${onImg ? 'rgba(255,255,255,.85)' : rgb(text, .62)};">${E(s.subheading)}</p>` : ''}
+        ${(s.btn_label || s.btn2_label) ? `<div style="display:flex;gap:.8rem;flex-wrap:wrap;justify-content:${ai};margin-top:2rem;">${btn(s.btn_label, s.btn_url, 'solid')}${btn(s.btn2_label, s.btn2_url, 'outline')}</div>` : ''}
+        </div></div>`;
+    }
+    case 'features': {
+      const min = s.cols === '4' ? '200px' : s.cols === '2' ? '300px' : '240px';
+      const ca = s.card_align || 'left';
+      const cards = items.map(it => `<div style="text-align:${ca};">
+        ${it.icon ? `<div style="font-size:2rem;line-height:1;margin-bottom:1rem;">${E(it.icon)}</div>` : ''}
+        <div style="font-size:1.05rem;font-weight:400;letter-spacing:.01em;margin-bottom:.5rem;">${E(it.title || '')}</div>
+        <div style="font-size:.9rem;font-weight:200;line-height:1.7;color:${rgb(text, .6)};">${E(it.text || '')}</div>
+      </div>`).join('');
+      return wrap(cont(secHead() + `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(${min},1fr));gap:2.2rem;">${cards}</div>`));
+    }
+    case 'steps': {
+      const cards = items.map((it, i) => `<div style="display:flex;gap:1rem;align-items:flex-start;">
+        <div style="flex-shrink:0;width:42px;height:42px;border-radius:50%;border:1px solid ${rgb(accent, .4)};color:${accent};display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:300;">${i + 1}</div>
+        <div><div style="font-size:1.02rem;font-weight:400;margin-bottom:.35rem;">${E(it.title || '')}</div><div style="font-size:.9rem;font-weight:200;line-height:1.7;color:${rgb(text, .6)};">${E(it.text || '')}</div></div>
+      </div>`).join('');
+      const grid = s.layout === 'row' ? 'grid-template-columns:repeat(auto-fit,minmax(220px,1fr));' : 'grid-template-columns:1fr;max-width:620px;margin:0 auto;';
+      return wrap(cont(secHead() + `<div style="display:grid;${grid}gap:2rem;">${cards}</div>`));
+    }
+    case 'pricing': {
+      const cards = items.map(it => {
+        const feat = String(it.features || '').split('\n').filter(Boolean).map(ln => `<li style="font-size:.86rem;font-weight:200;line-height:1.5;color:${rgb(text, .7)};padding:.45rem 0;border-bottom:1px solid ${rgb(accent, .08)};list-style:none;">${E(ln)}</li>`).join('');
+        const fe = it.featured === 'yes';
+        return `<div style="border:1px solid ${fe ? rgb(accent, .5) : rgb(accent, .14)};background:${fe ? rgb(accent, .07) : rgb(accent, .03)};border-radius:16px;padding:2rem 1.6rem;display:flex;flex-direction:column;">
+          ${fe ? `<div style="align-self:flex-start;font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;background:${accent};color:${bg};padding:.25rem .6rem;border-radius:5px;margin-bottom:1rem;font-weight:400;">${E(it.badge || 'Popular')}</div>` : ''}
+          <div style="font-size:.92rem;font-weight:400;letter-spacing:.05em;text-transform:uppercase;color:${rgb(text, .7)};margin-bottom:.6rem;">${E(it.name || '')}</div>
+          <div style="display:flex;align-items:baseline;gap:.3rem;margin-bottom:1.3rem;"><span style="font-size:2.4rem;font-weight:300;letter-spacing:-.02em;">${E(it.price || '')}</span>${it.period ? `<span style="font-size:.8rem;font-weight:200;color:${rgb(text, .5)};">${E(it.period)}</span>` : ''}</div>
+          <ul style="margin:0 0 1.6rem;padding:0;flex:1;">${feat}</ul>
+          ${btn(it.btn_label || 'Choose', it.btn_url, fe ? 'solid' : 'outline')}
+        </div>`;
+      }).join('');
+      return wrap(cont(secHead() + `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.4rem;align-items:stretch;">${cards}</div>`));
+    }
+    case 'testimonials': {
+      const cards = items.map(it => `<div style="border:1px solid ${rgb(accent, .12)};background:${rgb(accent, .03)};border-radius:14px;padding:1.6rem;display:flex;flex-direction:column;gap:1rem;">
+        <div style="font-size:.95rem;font-weight:200;line-height:1.75;color:${rgb(text, .8)};font-style:italic;">&ldquo;${E(it.quote || '')}&rdquo;</div>
+        <div style="display:flex;align-items:center;gap:.7rem;margin-top:auto;">
+          ${it.avatar ? `<img src="${A(it.avatar)}" alt="" style="width:38px;height:38px;border-radius:50%;object-fit:cover;" />` : ''}
+          <div><div style="font-size:.85rem;font-weight:400;">${E(it.name || '')}</div>${it.role ? `<div style="font-size:.72rem;font-weight:200;color:${rgb(accent, .6)};">${E(it.role)}</div>` : ''}</div>
+        </div></div>`).join('');
+      return wrap(cont(secHead() + `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.4rem;">${cards}</div>`));
+    }
+    case 'team': {
+      const min = s.cols === '4' ? '160px' : s.cols === '2' ? '240px' : '200px';
+      const cards = items.map(it => {
+        const inner = `${it.photo ? `<img src="${A(it.photo)}" alt="" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:14px;display:block;margin-bottom:.9rem;" />` : `<div style="width:100%;aspect-ratio:1;background:${rgb(accent, .08)};border-radius:14px;margin-bottom:.9rem;"></div>`}
+          <div style="font-size:1rem;font-weight:400;">${E(it.name || '')}</div>${it.role ? `<div style="font-size:.8rem;font-weight:200;color:${rgb(accent, .6)};margin-top:.2rem;">${E(it.role)}</div>` : ''}`;
+        return it.url ? `<a href="${A(it.url)}" style="text-decoration:none;color:inherit;display:block;">${inner}</a>` : `<div>${inner}</div>`;
+      }).join('');
+      return wrap(cont(secHead() + `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(${min},1fr));gap:1.6rem;text-align:${s.card_align || 'left'};">${cards}</div>`));
+    }
+    case 'logos': {
+      const mh = s.size === 'lg' ? '56px' : s.size === 'sm' ? '32px' : '44px';
+      const logos = items.map(it => {
+        const img = it.img
+          ? `<img src="${A(it.img)}" alt="${A(it.label || '')}" style="max-height:${mh};max-width:150px;object-fit:contain;opacity:.7;filter:${s.mono === 'yes' ? 'grayscale(1)' : 'none'};" />`
+          : `<span style="font-size:1.05rem;font-weight:300;color:${rgb(text, .5)};">${E(it.label || '')}</span>`;
+        return it.url ? `<a href="${A(it.url)}" style="display:flex;align-items:center;">${img}</a>` : `<div style="display:flex;align-items:center;">${img}</div>`;
+      }).join('');
+      const head = s.heading ? `<div style="text-align:center;font-size:.72rem;letter-spacing:.24em;text-transform:uppercase;color:${rgb(text, .45)};margin-bottom:1.8rem;font-weight:300;">${E(s.heading)}</div>` : '';
+      return wrap(cont(head + `<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:2.6rem;">${logos}</div>`, '860px'));
+    }
+    case 'video': {
+      const u = s.url || ''; let embed = ''; let m;
+      if ((m = u.match(/(?:youtube\.com\/.*[?&]v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/))) embed = 'https://www.youtube.com/embed/' + m[1];
+      else if ((m = u.match(/vimeo\.com\/(?:video\/)?(\d+)/))) embed = 'https://player.vimeo.com/video/' + m[1];
+      const mw = s.max_w === 'narrow' ? '640px' : s.max_w === 'full' ? '100%' : '860px';
+      const frame = embed
+        ? `<div style="position:relative;width:100%;aspect-ratio:16/9;border-radius:14px;overflow:hidden;"><iframe src="${A(embed)}" style="position:absolute;inset:0;width:100%;height:100%;border:0;" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen></iframe></div>`
+        : `<div style="aspect-ratio:16/9;background:${rgb(accent, .06)};border:1px dashed ${rgb(accent, .2)};border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:${rgb(text, .4)};">Paste a YouTube or Vimeo URL</div>`;
+      return wrap(cont(frame + (s.caption ? `<p style="text-align:center;font-size:.78rem;font-weight:200;color:${rgb(text, .5)};margin-top:.9rem;">${E(s.caption)}</p>` : ''), mw));
+    }
+    case 'map': {
+      const q = s.query || '';
+      const src = /^https?:\/\//.test(q) ? q : 'https://maps.google.com/maps?q=' + encodeURIComponent(q) + '&output=embed';
+      const ht = s.height === 'sm' ? '280px' : s.height === 'lg' ? '520px' : '400px';
+      const frame = q
+        ? `<iframe src="${A(src)}" style="width:100%;height:${ht};border:0;border-radius:14px;display:block;" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`
+        : `<div style="height:${ht};background:${rgb(accent, .06)};border:1px dashed ${rgb(accent, .2)};border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:${rgb(text, .4)};">Enter an address or Google Maps embed URL</div>`;
+      return wrap(cont(frame));
+    }
+    case 'marquee': {
+      const sp = s.speed === 'slow' ? '40s' : s.speed === 'fast' ? '14s' : '24s';
+      const one = `<span style="padding:0 1.5rem;">${E(s.text || 'Announcement')}</span><span style="opacity:.4;">${E(s.separator || '•')}</span>`;
+      const run = one.repeat(8);
+      return `<div style="${f}${c}overflow:hidden;white-space:nowrap;background:${rgb(accent, .07)};border-top:1px solid ${rgb(accent, .12)};border-bottom:1px solid ${rgb(accent, .12)};padding:.85rem 0;font-size:.95rem;font-weight:300;letter-spacing:.04em;"><style>@keyframes foyer-marq{from{transform:translateX(0)}to{transform:translateX(-50%)}}</style><div style="display:inline-block;animation:foyer-marq ${sp} linear infinite;">${run}${run}</div></div>`;
+    }
     default: return '';
   }
 }
@@ -314,6 +447,16 @@ function bDefault(type) {
     case 'filedown':  return { id, type, url:'', label:'Download', filename:'', align:'center', btn_style:'solid', pad:'md' };
     case 'tutorials': return { id, type, tut_style:'cards', heading:'', heading_align:'center', max_items:'0', view_all_show:'yes', view_all_label:'View all →', pad:'md' };
     case 'reviews': return { id, type, rev_style:'cards', heading:'', heading_align:'center', max_items:'0', view_all_show:'yes', view_all_label:'View all →', pad:'md' };
+    case 'banner':  return { id, type, eyebrow:'', heading:'Your headline here', subheading:'A short supporting line that sells it.', btn_label:'Get started', btn_url:'', btn2_label:'', btn2_url:'', bg_img:'', overlay:'0.5', min_h:'md', align:'center', pad:'md' };
+    case 'features':return { id, type, eyebrow:'', heading:'What we offer', sub:'', items:[{icon:'✦',title:'Feature one',text:'Describe it in a sentence.'},{icon:'✦',title:'Feature two',text:'Describe it in a sentence.'},{icon:'✦',title:'Feature three',text:'Describe it in a sentence.'}], cols:'3', card_align:'left', pad:'md' };
+    case 'steps':   return { id, type, eyebrow:'', heading:'How it works', sub:'', items:[{title:'Step one',text:'What happens first.'},{title:'Step two',text:'What happens next.'},{title:'Step three',text:'And finally this.'}], layout:'stack', pad:'md' };
+    case 'pricing': return { id, type, eyebrow:'', heading:'Pricing', sub:'', items:[{name:'Basic',price:'$0',period:'/mo',features:'Feature A\nFeature B',btn_label:'Choose',btn_url:'',featured:'no'},{name:'Pro',price:'$29',period:'/mo',features:'Everything in Basic\nFeature C\nFeature D',btn_label:'Choose',btn_url:'',featured:'yes',badge:'Popular'}], pad:'md' };
+    case 'testimonials': return { id, type, eyebrow:'', heading:'What people say', sub:'', items:[{quote:'This made all the difference for us.',name:'Jane Doe',role:'Customer',avatar:''},{quote:'Couldn’t recommend it more highly.',name:'John Smith',role:'Customer',avatar:''}], pad:'md' };
+    case 'team':    return { id, type, eyebrow:'', heading:'Our team', sub:'', items:[{photo:'',name:'Full Name',role:'Role',url:''},{photo:'',name:'Full Name',role:'Role',url:''},{photo:'',name:'Full Name',role:'Role',url:''}], cols:'3', card_align:'left', pad:'md' };
+    case 'logos':   return { id, type, heading:'Trusted by', items:[{img:'',label:'Brand',url:''},{img:'',label:'Brand',url:''},{img:'',label:'Brand',url:''},{img:'',label:'Brand',url:''}], size:'md', mono:'yes', pad:'md' };
+    case 'video':   return { id, type, url:'', caption:'', max_w:'normal', pad:'md' };
+    case 'map':     return { id, type, query:'', height:'md', pad:'md' };
+    case 'marquee': return { id, type, text:'Announcement — limited time offer', separator:'•', speed:'normal' };
   }
 }
 
@@ -334,8 +477,12 @@ function bPadRow(cur) {
 }
 
 function bEditorFields(s) {
-  const typeLabels={hero:'Hero',bio:'Bio',links:'Links',link:'Link',contact:'Contact',social:'Social',cta:'CTA',quote:'Quote',heading:'Heading',text:'Text',image:'Image',stats:'Stats',divider:'Divider',spacer:'Spacer',cards:'Cards',collection:'Collection',gallery:'Gallery',imgtext:'Image + Text',accordion:'Accordion',carousel:'Carousel',group:'Collapsible Group',fileprev:'File Preview',filedown:'File Download',tutorials:'Tutorials',reviews:'Reviews'};
+  const typeLabels={hero:'Hero',bio:'Bio',links:'Links',link:'Link',contact:'Contact',social:'Social',cta:'CTA',quote:'Quote',heading:'Heading',text:'Text',image:'Image',stats:'Stats',divider:'Divider',spacer:'Spacer',cards:'Cards',collection:'Collection',gallery:'Gallery',imgtext:'Image + Text',accordion:'Accordion',carousel:'Carousel',group:'Collapsible Group',fileprev:'File Preview',filedown:'File Download',tutorials:'Tutorials',reviews:'Reviews',banner:'Banner',features:'Features',steps:'Steps',pricing:'Pricing',testimonials:'Testimonials',team:'Team',logos:'Logo Strip',video:'Video',map:'Map',marquee:'Marquee'};
   let f='';
+
+  const ehs=`<div class="bld-ef"><label>Eyebrow <span style="opacity:.5">(small text above)</span></label><input type="text" data-f="eyebrow" value="${bA(s.eyebrow||'')}" /></div>
+     <div class="bld-ef"><label>Heading <span style="opacity:.5">(optional)</span></label><input type="text" data-f="heading" value="${bA(s.heading||'')}" /></div>
+     <div class="bld-ef"><label>Subheading <span style="opacity:.5">(optional)</span></label><input type="text" data-f="sub" value="${bA(s.sub||'')}" /></div>`;
 
   if (s.type==='hero') {
     f=`<div class="bld-ef"><label>Name</label><input type="text" data-f="name" value="${bA(s.name)}" /></div>
@@ -571,6 +718,105 @@ function bEditorFields(s) {
     </select></div>
     <div class="bld-ef"><label>View All Label</label><input type="text" data-f="view_all_label" value="${bA(s.view_all_label||'View all →')}" /></div>
     ${bPadRow(s.pad)}`;
+  } else if (s.type==='banner') {
+    f=`<div class="bld-ef"><label>Eyebrow <span style="opacity:.5">(small text above)</span></label><input type="text" data-f="eyebrow" value="${bA(s.eyebrow||'')}" /></div>
+       <div class="bld-ef"><label>Headline</label><input type="text" data-f="heading" value="${bA(s.heading||'')}" /></div>
+       <div class="bld-ef"><label>Subheading</label><textarea data-f="subheading" rows="2">${bE(s.subheading||'')}</textarea></div>
+       <div class="bld-ef"><label>Button label</label><input type="text" data-f="btn_label" value="${bA(s.btn_label||'')}" /></div>
+       <div class="bld-ef"><label>Button URL</label><input type="url" data-f="btn_url" value="${bA(s.btn_url||'')}" /></div>
+       <div class="bld-ef"><label>2nd button label <span style="opacity:.5">(optional)</span></label><input type="text" data-f="btn2_label" value="${bA(s.btn2_label||'')}" /></div>
+       <div class="bld-ef"><label>2nd button URL</label><input type="url" data-f="btn2_url" value="${bA(s.btn2_url||'')}" /></div>
+       <div class="bld-ef"><label>Background Image <span style="opacity:.5">(optional)</span></label><div style="display:flex;gap:.4rem;"><input type="url" data-f="bg_img" value="${bA(s.bg_img||'')}" style="flex:1;" /><button class="btn btn-sm bld-img-pick" data-target-f="bg_img">Pick</button></div></div>
+       <div class="bld-ef"><label>Overlay darkness <span style="opacity:.5">(0–1)</span></label><input type="text" data-f="overlay" value="${bA(s.overlay||'0.5')}" /></div>
+       <div class="bld-ef"><label>Height</label><select data-f="min_h"><option value="sm"${s.min_h==='sm'?' selected':''}>Short</option><option value="md"${(!s.min_h||s.min_h==='md')?' selected':''}>Medium</option><option value="lg"${s.min_h==='lg'?' selected':''}>Tall</option><option value="full"${s.min_h==='full'?' selected':''}>Full screen</option></select></div>
+       ${bAlignRow(s.align)}
+       ${bPadRow(s.pad)}`;
+  } else if (s.type==='features') {
+    const items=s.items||[];
+    f=`${ehs}
+       <div id="bFEAT">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button>
+       <div class="bld-ef"><label>Icon / emoji</label><input type="text" data-ci="${i}" data-cf="icon" value="${bA(it.icon||'')}" placeholder="✦ or 🚀" /></div>
+       <div class="bld-ef"><label>Title</label><input type="text" data-ci="${i}" data-cf="title" value="${bA(it.title||'')}" /></div>
+       <div class="bld-ef"><label>Text</label><textarea data-ci="${i}" data-cf="text" rows="2">${bE(it.text||'')}</textarea></div>
+     </div>`).join('')}</div>
+       <button class="bld-add-li bld-add-item" data-shape='{"icon":"✦","title":"Feature","text":""}'>+ Add feature</button>
+       <div class="bld-ef"><label>Columns</label><select data-f="cols"><option value="2"${s.cols==='2'?' selected':''}>2</option><option value="3"${(!s.cols||s.cols==='3')?' selected':''}>3</option><option value="4"${s.cols==='4'?' selected':''}>4</option></select></div>
+       <div class="bld-ef"><label>Card text align</label><select data-f="card_align"><option value="left"${(!s.card_align||s.card_align==='left')?' selected':''}>Left</option><option value="center"${s.card_align==='center'?' selected':''}>Center</option></select></div>
+       ${bPadRow(s.pad)}`;
+  } else if (s.type==='steps') {
+    const items=s.items||[];
+    f=`${ehs}
+       <div id="bSTEP">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button>
+       <div class="bld-ef"><label>Title</label><input type="text" data-ci="${i}" data-cf="title" value="${bA(it.title||'')}" /></div>
+       <div class="bld-ef"><label>Text</label><textarea data-ci="${i}" data-cf="text" rows="2">${bE(it.text||'')}</textarea></div>
+     </div>`).join('')}</div>
+       <button class="bld-add-li bld-add-item" data-shape='{"title":"Step","text":""}'>+ Add step</button>
+       <div class="bld-ef"><label>Layout</label><select data-f="layout"><option value="stack"${(!s.layout||s.layout==='stack')?' selected':''}>Stacked</option><option value="row"${s.layout==='row'?' selected':''}>Row</option></select></div>
+       ${bPadRow(s.pad)}`;
+  } else if (s.type==='pricing') {
+    const items=s.items||[];
+    f=`${ehs}
+       <div id="bPRICE">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button>
+       <div class="bld-ef"><label>Plan name</label><input type="text" data-ci="${i}" data-cf="name" value="${bA(it.name||'')}" /></div>
+       <div class="bld-ef"><label>Price</label><input type="text" data-ci="${i}" data-cf="price" value="${bA(it.price||'')}" placeholder="$29" /></div>
+       <div class="bld-ef"><label>Period <span style="opacity:.5">(optional)</span></label><input type="text" data-ci="${i}" data-cf="period" value="${bA(it.period||'')}" placeholder="/mo" /></div>
+       <div class="bld-ef"><label>Features <span style="opacity:.5">(one per line)</span></label><textarea data-ci="${i}" data-cf="features" rows="4">${bE(it.features||'')}</textarea></div>
+       <div class="bld-ef"><label>Button label</label><input type="text" data-ci="${i}" data-cf="btn_label" value="${bA(it.btn_label||'')}" /></div>
+       <div class="bld-ef"><label>Button URL</label><input type="url" data-ci="${i}" data-cf="btn_url" value="${bA(it.btn_url||'')}" /></div>
+       <div class="bld-ef"><label>Highlight this plan</label><select data-ci="${i}" data-cf="featured"><option value="no"${it.featured!=='yes'?' selected':''}>No</option><option value="yes"${it.featured==='yes'?' selected':''}>Yes</option></select></div>
+       <div class="bld-ef"><label>Badge <span style="opacity:.5">(if highlighted)</span></label><input type="text" data-ci="${i}" data-cf="badge" value="${bA(it.badge||'')}" placeholder="Popular" /></div>
+     </div>`).join('')}</div>
+       <button class="bld-add-li bld-add-item" data-shape='{"name":"Plan","price":"$0","period":"/mo","features":"","btn_label":"Choose","btn_url":"","featured":"no"}'>+ Add plan</button>
+       ${bPadRow(s.pad)}`;
+  } else if (s.type==='testimonials') {
+    const items=s.items||[];
+    f=`${ehs}
+       <div id="bTEST">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button>
+       <div class="bld-ef"><label>Quote</label><textarea data-ci="${i}" data-cf="quote" rows="3">${bE(it.quote||'')}</textarea></div>
+       <div class="bld-ef"><label>Name</label><input type="text" data-ci="${i}" data-cf="name" value="${bA(it.name||'')}" /></div>
+       <div class="bld-ef"><label>Role / company <span style="opacity:.5">(optional)</span></label><input type="text" data-ci="${i}" data-cf="role" value="${bA(it.role||'')}" /></div>
+       <div class="bld-ef"><label>Avatar <span style="opacity:.5">(optional)</span></label><div style="display:flex;gap:.4rem;"><input type="url" data-ci="${i}" data-cf="avatar" value="${bA(it.avatar||'')}" style="flex:1;" /><button class="btn btn-sm bld-img-pick" data-target-ci="${i}" data-target-cf="avatar">Pick</button></div></div>
+     </div>`).join('')}</div>
+       <button class="bld-add-li bld-add-item" data-shape='{"quote":"","name":"","role":"","avatar":""}'>+ Add testimonial</button>
+       ${bPadRow(s.pad)}`;
+  } else if (s.type==='team') {
+    const items=s.items||[];
+    f=`${ehs}
+       <div id="bTEAM">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button>
+       <div class="bld-ef"><label>Photo</label><div style="display:flex;gap:.4rem;"><input type="url" data-ci="${i}" data-cf="photo" value="${bA(it.photo||'')}" style="flex:1;" /><button class="btn btn-sm bld-img-pick" data-target-ci="${i}" data-target-cf="photo">Pick</button></div></div>
+       <div class="bld-ef"><label>Name</label><input type="text" data-ci="${i}" data-cf="name" value="${bA(it.name||'')}" /></div>
+       <div class="bld-ef"><label>Role</label><input type="text" data-ci="${i}" data-cf="role" value="${bA(it.role||'')}" /></div>
+       <div class="bld-ef"><label>Link <span style="opacity:.5">(optional)</span></label><input type="url" data-ci="${i}" data-cf="url" value="${bA(it.url||'')}" /></div>
+     </div>`).join('')}</div>
+       <button class="bld-add-li bld-add-item" data-shape='{"photo":"","name":"","role":"","url":""}'>+ Add member</button>
+       <div class="bld-ef"><label>Columns</label><select data-f="cols"><option value="2"${s.cols==='2'?' selected':''}>2</option><option value="3"${(!s.cols||s.cols==='3')?' selected':''}>3</option><option value="4"${s.cols==='4'?' selected':''}>4</option></select></div>
+       <div class="bld-ef"><label>Card text align</label><select data-f="card_align"><option value="left"${(!s.card_align||s.card_align==='left')?' selected':''}>Left</option><option value="center"${s.card_align==='center'?' selected':''}>Center</option></select></div>
+       ${bPadRow(s.pad)}`;
+  } else if (s.type==='logos') {
+    const items=s.items||[];
+    f=`<div class="bld-ef"><label>Heading <span style="opacity:.5">(optional)</span></label><input type="text" data-f="heading" value="${bA(s.heading||'')}" /></div>
+       <div id="bLOGO">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button>
+       <div class="bld-ef"><label>Logo image</label><div style="display:flex;gap:.4rem;"><input type="url" data-ci="${i}" data-cf="img" value="${bA(it.img||'')}" style="flex:1;" /><button class="btn btn-sm bld-img-pick" data-target-ci="${i}" data-target-cf="img">Pick</button></div></div>
+       <div class="bld-ef"><label>Label <span style="opacity:.5">(alt / fallback)</span></label><input type="text" data-ci="${i}" data-cf="label" value="${bA(it.label||'')}" /></div>
+       <div class="bld-ef"><label>Link <span style="opacity:.5">(optional)</span></label><input type="url" data-ci="${i}" data-cf="url" value="${bA(it.url||'')}" /></div>
+     </div>`).join('')}</div>
+       <button class="bld-add-li bld-add-item" data-shape='{"img":"","label":"Brand","url":""}'>+ Add logo</button>
+       <div class="bld-ef"><label>Logo size</label><select data-f="size"><option value="sm"${s.size==='sm'?' selected':''}>Small</option><option value="md"${(!s.size||s.size==='md')?' selected':''}>Medium</option><option value="lg"${s.size==='lg'?' selected':''}>Large</option></select></div>
+       <div class="bld-ef"><label>Grayscale</label><select data-f="mono"><option value="yes"${s.mono!=='no'?' selected':''}>Yes</option><option value="no"${s.mono==='no'?' selected':''}>No</option></select></div>
+       ${bPadRow(s.pad)}`;
+  } else if (s.type==='video') {
+    f=`<div class="bld-ef"><label>Video URL <span style="opacity:.5">(YouTube or Vimeo)</span></label><input type="url" data-f="url" value="${bA(s.url||'')}" placeholder="https://youtube.com/watch?v=…" /></div>
+       <div class="bld-ef"><label>Caption <span style="opacity:.5">(optional)</span></label><input type="text" data-f="caption" value="${bA(s.caption||'')}" /></div>
+       <div class="bld-ef"><label>Width</label><select data-f="max_w"><option value="narrow"${s.max_w==='narrow'?' selected':''}>Narrow</option><option value="normal"${(!s.max_w||s.max_w==='normal')?' selected':''}>Normal</option><option value="full"${s.max_w==='full'?' selected':''}>Full</option></select></div>
+       ${bPadRow(s.pad)}`;
+  } else if (s.type==='map') {
+    f=`<div class="bld-ef"><label>Address or embed URL</label><input type="text" data-f="query" value="${bA(s.query||'')}" placeholder="123 Main St, City, State" /></div>
+       <div class="bld-ef"><label>Height</label><select data-f="height"><option value="sm"${s.height==='sm'?' selected':''}>Short</option><option value="md"${(!s.height||s.height==='md')?' selected':''}>Medium</option><option value="lg"${s.height==='lg'?' selected':''}>Tall</option></select></div>
+       ${bPadRow(s.pad)}`;
+  } else if (s.type==='marquee') {
+    f=`<div class="bld-ef"><label>Text</label><input type="text" data-f="text" value="${bA(s.text||'')}" /></div>
+       <div class="bld-ef"><label>Separator</label><input type="text" data-f="separator" value="${bA(s.separator||'•')}" /></div>
+       <div class="bld-ef"><label>Speed</label><select data-f="speed"><option value="slow"${s.speed==='slow'?' selected':''}>Slow</option><option value="normal"${(!s.speed||s.speed==='normal')?' selected':''}>Normal</option><option value="fast"${s.speed==='fast'?' selected':''}>Fast</option></select></div>`;
   }
 
   if (!['divider','spacer'].includes(s.type)) {
@@ -670,6 +916,15 @@ function bBindEditor(panel, s, onUpdate) {
   });
   const addCti=panel.querySelector('#bAddCti');
   if (addCti) addCti.addEventListener('click', () => { if (!s.items) s.items=[]; s.items.push({label:'',val:'',href:'',sub:''}); onUpdate(s,'re-editor'); });
+
+
+  panel.querySelectorAll('.bld-add-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!s.items) s.items=[];
+      let shape={}; try { shape=JSON.parse(btn.dataset.shape||'{}'); } catch {}
+      s.items.push(shape); onUpdate(s,'re-editor');
+    });
+  });
 
   panel.querySelector('#bFilePrevPick')?.addEventListener('click', () => openFilePicker(url => { s.url=url; const inp=panel.querySelector('[data-f="url"]'); if(inp){inp.value=url;} onUpdate(s); }));
   panel.querySelector('#bFileDownPick')?.addEventListener('click', () => openFilePicker(url => { s.url=url; const inp=panel.querySelector('[data-f="url"]'); if(inp){inp.value=url;} onUpdate(s); }));
