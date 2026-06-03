@@ -2,5 +2,5 @@ node_modules/
 dist/
 .wrangler/
 meta.json
-wrangler.toml
+/wrangler.toml
 .foyer.env
