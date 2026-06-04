@@ -258,15 +258,23 @@
 
 
 
+
     function _zoomable(img) {
       return img && img.closest('#scene') && !img.closest('a') &&
-        !img.classList.contains('no-zoom') && (img.naturalWidth || 100) >= 90;
+        !img.classList.contains('no-zoom') && !img.classList.contains('coll-thumb') &&
+        (img.naturalWidth || 100) >= 90;
     }
     document.addEventListener('click', (e) => {
       const img = e.target.closest('img');
       if (!_zoomable(img) || !window.Fancybox) return;
       e.preventDefault();
-      const imgs = Array.from(document.querySelectorAll('#scene img')).filter(_zoomable);
-      const idx = Math.max(0, imgs.indexOf(img));
-      window.Fancybox.show(imgs.map(im => ({ src: im.currentSrc || im.src, type: 'image' })), { startIndex: idx });
+
+      const seen = new Set(), slides = [];
+      Array.from(document.querySelectorAll('#scene img')).filter(_zoomable).forEach((im) => {
+        const src = im.currentSrc || im.src;
+        if (!seen.has(src)) { seen.add(src); slides.push({ src, type: 'image' }); }
+      });
+      const target = img.currentSrc || img.src;
+      const idx = Math.max(0, slides.findIndex((s) => s.src === target));
+      window.Fancybox.show(slides, { startIndex: idx });
     });
