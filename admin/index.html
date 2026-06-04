@@ -18,6 +18,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200;300&family=Josefin+Sans:ital,wght@0,100;0,200;0,300;1,100&family=Inter:ital,wght@0,200;0,300;0,400;1,200&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Space+Grotesk:wght@300;400;500&family=Raleway:ital,wght@0,200;0,300;0,400;1,200&family=Poppins:ital,wght@0,200;0,300;1,200&family=DM+Sans:ital,opsz,wght@0,9..40,200;0,9..40,300;1,9..40,300&family=Lato:ital,wght@0,300;0,400;1,300&family=Montserrat:ital,wght@0,200;0,300;0,400;1,200&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/marked@13/marked.min.js"></script>
   <link rel="stylesheet" href="admin.css" />
+  <link rel="stylesheet" href="admin-mobile.css" />
 </head>
 <body>
 
@@ -420,13 +421,10 @@
 
   
   <div class="section bld-sec active" id="sec-builder" style="position:relative;">
-    <div class="mob-bld-bar" id="mobBldBar" style="display:none;">
-      <button class="mob-bld-pages-btn" id="mobPagesBtn">☰ Pages</button>
-      <span class="mob-bld-title" id="mobBldTitle">—</span>
-      <div style="display:flex;gap:.4rem;">
-        <button class="btn btn-xs" id="mobPreviewBtn">↗</button>
-        <button class="btn btn-primary btn-xs" id="mobPublishBtn">Publish</button>
-      </div>
+    <div class="m-bldbar" id="mBldBar">
+      <button class="m-bld-page" id="mBldPage"><span id="mBldPageName">Page</span> <span class="m-bld-caret">▾</span></button>
+      <button class="m-bld-tool" id="mBldTheme" title="Theme &amp; background" aria-label="Theme">✦</button>
+      <button class="m-bld-add" id="mBldAdd">＋ Section</button>
     </div>
     <div class="bld-loading" id="bldLoading"><div class="bld-loading-inner"><div class="bld-loading-spin"></div><p class="bld-loading-label">Loading pages</p></div></div>
     <div class="bld-topbar">
@@ -509,57 +507,33 @@
     </div>
   </div>
 
-  <nav class="mob-nav" id="mobNav">
-    <button class="mob-tab active" data-tab="builder">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      Builder
-    </button>
-    <button class="mob-tab" data-tab="images">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-      Images
-    </button>
-    <button class="mob-tab" data-tab="files">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      Files
-    </button>
-    <button class="mob-tab" data-tab="settings">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      Settings
-    </button>
-    <button class="mob-tab" data-tab="tutorials">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-      Tutorials
-    </button>
-    <button class="mob-tab" data-tab="reviews">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 21 12 16.5 5.5 21 7.5 13.5 2 9 9 9"/></svg>
-      Reviews
-    </button>
-    <button class="mob-tab" data-tab="analytics">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-      Analytics <span class="mob-badge" id="mobBadge"></span>
-    </button>
-  </nav>
+  
+  <header class="m-top" id="mTop">
+    <button class="m-burger" id="mBurger" aria-label="Menu"><span></span><span></span><span></span></button>
+    <span class="m-title" id="mTitle">Builder</span>
+    <div class="m-actions" id="mActions"></div>
+  </header>
 </div>
 
 
-<div class="mob-drawer-backdrop" id="mobDrawerBackdrop"></div>
-<div class="mob-drawer" id="mobDrawer">
-  <div class="mob-drawer-head">
-    <span>Pages</span>
-    <button id="mobDrawerClose">✕</button>
+<div class="m-menu" id="mMenu" aria-hidden="true">
+  <div class="m-menu-top">
+    <span class="m-menu-brand"><img src="/icons/favicon.svg" alt="" />Admin</span>
+    <button class="m-menu-x" id="mMenuClose" aria-label="Close">✕</button>
   </div>
-  <div id="mobDrawerPageList"></div>
-  <div style="padding:.75rem;">
-    <button class="btn btn-xs" style="width:100%" id="mobAddPageBtn">+ New Page</button>
+  <nav class="m-menu-list" id="mMenuList"></nav>
+  <div class="m-menu-foot">
+    <a href="/" target="_blank" class="m-menu-foot-link">View site ↗</a>
+    <button class="m-menu-foot-link" id="mLogout">Log out</button>
   </div>
 </div>
 
 
-<div class="mob-sheet-backdrop" id="mobSheetBackdrop"></div>
-<div class="mob-sheet" id="mobSheet">
-  <div class="mob-sheet-handle"></div>
-  <div class="mob-sheet-head" id="mobSheetHead"></div>
-  <div class="mob-sheet-body" id="mobSheetBody"></div>
+<div class="m-sheet-back" id="mSheetBack"></div>
+<div class="m-sheet" id="mSheet" role="dialog">
+  <div class="m-sheet-grip"></div>
+  <div class="m-sheet-head"><span class="m-sheet-title" id="mSheetTitle"></span><button class="m-sheet-x" id="mSheetX" aria-label="Close">✕</button></div>
+  <div class="m-sheet-body" id="mSheetBody"></div>
 </div>
 
 <script src="js/utils.js" defer></script>

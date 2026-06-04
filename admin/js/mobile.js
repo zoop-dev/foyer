@@ -1,115 +1,245 @@
+
+
 function isMobile() { return window.innerWidth <= 640; }
 
-function mobSyncTitle() {
-  const p = bldPages.find(p => p.id === bldPageId);
-  const el = document.getElementById('mobBldTitle');
-  if (el) el.textContent = p ? p.title : '—';
-}
+const M_SECTIONS = [
+  { tab: 'builder',   label: 'Page Builder', ico: '▦' },
+  { tab: 'images',    label: 'Images',       ico: '🖼' },
+  { tab: 'files',     label: 'Files',        ico: '📄' },
+  { tab: 'settings',  label: 'Settings',     ico: '⚙' },
+  { tab: 'tutorials', label: 'Tutorials',    ico: '🎓' },
+  { tab: 'reviews',   label: 'Reviews',      ico: '★' },
+  { tab: 'analytics', label: 'Analytics',    ico: '📊' },
+];
+let mCurTab = 'builder';
+let mSheetMode = '';   // 'editor' | 'pages' | 'newpage' | 'theme'
 
-function mobOpenDrawer() {
-  const list = document.getElementById('mobDrawerPageList');
-  if (!list) return;
-  list.innerHTML = bldPages.map(p => `
-    <div class="bld-pi${p.id===bldPageId?' sel':''}" data-pid="${p.id}" style="cursor:pointer;">
-      <div>
-        <div class="bld-pi-t">${escHtml(p.title||'Untitled')}</div>
-        <div class="bld-pi-s">${escHtml(p.slug||'')}</div>
-      </div>
-    </div>`).join('') || '<p style="padding:1rem;font-size:.62rem;color:var(--muted);font-weight:100;">No pages yet</p>';
-  list.querySelectorAll('[data-pid]').forEach(el => {
-    el.addEventListener('click', () => {
-      bldPickPage(+el.dataset.pid);
-      mobCloseDrawer();
-      mobSyncTitle();
-    });
-  });
-  document.getElementById('mobDrawer').classList.add('open');
-  document.getElementById('mobDrawerBackdrop').classList.add('open');
-}
-
-function mobCloseDrawer() {
-  document.getElementById('mobDrawer').classList.remove('open');
-  document.getElementById('mobDrawerBackdrop').classList.remove('open');
-}
-
-function mobOpenSheet(s) {
-  if (!isMobile()) return;
-  const head = document.getElementById('mobSheetHead');
-  const body = document.getElementById('mobSheetBody');
-  if (!head || !body) return;
-  const { html, label } = bEditorFields(s);
-  head.innerHTML = `<span style="font-weight:200;font-size:.75rem;color:#f0f7f1;">${escHtml(label)}</span><button id="mobSheetClose" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:.2rem .4rem;">✕</button>`;
-  body.innerHTML = `<div class="bld-ep" style="padding:.5rem 0;">${html}</div>`;
-  document.getElementById('mobSheetClose').addEventListener('click', mobCloseSheet);
-  document.getElementById('mobSheetBackdrop').classList.add('open');
-  document.getElementById('mobSheet').classList.add('open');
-  bBindEditor(body, s, sec => { bldPatch(sec); mobSyncTitle(); });
-}
-
-function mobCloseSheet() {
-  document.getElementById('mobSheet').classList.remove('open');
-  document.getElementById('mobSheetBackdrop').classList.remove('open');
-  bldSel = null; bldParentId = null;
-}
-
-const _origBldDrawEditor = bldDrawEditor; // captures builder.js version before any override
-bldDrawEditor = function() {             // assignment: not hoisted, so _orig is correct above
-  if (isMobile()) {
-    if (bldSel) {
-      const { sec } = bldFindSection(bldSel);
-      if (sec) mobOpenSheet(sec);
-    } else {
-      mobCloseSheet();
-    }
-    mobSyncTitle();
-    return;
+function mSyncTitle() {
+  const el = document.getElementById('mTitle'); if (!el) return;
+  if (mCurTab === 'builder') {
+    const p = (typeof bldPages !== 'undefined') ? bldPages.find(p => p.id === bldPageId) : null;
+    el.textContent = p ? (p.title || 'Untitled') : 'Builder';
+  } else {
+    el.textContent = (M_SECTIONS.find(s => s.tab === mCurTab) || {}).label || 'Admin';
   }
-  _origBldDrawEditor();
+}
+function mSetActions() {
+  const el = document.getElementById('mActions'); if (!el) return;
+  if (mCurTab === 'builder') {
+    el.innerHTML = `<button class="btn btn-xs" id="mPreview" title="Preview">↗</button><button class="btn btn-primary btn-xs" id="mPublish">Publish</button>`;
+    el.querySelector('#mPreview').onclick = () => document.getElementById('bldPreview')?.click();
+    el.querySelector('#mPublish').onclick = () => document.getElementById('bldPublish')?.click();
+  } else {
+    el.innerHTML = '';
+  }
+}
+
+function mBuildMenu() {
+  const list = document.getElementById('mMenuList'); if (!list) return;
+  const visible = M_SECTIONS.filter(s => {
+    const btn = document.querySelector(`.tab-btn[data-tab="${s.tab}"]`);
+    return !(btn && btn.style.display === 'none');   // respect hidden-tab setting
+  });
+  list.innerHTML = visible.map(s => `<button class="m-menu-item${s.tab === mCurTab ? ' on' : ''}" data-tab="${s.tab}"><span class="m-menu-ico">${s.ico}</span>${s.label}${s.tab === 'analytics' ? '<span class="m-menu-badge" id="mMenuBadge" style="display:none"></span>' : ''}</button>`).join('');
+  list.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => { mSwitch(b.dataset.tab); mCloseMenu(); }));
+  mSyncMenuBadge();
+}
+function mOpenMenu() { mBuildMenu(); document.getElementById('mMenu').classList.add('open'); }
+function mCloseMenu() { document.getElementById('mMenu').classList.remove('open'); }
+
+function mSyncMenuBadge() {
+  const badge = document.getElementById('mMenuBadge'); const vis = document.getElementById('visBadge');
+  if (badge && vis) { badge.textContent = vis.textContent; badge.style.display = (vis.textContent || '').trim() ? '' : 'none'; }
+}
+
+function mSwitch(tab) {
+  mCurTab = tab;
+  const btn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
+  if (btn) btn.click();   // runs the full desktop switch + data loaders
+  mSyncTitle(); mSetActions();
+  if (tab === 'builder') mRenderBlockList();
+}
+
+function mOpenSheet(title, html, compact) {
+  const sheet = document.getElementById('mSheet'), body = document.getElementById('mSheetBody');
+  mRescueTheme();   // never let innerHTML destroy the live theme controls
+  document.getElementById('mSheetTitle').textContent = title || '';
+  body.innerHTML = html;
+  sheet.classList.toggle('compact', !!compact);
+  document.getElementById('mSheetBack').classList.add('open');
+  sheet.classList.add('open');
+}
+function mCloseSheet() {
+  if (mSheetMode === 'theme') mRescueTheme();
+  if (mSheetMode === 'editor') { bldSel = null; bldParentId = null; mRenderBlockList(); }
+  mSheetMode = '';
+  document.getElementById('mSheet').classList.remove('open');
+  document.getElementById('mSheetBack').classList.remove('open');
+}
+
+function mRescueTheme() {
+  const bar = document.querySelector('.bld-topbar');
+  if (bar) document.querySelectorAll('#mSheetBody .bld-tc').forEach(tc => bar.appendChild(tc));
+}
+
+function mSnippet(s) {
+  let t = s.heading || s.name || s.text || s.title || s.label || s.quote || s.body || s.url || '';
+  if (!t && Array.isArray(s.items)) t = `${s.items.length} item${s.items.length === 1 ? '' : 's'}`;
+  t = String(t).replace(/\s+/g, ' ').trim();
+  return t.length > 64 ? t.slice(0, 64) + '…' : t;
+}
+function mBlockRow(s) {
+  const cat = (typeof BLOCK_CATALOG !== 'undefined') ? BLOCK_CATALOG.find(b => b.t === s.type) : null;
+  const ico = (cat && cat.i) || '▫';
+  const label = (typeof BLK_LABEL !== 'undefined' && BLK_LABEL[s.type]) || s.type;
+  const snip = mSnippet(s);
+  const wl = s.width === 'half' ? '½' : s.width === 'third' ? '⅓' : 'Full';
+  return `<div class="m-block${bldSel === s.id ? ' sel' : ''}" data-sid="${s.id}">
+    <span class="m-block-handle" title="Drag to reorder">⠿</span>
+    <span class="m-block-ico">${ico}</span>
+    <div class="m-block-main">
+      <div class="m-block-label">${escHtml(label)}</div>
+      ${snip ? `<div class="m-block-snip">${escHtml(snip)}</div>` : ''}
+    </div>
+    <button class="m-block-w" title="Column width">${wl}</button>
+    <button class="m-block-del" aria-label="Delete">✕</button>
+  </div>`;
+}
+function mRenderBlockList() {
+  if (!isMobile()) return;
+  const col = document.querySelector('#sec-builder .bld-canvas-col'); if (!col) return;
+  let list = document.getElementById('mBldList');
+  if (!list) { list = document.createElement('div'); list.id = 'mBldList'; list.className = 'm-blist'; col.appendChild(list); }
+  const secs = (typeof bldState !== 'undefined' && bldState.sections) || [];
+  if (!bldPageId) { list.innerHTML = `<div class="m-blist-empty">Pick or create a page to start.<br>Tap the page name above.</div>`; return; }
+  if (!secs.length) { list.innerHTML = `<div class="m-blist-empty">No sections yet.<br>Tap <b>＋ Section</b> to start building.</div>`; return; }
+  list.innerHTML = secs.map(mBlockRow).join('');
+  list.querySelectorAll('.m-block').forEach(row => {
+    const id = row.dataset.sid;
+    row.querySelector('.m-block-main').addEventListener('click', () => { bldSel = id; bldParentId = null; mOpenEditor(id); });
+    row.querySelector('.m-block-del').addEventListener('click', e => { e.stopPropagation(); mDeleteBlock(id); });
+    row.querySelector('.m-block-w').addEventListener('click', e => { e.stopPropagation(); mToggleWidth(id); });
+    mWireDrag(row);
+  });
+}
+function mDeleteBlock(id) {
+  bldState.sections = bldState.sections.filter(x => x.id !== id);
+  if (bldSel === id) { bldSel = null; bldParentId = null; if (mSheetMode === 'editor') { mSheetMode = ''; document.getElementById('mSheet').classList.remove('open'); document.getElementById('mSheetBack').classList.remove('open'); } }
+  bldDrawCanvas();
+}
+function mToggleWidth(id) {
+  const s = bldState.sections.find(x => x.id === id); if (!s) return;
+  const cur = s.width || 'full';
+  s.width = cur === 'full' ? 'half' : cur === 'half' ? 'third' : 'full';
+  bldDrawCanvas();
+}
+
+function mWireDrag(row) {
+  const handle = row.querySelector('.m-block-handle');
+  handle.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    const list = row.parentElement;
+    row.classList.add('m-dragging');
+    const move = ev => {
+      const rows = Array.from(list.querySelectorAll('.m-block'));
+      const after = rows.find(r => {
+        if (r === row) return false;
+        const b = r.getBoundingClientRect();
+        return ev.clientY < b.top + b.height / 2;
+      });
+      if (after) list.insertBefore(row, after); else list.appendChild(row);
+    };
+    const up = () => {
+      row.classList.remove('m-dragging');
+      document.removeEventListener('pointermove', move);
+      document.removeEventListener('pointerup', up);
+      const order = Array.from(list.querySelectorAll('.m-block')).map(r => r.dataset.sid);
+      bldState.sections.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+      bldDrawCanvas();
+    };
+    document.addEventListener('pointermove', move);
+    document.addEventListener('pointerup', up);
+  });
+}
+
+function mOpenEditor(id) {
+  const found = bldFindSection(id); if (!found || !found.sec) return;
+  const sec = found.sec;
+  const { html, label } = bEditorFields(sec);
+  mSheetMode = 'editor';
+  mOpenSheet(label, `<div class="bld-ep">${html}</div>`, false);
+  bBindEditor(document.getElementById('mSheetBody'), sec, (s, mode) => {
+    bldSaveDraft();
+    if (mode === 'group-edit') { mOpenEditor(bldSel); return; }   // entered a group child
+    if (mode === 're-editor') mOpenEditor(id);                    // list add/remove → re-render fields
+  });
+}
+
+function mOpenPages() {
+  const rows = (bldPages || []).map(p => `<div class="m-page-row${p.id === bldPageId ? ' on' : ''}" data-pid="${p.id}"><div><div class="m-page-row-t">${escHtml(p.title || 'Untitled')}</div><div class="m-page-row-s">${escHtml(p.slug || '')}</div></div>${p.id === bldPageId ? '<span style="color:var(--accent)">●</span>' : ''}</div>`).join('') || '<p style="color:var(--muted);font-size:.8rem;padding:1rem 0;">No pages yet.</p>';
+  mSheetMode = 'pages';
+  mOpenSheet('Pages', rows + `<button class="btn btn-primary" style="width:100%;margin-top:.7rem" id="mNewPage">+ New page</button>`, true);
+  document.querySelectorAll('#mSheetBody [data-pid]').forEach(r => r.addEventListener('click', () => {
+    bldPickPage(+r.dataset.pid); mCloseSheet(); mSyncTitle(); mUpdatePageChip(); mRenderBlockList();
+  }));
+  document.getElementById('mNewPage').addEventListener('click', mNewPageForm);
+}
+function mNewPageForm() {
+  mSheetMode = 'newpage';
+  mOpenSheet('New page', `
+    <div class="bld-ef"><label>Page title</label><input type="text" id="mNPTitle" placeholder="About" /></div>
+    <div class="bld-ef"><label>Slug — URL path</label><input type="text" id="mNPSlug" placeholder="/about" /></div>
+    <p style="font-size:.62rem;color:var(--muted);margin:.2rem 0 .8rem;">Leave slug blank to auto-generate from the title.</p>
+    <button class="btn btn-primary" style="width:100%" id="mNPCreate">Create page</button>`, true);
+  document.getElementById('mNPCreate').addEventListener('click', () => {
+    const t = document.getElementById('mNPTitle').value, s = document.getElementById('mNPSlug').value;
+    const dt = document.getElementById('bldNPTitle'), ds = document.getElementById('bldNPSlug');
+    if (dt) dt.value = t; if (ds) ds.value = s;
+    document.getElementById('bldNPCreate')?.click();
+    mCloseSheet();
+    setTimeout(() => { mSyncTitle(); mUpdatePageChip(); mRenderBlockList(); }, 400);
+  });
+}
+function mUpdatePageChip() {
+  const el = document.getElementById('mBldPageName'); if (!el) return;
+  const p = (bldPages || []).find(p => p.id === bldPageId);
+  el.textContent = p ? (p.title || 'Untitled') : 'Pick a page';
+}
+
+function mOpenTheme() {
+  mSheetMode = 'theme';
+  mOpenSheet('Theme & background', '<div id="mThemeHost"></div>', false);
+  const host = document.getElementById('mThemeHost');
+  document.querySelectorAll('.bld-topbar .bld-tc').forEach(tc => host.appendChild(tc));
+}
+
+const _origBldDrawCanvas = bldDrawCanvas;
+bldDrawCanvas = function () {
+  if (!isMobile()) return _origBldDrawCanvas();
+  if (typeof bldSaveDraft === 'function') bldSaveDraft();
+  mRenderBlockList();
+  mUpdatePageChip();
+  mSyncTitle();
+};
+const _origBldDrawEditor = bldDrawEditor;
+bldDrawEditor = function () {
+  if (!isMobile()) return _origBldDrawEditor();
+  if (bldSel) { const f = bldFindSection(bldSel); if (f && f.sec) mOpenEditor(bldSel); }
 };
 
-(function wireMob() {
-  const pagesBtn = document.getElementById('mobPagesBtn');
-  const drawerBackdrop = document.getElementById('mobDrawerBackdrop');
-  const sheetBackdrop = document.getElementById('mobSheetBackdrop');
-  const addPageBtn = document.getElementById('mobAddPageBtn');
-  const drawerClose = document.getElementById('mobDrawerClose');
-  const previewBtn = document.getElementById('mobPreviewBtn');
-  const publishBtn = document.getElementById('mobPublishBtn');
+(function wireMobileShell() {
+  const on = (id, ev, fn) => { const el = document.getElementById(id); if (el) el.addEventListener(ev, fn); };
+  on('mBurger', 'click', mOpenMenu);
+  on('mMenuClose', 'click', mCloseMenu);
+  on('mLogout', 'click', () => document.getElementById('logoutBtn')?.click());
+  on('mSheetX', 'click', mCloseSheet);
+  on('mSheetBack', 'click', mCloseSheet);
+  on('mBldPage', 'click', mOpenPages);
+  on('mBldTheme', 'click', mOpenTheme);
+  on('mBldAdd', 'click', () => { if (typeof bldOpenPicker === 'function') bldOpenPicker(); });
 
-  if (pagesBtn) pagesBtn.addEventListener('click', mobOpenDrawer);
-  if (drawerBackdrop) drawerBackdrop.addEventListener('click', mobCloseDrawer);
-  if (drawerClose) drawerClose.addEventListener('click', mobCloseDrawer);
-  if (sheetBackdrop) sheetBackdrop.addEventListener('click', mobCloseSheet);
-  if (addPageBtn) addPageBtn.addEventListener('click', () => { mobCloseDrawer(); document.getElementById('bldAddPageBtn')?.click(); });
-  if (previewBtn) previewBtn.addEventListener('click', () => document.getElementById('bldPreview')?.click());
-  if (publishBtn) publishBtn.addEventListener('click', () => document.getElementById('bldPublish')?.click());
-})();
+  const vis = document.getElementById('visBadge');
+  if (vis) new MutationObserver(mSyncMenuBadge).observe(vis, { childList: true, characterData: true, subtree: true, attributes: true });
 
-document.querySelectorAll('.mob-tab').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.mob-tab').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    btn.classList.add('active');
-    document.querySelector(`.tab-btn[data-tab="${btn.dataset.tab}"]`)?.classList.add('active');
-    document.getElementById('sec-' + btn.dataset.tab).classList.add('active');
-    if (btn.dataset.tab === 'analytics') fetchAnalytics();
-    if (btn.dataset.tab === 'builder') { bldBoot(); bldLoadPages(); mobSyncTitle(); }
-    if (btn.dataset.tab === 'images') renderImgTabGallery();
-    if (btn.dataset.tab === 'files') fetchAndRenderFiles();
-    if (btn.dataset.tab === 'tutorials') fetchTutorials();
-    if (btn.dataset.tab === 'reviews') fetchReviews();
-    if (btn.dataset.tab === 'settings') { fetchBlocklist(); loadNavEditor(); }
-  });
-});
-
-(function syncMobBadge() {
-  const mobBadge = document.getElementById('mobBadge');
-  const visBadge = document.getElementById('visBadge');
-  if (mobBadge && visBadge) {
-    new MutationObserver(() => {
-      mobBadge.textContent = visBadge.textContent;
-      mobBadge.style.display = visBadge.style.display;
-    }).observe(visBadge, { childList: true, attributes: true, attributeFilter: ['style'] });
-  }
+  if (isMobile()) { mSyncTitle(); mSetActions(); mUpdatePageChip(); mRenderBlockList(); }
 })();
