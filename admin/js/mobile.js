@@ -82,27 +82,29 @@ function mRescueTheme() {
   if (bar) document.querySelectorAll('#mSheetBody .bld-tc').forEach(tc => bar.appendChild(tc));
 }
 
-function mSnippet(s) {
-  let t = s.heading || s.name || s.text || s.title || s.label || s.quote || s.body || s.url || '';
-  if (!t && Array.isArray(s.items)) t = `${s.items.length} item${s.items.length === 1 ? '' : 's'}`;
-  t = String(t).replace(/\s+/g, ' ').trim();
-  return t.length > 64 ? t.slice(0, 64) + '…' : t;
-}
 function mBlockRow(s) {
   const cat = (typeof BLOCK_CATALOG !== 'undefined') ? BLOCK_CATALOG.find(b => b.t === s.type) : null;
   const ico = (cat && cat.i) || '▫';
   const label = (typeof BLK_LABEL !== 'undefined' && BLK_LABEL[s.type]) || s.type;
-  const snip = mSnippet(s);
   const wl = s.width === 'half' ? '½' : s.width === 'third' ? '⅓' : 'Full';
+  let preview;
+  if (s.type === 'group') {
+    const n = (s.sections || []).length;
+    preview = `<div class="m-block-empty">${escHtml(s.label || 'Group')} · ${n} section${n === 1 ? '' : 's'} · tap Edit</div>`;
+  } else {
+    preview = bRender(s, bldState) || `<div class="m-block-empty">Empty — tap Edit to fill it in</div>`;
+  }
+  const bg = (typeof bldBgCss === 'function') ? bldBgCss() : (bldState.bg || '#020a03');
   return `<div class="m-block${bldSel === s.id ? ' sel' : ''}" data-sid="${s.id}">
-    <span class="m-block-handle" title="Drag to reorder">⠿</span>
-    <span class="m-block-ico">${ico}</span>
-    <div class="m-block-main">
-      <div class="m-block-label">${escHtml(label)}</div>
-      ${snip ? `<div class="m-block-snip">${escHtml(snip)}</div>` : ''}
+    <div class="m-block-bar">
+      <span class="m-block-handle" title="Drag to reorder">⠿</span>
+      <span class="m-block-ico">${ico}</span>
+      <span class="m-block-label">${escHtml(label)}</span>
+      <button class="m-block-w" title="Column width">${wl}</button>
+      <button class="m-block-edit">Edit</button>
+      <button class="m-block-del" aria-label="Delete">✕</button>
     </div>
-    <button class="m-block-w" title="Column width">${wl}</button>
-    <button class="m-block-del" aria-label="Delete">✕</button>
+    <div class="m-block-prev" style="background:${bg};">${preview}</div>
   </div>`;
 }
 function mRenderBlockList() {
@@ -116,10 +118,14 @@ function mRenderBlockList() {
   list.innerHTML = secs.map(mBlockRow).join('');
   list.querySelectorAll('.m-block').forEach(row => {
     const id = row.dataset.sid;
-    row.querySelector('.m-block-main').addEventListener('click', () => { bldSel = id; bldParentId = null; mOpenEditor(id); });
+    const edit = () => { bldSel = id; bldParentId = null; mOpenEditor(id); };
+    row.querySelector('.m-block-edit').addEventListener('click', e => { e.stopPropagation(); edit(); });
+    row.querySelector('.m-block-prev').addEventListener('click', edit);
     row.querySelector('.m-block-del').addEventListener('click', e => { e.stopPropagation(); mDeleteBlock(id); });
     row.querySelector('.m-block-w').addEventListener('click', e => { e.stopPropagation(); mToggleWidth(id); });
     mWireDrag(row);
+    const prev = row.querySelector('.m-block-prev');
+    if (prev.scrollHeight > 320) prev.classList.add('tall');
   });
 }
 function mDeleteBlock(id) {
