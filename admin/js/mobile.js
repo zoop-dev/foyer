@@ -115,7 +115,9 @@ function mRenderBlockList() {
   const secs = (typeof bldState !== 'undefined' && bldState.sections) || [];
   if (!bldPageId) { list.innerHTML = `<div class="m-blist-empty">Pick or create a page to start.<br>Tap the page name above.</div>`; return; }
   if (!secs.length) { list.innerHTML = `<div class="m-blist-empty">No sections yet.<br>Tap <b>＋ Section</b> to start building.</div>`; return; }
-  list.innerHTML = secs.map(mBlockRow).join('');
+
+  const grouped = (typeof groupRows === 'function') ? groupRows(secs) : secs.map(s => [s]);
+  list.innerHTML = grouped.map(r => r.length === 1 ? mBlockRow(r[0]) : `<div class="m-blist-row">${r.map(mBlockRow).join('')}</div>`).join('');
   list.querySelectorAll('.m-block').forEach(row => {
     const id = row.dataset.sid;
     const edit = () => { bldSel = id; bldParentId = null; mOpenEditor(id); };
@@ -140,13 +142,21 @@ function mToggleWidth(id) {
   bldDrawCanvas();
 }
 
+
 function mWireDrag(row) {
-  const handle = row.querySelector('.m-block-handle');
-  handle.addEventListener('pointerdown', e => {
+  const bar = row.querySelector('.m-block-bar');
+  bar.addEventListener('pointerdown', e => {
+    if (e.target.closest('button')) return;   // edit / width / delete taps pass through
     e.preventDefault();
     const list = row.parentElement;
-    row.classList.add('m-dragging');
+    const startY = e.clientY;
+    let dragging = false;
+    try { bar.setPointerCapture(e.pointerId); } catch (_) {}
     const move = ev => {
+      if (!dragging) {
+        if (Math.abs(ev.clientY - startY) < 5) return;   // small threshold so taps still register
+        dragging = true; row.classList.add('m-dragging');
+      }
       const rows = Array.from(list.querySelectorAll('.m-block'));
       const after = rows.find(r => {
         if (r === row) return false;
@@ -156,15 +166,16 @@ function mWireDrag(row) {
       if (after) list.insertBefore(row, after); else list.appendChild(row);
     };
     const up = () => {
+      bar.removeEventListener('pointermove', move);
+      bar.removeEventListener('pointerup', up);
+      if (!dragging) return;
       row.classList.remove('m-dragging');
-      document.removeEventListener('pointermove', move);
-      document.removeEventListener('pointerup', up);
       const order = Array.from(list.querySelectorAll('.m-block')).map(r => r.dataset.sid);
       bldState.sections.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
       bldDrawCanvas();
     };
-    document.addEventListener('pointermove', move);
-    document.addEventListener('pointerup', up);
+    bar.addEventListener('pointermove', move);
+    bar.addEventListener('pointerup', up);
   });
 }
 

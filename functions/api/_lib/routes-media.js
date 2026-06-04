@@ -42,7 +42,8 @@ export async function handleMedia(ctx) {
     return new Response(bytes, {
       headers: {
         'Content-Type': row.mime,
-        'Cache-Control': 'public, max-age=31536000, immutable',
+
+        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=604800',
         'Access-Control-Allow-Origin': '*',
       },
     });
@@ -50,8 +51,16 @@ export async function handleMedia(ctx) {
 
   if (imageSingle && method === 'PUT') {
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
-    const { name } = await request.json().catch(() => ({}));
-    await env.DB.prepare('UPDATE images SET name = ? WHERE id = ?').bind(name || '', parseInt(imageSingle[1])).run();
+    const { name, data, mime, size } = await request.json().catch(() => ({}));
+    const id = parseInt(imageSingle[1]);
+    if (data) {
+
+      await env.DB.prepare('UPDATE images SET data = ?, mime = ?, size = ? WHERE id = ?')
+        .bind(data, mime || 'image/jpeg', size || 0, id).run();
+      if (typeof name === 'string') await env.DB.prepare('UPDATE images SET name = ? WHERE id = ?').bind(name, id).run();
+    } else {
+      await env.DB.prepare('UPDATE images SET name = ? WHERE id = ?').bind(name || '', id).run();
+    }
     return respond({ ok: true });
   }
 

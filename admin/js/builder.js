@@ -120,9 +120,21 @@ function bldOpenPicker(){
   setTimeout(()=>{ const s2=document.getElementById('bldPickerSearch'); if(s2) s2.focus(); },40);
 }
 function bldClosePicker(){ document.getElementById('bldPickerOv')?.classList.remove('open'); }
+
+
+function bldOpenSlotWidth(sections){
+  if(!sections.length) return null;
+  const w=sections[sections.length-1].width;
+  if(w!=='half'&&w!=='third') return null;
+  const max=w==='third'?3:2;
+  let n=0; for(let i=sections.length-1;i>=0;i--){ if(sections[i].width===w) n++; else break; }
+  return (n%max!==0)?w:null;
+}
 function bldAddBlock(type){
   const sec=bDefault(type);
   if(!sec){ toast('That block is coming soon.', true); return; }
+  const slot=bldOpenSlotWidth(bldState.sections);
+  if(slot) sec.width=slot;   // fill an open ½/⅓ space instead of starting a new full row
   bldState.sections.push(sec); bldSel=sec.id;
   bldClosePicker(); bldDrawCanvas(); bldDrawEditor();
   const col=document.getElementById('bldCanvasCol');
@@ -343,7 +355,18 @@ function bldDrawCanvas() {
   }
   function swHtml(s) {
     const wLabel=s.width==='half'?'½':s.width==='third'?'⅓':'Full';
-    const inner=s.type==='group'?groupCanvasHtml(s):bRender(s,bldState);
+    let inner=s.type==='group'?groupCanvasHtml(s):bRender(s,bldState);
+
+    const ac=bldState.accent||__SITE__.accent;
+    let ws='';
+    const m=s.smargin==='sm'?'1.2rem':s.smargin==='md'?'2.6rem':s.smargin==='lg'?'4.5rem':'';
+    if(m) ws+=`margin-top:${m};margin-bottom:${m};`;
+    const sb=s.sbg==='subtle'?bRgb(ac,.04):s.sbg==='bold'?bRgb(ac,.09):s.sbg==='dark'?'rgba(0,0,0,.22)':'';
+    if(sb) ws+=`background:${sb};`;
+    const r=s.sround==='sm'?'10px':s.sround==='lg'?'20px':'';
+    if(r) ws+=`border-radius:${r};overflow:hidden;`;
+    const hideBadge=s.hide?`<div style="position:absolute;top:.4rem;left:.4rem;z-index:2;font-size:.5rem;letter-spacing:.12em;text-transform:uppercase;background:rgba(230,200,90,.9);color:#1a1400;padding:.12rem .4rem;border-radius:3px;">Hidden · ${s.hide}</div>`:'';
+    if(ws||hideBadge) inner=`<div style="position:relative;${ws}${s.hide?'opacity:.5;':''}">${hideBadge}${inner}</div>`;
     return `<div class="bld-sw${bldSel===s.id?' sel':''}" data-sid="${s.id}" draggable="true">
       <div class="bld-ov">
         <span class="bld-drag-handle" title="Drag to reorder">⠿</span>

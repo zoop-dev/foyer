@@ -475,6 +475,7 @@ function renderImgTabGallery() {
         <div class="img-card-ref">/api/images/${img.id}</div>
         <div class="img-card-actions">
           <button class="img-card-copy" data-copy="/api/images/${img.id}">Copy URL</button>
+          <button class="img-card-copy" data-recrop="${img.id}">Crop</button>
           <button class="img-card-del" data-del="${img.id}">Delete</button>
         </div>
       </div>
@@ -507,7 +508,11 @@ function renderImgTabGallery() {
     });
   });
 
-  gallery.querySelectorAll('[data-copy]').forEach(btn => {
+  gallery.querySelectorAll('[data-recrop]').forEach(btn => {
+    btn.addEventListener('click', () => recropImage(btn.dataset.recrop));
+  });
+
+  gallery.querySelectorAll('[data-copy]:not([data-recrop])').forEach(btn => {
     btn.addEventListener('click', () => {
       navigator.clipboard.writeText(location.origin + btn.dataset.copy);
       toast('URL copied');
@@ -554,6 +559,82 @@ document.getElementById('imgTabFileInput').addEventListener('change', e => {
   }
   e.target.value = '';
 });
+
+
+
+async function openCamera() {
+  if (!navigator.mediaDevices?.getUserMedia) { toast('Camera not supported on this device.', true); return; }
+  let stream = null, facing = 'environment', shotBlob = null;
+  const ov = document.createElement('div');
+  ov.className = 'cam-ov';
+  ov.innerHTML = `
+    <video class="cam-video" autoplay playsinline muted></video>
+    <img class="cam-shot" alt="" />
+    <div class="cam-top"><button class="cam-x" id="camX" aria-label="Close">✕</button></div>
+    <div class="cam-bar" id="camBar">
+      <button class="cam-flip" id="camFlip" aria-label="Flip camera"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button>
+      <button class="cam-shutter" id="camShutter" aria-label="Take photo"></button>
+      <span style="width:48px;"></span>
+    </div>
+    <div class="cam-confirm" id="camConfirm">
+      <button class="cam-retake" id="camRetake">Retake</button>
+      <button class="cam-use" id="camUse">Use photo</button>
+    </div>`;
+  document.body.appendChild(ov);
+  const video = ov.querySelector('.cam-video'), shot = ov.querySelector('.cam-shot');
+  const showLive = (live) => {
+    video.style.display = live ? '' : 'none';
+    shot.style.display = live ? 'none' : '';
+    ov.querySelector('#camBar').style.display = live ? '' : 'none';
+    ov.querySelector('#camConfirm').style.display = live ? 'none' : 'flex';
+  };
+  const stop = () => { if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; };
+  const close = () => { stop(); if (shot.src) URL.revokeObjectURL(shot.src); ov.remove(); };
+  async function start() {
+    stop();
+    try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing }, audio: false }); video.srcObject = stream; }
+    catch { toast('Couldn’t open the camera — check permissions.', true); close(); }
+  }
+  ov.querySelector('#camX').onclick = close;
+  ov.querySelector('#camFlip').onclick = () => { facing = facing === 'environment' ? 'user' : 'environment'; start(); };
+  ov.querySelector('#camShutter').onclick = () => {
+    const w = video.videoWidth, hh = video.videoHeight; if (!w) return;
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = hh;
+    cv.getContext('2d').drawImage(video, 0, 0, w, hh);
+    cv.toBlob(b => { if (!b) return; shotBlob = b; if (shot.src) URL.revokeObjectURL(shot.src); shot.src = URL.createObjectURL(b); showLive(false); }, 'image/jpeg', 0.92);
+  };
+  ov.querySelector('#camRetake').onclick = () => { shotBlob = null; showLive(true); };
+  ov.querySelector('#camUse').onclick = () => {
+    if (!shotBlob) return;
+    const file = new File([shotBlob], `photo-${Date.now()}.jpg`, { type: 'image/jpeg' });
+    const nameOverride = document.getElementById('imgUploadName')?.value.trim() || null;
+    close();
+    uploadFiles([file], nameOverride);   // crop → compress → POST /api/images (D1)
+  };
+  showLive(true);
+  await start();
+}
+document.getElementById('imgCamBtn')?.addEventListener('click', openCamera);
+
+async function recropImage(id) {
+  let resp = null;
+  try { resp = await fetch(`/api/images/${id}?t=${Date.now()}`, { cache: 'reload' }); } catch {}
+  if (!resp || !resp.ok) { toast('Couldn’t load that image.', true); return; }
+  const blob = await resp.blob();
+  const file = new File([blob], `image-${id}.jpg`, { type: blob.type || 'image/jpeg' });
+  const cropped = await cropImage(file);
+  if (!cropped) return;   // cancelled
+  const { data, size, mime } = await compressImage(cropped);
+  if (size > 900000) { toast(`Too large after crop (${fmtBytes(size)})`, true); return; }
+  const r = await fetch(`/api/images/${id}`, {
+    method: 'PUT', headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data, mime, size }),
+  });
+  if (!r.ok) { toast('Crop failed to save.', true); return; }
+  toast('Image updated ✓');
+  const thumb = document.querySelector(`.img-card[data-img-id="${id}"] img`);
+  if (thumb) thumb.src = `/api/images/${id}?t=${Date.now()}`;   // bust the cached thumbnail
+}
 
 let _fileList = [];
 

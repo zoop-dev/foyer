@@ -946,11 +946,38 @@ function bEditorFields(s) {
 
   if (!['divider','spacer'].includes(s.type)) {
     f += `<div class="bld-sep" style="margin:.4rem 0;"></div>
+    <div style="font-size:.52rem;letter-spacing:.3em;text-transform:uppercase;color:rgba(var(--accent-rgb),.4);margin:.2rem 0 .5rem;">Section settings</div>
     <div class="bld-ef"><label>Column Width <span style="opacity:.45">(for side-by-side rows)</span></label>
     <select data-f="width">
       <option value="full"${(!s.width||s.width==='full')?' selected':''}>Full width</option>
       <option value="half"${s.width==='half'?' selected':''}>Half — pair with next</option>
       <option value="third"${s.width==='third'?' selected':''}>One-third — group of 3</option>
+    </select></div>
+    <div class="bld-ef"><label>Section background</label>
+    <select data-f="sbg">
+      <option value=""${!s.sbg?' selected':''}>None</option>
+      <option value="subtle"${s.sbg==='subtle'?' selected':''}>Subtle tint</option>
+      <option value="bold"${s.sbg==='bold'?' selected':''}>Bold tint</option>
+      <option value="dark"${s.sbg==='dark'?' selected':''}>Darker</option>
+    </select></div>
+    <div class="bld-ef"><label>Vertical spacing <span style="opacity:.45">(around the section)</span></label>
+    <select data-f="smargin">
+      <option value=""${!s.smargin?' selected':''}>None</option>
+      <option value="sm"${s.smargin==='sm'?' selected':''}>Small</option>
+      <option value="md"${s.smargin==='md'?' selected':''}>Medium</option>
+      <option value="lg"${s.smargin==='lg'?' selected':''}>Large</option>
+    </select></div>
+    <div class="bld-ef"><label>Rounded corners</label>
+    <select data-f="sround">
+      <option value=""${!s.sround?' selected':''}>None</option>
+      <option value="sm"${s.sround==='sm'?' selected':''}>Small</option>
+      <option value="lg"${s.sround==='lg'?' selected':''}>Large</option>
+    </select></div>
+    <div class="bld-ef"><label>Visibility</label>
+    <select data-f="hide">
+      <option value=""${!s.hide?' selected':''}>Everywhere</option>
+      <option value="mobile"${s.hide==='mobile'?' selected':''}>Hide on mobile</option>
+      <option value="desktop"${s.hide==='desktop'?' selected':''}>Hide on desktop</option>
     </select></div>
     <div class="bld-ef"><label>Anchor ID <span style="opacity:.45">(optional — link to it with #id)</span></label>
     <input type="text" data-f="anchor" value="${bA(s.anchor||'')}" placeholder="e.g. about" /></div>`;

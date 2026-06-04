@@ -538,3 +538,7 @@
 
 #scene img { cursor: zoom-in; }
 #scene a img, #scene .no-zoom { cursor: inherit; }
+
+
+@media (max-width: 640px) { .foyer-hide-mobile { display: none !important; } }
+@media (min-width: 641px) { .foyer-hide-desktop { display: none !important; } }

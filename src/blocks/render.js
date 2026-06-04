@@ -7,8 +7,9 @@ function bXtra(s, h) {
   const { E, A, rgb, md, accent, text, bg, font } = h;
   const f = `font-family:'${font}',sans-serif;`;
   const c = `color:${text};`;
-  const PAD = (p) => p === 'sm' ? '2.25rem' : p === 'lg' ? '5.5rem' : '3.75rem';
-  const wrap = (inner, extra = '') => `<div style="${f}${c}padding:${PAD(s.pad)} 1.5rem;${extra}">${inner}</div>`;
+  const narrow = s.width === 'half' || s.width === 'third';   // in a side-by-side row
+  const PAD = (p) => { const v = p === 'sm' ? 2.25 : p === 'lg' ? 5.5 : 3.75; return (narrow ? v * 0.6 : v) + 'rem'; };
+  const wrap = (inner, extra = '') => `<div style="${f}${c}padding:${PAD(s.pad)} ${narrow ? '1rem' : '1.5rem'};${extra}">${inner}</div>`;
   const cont = (inner, mw = '1080px') => `<div style="max-width:${mw};margin:0 auto;">${inner}</div>`;
   const btn = (label, url, style) => {
     if (!label) return '';
@@ -36,7 +37,7 @@ function bXtra(s, h) {
         ? `background-image:linear-gradient(rgba(0,0,0,${ov}),rgba(0,0,0,${ov})),url('${A(s.bg_img)}');background-size:cover;background-position:center;`
         : `background:${rgb(accent, .06)};`;
       const onImg = !!s.bg_img;
-      return `<div style="${f}${c}${bgStyle}min-height:${mh};display:flex;flex-direction:column;align-items:${ai};justify-content:center;text-align:${align};padding:4.5rem 1.5rem;">
+      return `<div style="${f}${c}${bgStyle}min-height:${narrow ? 'auto' : mh};display:flex;flex-direction:column;align-items:${ai};justify-content:center;text-align:${align};padding:${narrow ? '2.5rem 1.1rem' : '4.5rem 1.5rem'};">
         <div style="max-width:760px;">
         ${s.eyebrow ? `<div style="font-size:.72rem;letter-spacing:.32em;text-transform:uppercase;font-weight:400;margin-bottom:1.1rem;color:${onImg ? 'rgba(255,255,255,.88)' : accent};">${E(s.eyebrow)}</div>` : ''}
         <h1 style="font-size:clamp(2.2rem,6vw,4rem);font-weight:300;line-height:1.05;letter-spacing:-.02em;margin:0;color:${onImg ? '#fff' : text};">${E(s.heading || 'Headline')}</h1>

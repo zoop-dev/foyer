@@ -417,13 +417,27 @@
       const scene = document.getElementById('scene');
       scene.style.cssText = 'position:fixed;inset:0;z-index:10;display:block;overflow-y:auto;padding:0;';
       applyPageBg(state, scene);
+
+      const secWrap = (s) => {
+        let style = '', cls = '';
+        const m = s.smargin === 'sm' ? '1.2rem' : s.smargin === 'md' ? '2.6rem' : s.smargin === 'lg' ? '4.5rem' : '';
+        if (m) style += `margin-top:${m};margin-bottom:${m};`;
+        const sb = s.sbg === 'subtle' ? pgRgb(accent, .04) : s.sbg === 'bold' ? pgRgb(accent, .09) : s.sbg === 'dark' ? 'rgba(0,0,0,.22)' : '';
+        if (sb) style += `background:${sb};`;
+        const r = s.sround === 'sm' ? '10px' : s.sround === 'lg' ? '20px' : '';
+        if (r) style += `border-radius:${r};overflow:hidden;`;
+        if (s.hide === 'mobile') cls += ' foyer-hide-mobile';
+        if (s.hide === 'desktop') cls += ' foyer-hide-desktop';
+        return { style, cls };
+      };
       const rows = groupRows(sections || []);
       scene.innerHTML = rows.map(row => {
         if (row.length === 1) {
-          const s = row[0], h = pgRenderSec(s, accent, text, font, bg);
-          return s.anchor ? `<div id="${escAttr(s.anchor)}" style="scroll-margin-top:64px;">${h}</div>` : h;
+          const s = row[0], h = pgRenderSec(s, accent, text, font, bg), { style, cls } = secWrap(s);
+          if (!s.anchor && !style && !cls) return h;
+          return `<div${s.anchor ? ` id="${escAttr(s.anchor)}"` : ''} class="pg-sec${cls}" style="scroll-margin-top:64px;${style}">${h}</div>`;
         }
-        return `<div class="pg-row" style="display:flex;gap:0;">${row.map(s=>`<div${s.anchor?` id="${escAttr(s.anchor)}"`:''} style="flex:1;min-width:0;scroll-margin-top:64px;">${pgRenderSec(s, accent, text, font, bg)}</div>`).join('')}</div>`;
+        return `<div class="pg-row" style="display:flex;gap:0;">${row.map(s => { const { style, cls } = secWrap(s); return `<div${s.anchor ? ` id="${escAttr(s.anchor)}"` : ''} class="pg-sec${cls}" style="flex:1;min-width:0;scroll-margin-top:64px;${style}">${pgRenderSec(s, accent, text, font, bg)}</div>`; }).join('')}</div>`;
       }).join('');
       initCarousels(scene);
       initCollGalleries(scene);
