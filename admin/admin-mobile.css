@@ -84,10 +84,15 @@
   
   #sec-tutorials.active, #sec-reviews.active { overflow: hidden; }
   #sec-tutorials > div, #sec-reviews > div { flex-direction: column !important; height: 100% !important; }
-  #tutList, #revList { width: 100% !important; max-height: 40vh; border-right: none !important; border-bottom: 1px solid var(--border); }
-  #tutEditor, #revEditor { flex: 1; padding: 1.2rem !important; }
+  #tutList, #revList { width: 100% !important; flex: 1; max-height: none !important; border-right: none !important; border-bottom: none !important; }
+  #tutEditor, #revEditor { flex: 1; padding: 1.1rem 1.1rem calc(2rem + env(safe-area-inset-bottom, 0)) !important; }
+  
+  #sec-tutorials:not(.m-editing) #tutEditor, #sec-reviews:not(.m-editing) #revEditor { display: none !important; }
+  
+  #sec-tutorials.m-editing #tutList, #sec-reviews.m-editing #revList { display: none !important; }
   #tutEditor input, #tutEditor textarea, #tutEditor select,
   #revEditor input, #revEditor textarea, #revEditor select { font-size: 16px; }
+  .m-edit-back { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--accent); font-family: 'Josefin Sans', sans-serif; font-size: .82rem; font-weight: 300; letter-spacing: .04em; padding: 0 0 1rem; cursor: pointer; }
 
   
   .bld-loading { inset: 0; }

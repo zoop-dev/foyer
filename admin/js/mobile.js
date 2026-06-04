@@ -233,6 +233,26 @@ bldDrawEditor = function () {
   if (bldSel) { const f = bldFindSection(bldSel); if (f && f.sec) mOpenEditor(bldSel); }
 };
 
+
+
+function mWatchListEditor(secId, editorId, saveBtnId, backLabel) {
+  const editor = document.getElementById(editorId); if (!editor) return;
+  const sync = () => {
+    if (!isMobile()) return;
+    const sec = document.getElementById(secId); if (!sec) return;
+    const editing = !!document.getElementById(saveBtnId);
+    sec.classList.toggle('m-editing', editing);
+    if (editing && !editor.querySelector('.m-edit-back')) {
+      const back = document.createElement('button');
+      back.className = 'm-edit-back';
+      back.textContent = '‹ ' + backLabel;
+      back.addEventListener('click', () => document.getElementById(secId).classList.remove('m-editing'));
+      editor.prepend(back);
+    }
+  };
+  new MutationObserver(sync).observe(editor, { childList: true });
+}
+
 (function wireMobileShell() {
   const on = (id, ev, fn) => { const el = document.getElementById(id); if (el) el.addEventListener(ev, fn); };
   on('mBurger', 'click', mOpenMenu);
@@ -246,6 +266,9 @@ bldDrawEditor = function () {
 
   const vis = document.getElementById('visBadge');
   if (vis) new MutationObserver(mSyncMenuBadge).observe(vis, { childList: true, characterData: true, subtree: true, attributes: true });
+
+  mWatchListEditor('sec-tutorials', 'tutEditor', 'tutSaveBtn', 'All tutorials');
+  mWatchListEditor('sec-reviews', 'revEditor', 'revSaveBtn', 'All reviews');
 
   if (isMobile()) { mSyncTitle(); mSetActions(); mUpdatePageChip(); mRenderBlockList(); }
 })();
