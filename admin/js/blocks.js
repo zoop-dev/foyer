@@ -458,9 +458,6 @@ function bAlignRow(cur) {
   </div></div>`;
 }
 
-function bSel(name, cur, opts) {
-  return `<div class="bld-ef"><label>${name}</label><select data-f="${opts[0][2]}">${opts.map(([label,val,_,def])=>`<option value="${val}"${(cur===val||(def&&!cur))?' selected':''}>${label}</option>`).join('')}</select></div>`;
-}
 
 function bPadRow(cur) {
   return `<div class="bld-ef"><label>Padding</label><select data-f="pad"><option value="sm"${cur==='sm'?' selected':''}>Compact</option><option value="md"${(!cur||cur==='md')?' selected':''}>Normal</option><option value="lg"${cur==='lg'?' selected':''}>Spacious</option></select></div>`;

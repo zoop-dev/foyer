@@ -54,11 +54,10 @@
     }
 
     function syncCursor() {
-      const verifiOpen = !!document.getElementById('_st4ts_mbw');
       const gate = document.getElementById('gate');
       const gateVisible = gate && gate.style.display !== 'none' && gate.style.opacity !== '0';
       const modalOpen = !!document.querySelector('#acct-modal.show, #ml-modal.show');
-      const hide = verifiOpen || gateVisible || modalOpen;
+      const hide = gateVisible || modalOpen;
       document.getElementById('cr').style.display = hide ? 'none' : '';
       document.getElementById('cd').style.display = hide ? 'none' : '';
       document.body.classList.toggle('sys-cursor', hide);

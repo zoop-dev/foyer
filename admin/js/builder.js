@@ -77,15 +77,6 @@ function bSetupDnD(canvasEl, sections, onDone) {
   });
 }
 
-function bSetupBlockDrag(blocksEl) {
-  if (!blocksEl) return;
-  blocksEl.querySelectorAll('.bld-blk').forEach(btn=>{
-    btn.setAttribute('draggable','true');
-    btn.addEventListener('dragstart',e=>{ bDragNew=btn.dataset.type; bDragId=null; e.dataTransfer.effectAllowed='copy'; });
-    btn.addEventListener('dragend',()=>{ bDragNew=null; });
-  });
-}
-
 let bldPickerCat='all', bldPickerQ='';
 function pickCard(b){ return `<button class="bld-pick" data-type="${bA(b.t)}" title="${bA(b.l)}"><span class="bld-pick-ic">${b.i||'▫'}</span><span class="bld-pick-l">${bE(b.l)}</span></button>`; }
 function bldRenderPicker(){

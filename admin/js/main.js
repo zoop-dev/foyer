@@ -21,7 +21,7 @@ function getHiddenTabs() { try { return JSON.parse(localStorage.getItem('foyer_h
 function setHiddenTabs(arr) { try { localStorage.setItem('foyer_hidden_tabs', JSON.stringify(arr)); } catch {} }
 function applyHiddenTabs() {
   const hidden = getHiddenTabs();
-  document.querySelectorAll('.tab-btn, .mob-tab').forEach(b => {
+  document.querySelectorAll('.tab-btn').forEach(b => {
     if (HIDEABLE_TABS.includes(b.dataset.tab)) b.style.display = hidden.includes(b.dataset.tab) ? 'none' : '';
   });
   const active = document.querySelector('.tab-btn.active');
@@ -727,7 +727,7 @@ document.getElementById('blocklistEmailInput').addEventListener('keydown', e => 
   if (e.key === 'Enter') document.getElementById('blocklistAddBtn').click();
 });
 
-document.querySelectorAll('.tab-btn[data-tab="settings"], .mob-tab[data-tab="settings"]').forEach(btn => {
+document.querySelectorAll('.tab-btn[data-tab="settings"]').forEach(btn => {
   btn.addEventListener('click', () => { fetchBlocklist(); fetchAllowlist(); });
 });
 
