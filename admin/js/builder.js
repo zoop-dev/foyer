@@ -345,6 +345,21 @@ function bldPickPage(id) {
   bldDrawPages(); bldDrawCanvas(); bldDrawEditor();
 }
 
+
+
+function bSecWrap(s, inner) {
+  const ac = bldState.accent || __SITE__.accent;
+  let ws = '';
+  const m = s.smargin==='sm'?'1.2rem':s.smargin==='md'?'2.6rem':s.smargin==='lg'?'4.5rem':'';
+  if (m) ws += `margin-top:${m};margin-bottom:${m};`;
+  const sb = s.sbg==='subtle'?bRgb(ac,.04):s.sbg==='bold'?bRgb(ac,.09):s.sbg==='dark'?'rgba(0,0,0,.22)':'';
+  if (sb) ws += `background:${sb};`;
+  const r = s.sround==='sm'?'10px':s.sround==='lg'?'20px':'';
+  if (r) ws += `border-radius:${r};overflow:hidden;`;
+  const badge = s.hide?`<div style="position:absolute;top:.4rem;left:.4rem;z-index:2;font-size:.5rem;letter-spacing:.12em;text-transform:uppercase;background:rgba(230,200,90,.9);color:#1a1400;padding:.12rem .4rem;border-radius:3px;">Hidden · ${s.hide}</div>`:'';
+  return (ws||badge) ? `<div style="position:relative;${ws}${s.hide?'opacity:.5;':''}">${badge}${inner}</div>` : inner;
+}
+
 function bldDrawCanvas() {
   const el=document.getElementById('bldCanvas'); if (!el) return;
   bldSaveDraft();   // persist on every canvas change
@@ -355,18 +370,7 @@ function bldDrawCanvas() {
   }
   function swHtml(s) {
     const wLabel=s.width==='half'?'½':s.width==='third'?'⅓':'Full';
-    let inner=s.type==='group'?groupCanvasHtml(s):bRender(s,bldState);
-
-    const ac=bldState.accent||__SITE__.accent;
-    let ws='';
-    const m=s.smargin==='sm'?'1.2rem':s.smargin==='md'?'2.6rem':s.smargin==='lg'?'4.5rem':'';
-    if(m) ws+=`margin-top:${m};margin-bottom:${m};`;
-    const sb=s.sbg==='subtle'?bRgb(ac,.04):s.sbg==='bold'?bRgb(ac,.09):s.sbg==='dark'?'rgba(0,0,0,.22)':'';
-    if(sb) ws+=`background:${sb};`;
-    const r=s.sround==='sm'?'10px':s.sround==='lg'?'20px':'';
-    if(r) ws+=`border-radius:${r};overflow:hidden;`;
-    const hideBadge=s.hide?`<div style="position:absolute;top:.4rem;left:.4rem;z-index:2;font-size:.5rem;letter-spacing:.12em;text-transform:uppercase;background:rgba(230,200,90,.9);color:#1a1400;padding:.12rem .4rem;border-radius:3px;">Hidden · ${s.hide}</div>`:'';
-    if(ws||hideBadge) inner=`<div style="position:relative;${ws}${s.hide?'opacity:.5;':''}">${hideBadge}${inner}</div>`;
+    const inner=bSecWrap(s, s.type==='group'?groupCanvasHtml(s):bRender(s,bldState));
     return `<div class="bld-sw${bldSel===s.id?' sel':''}" data-sid="${s.id}" draggable="true">
       <div class="bld-ov">
         <span class="bld-drag-handle" title="Drag to reorder">⠿</span>
@@ -424,7 +428,7 @@ function bldPatch(s) {
   if (s.type==='group') { bldDrawCanvas(); return; }
   const w=document.querySelector(`#bldCanvas .bld-sw[data-sid="${s.id}"]`); if (!w){bldDrawCanvas();return;}
   const ov=w.querySelector('.bld-ov'); w.innerHTML=''; if(ov)w.appendChild(ov);
-  w.insertAdjacentHTML('beforeend',bRender(s,bldState));
+  w.insertAdjacentHTML('beforeend',bSecWrap(s,bRender(s,bldState)));
   initCarousels(w);
 }
 

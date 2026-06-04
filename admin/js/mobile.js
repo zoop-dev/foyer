@@ -92,7 +92,7 @@ function mBlockRow(s) {
     const n = (s.sections || []).length;
     preview = `<div class="m-block-empty">${escHtml(s.label || 'Group')} · ${n} section${n === 1 ? '' : 's'} · tap Edit</div>`;
   } else {
-    preview = bRender(s, bldState) || `<div class="m-block-empty">Empty — tap Edit to fill it in</div>`;
+    preview = bSecWrap(s, bRender(s, bldState) || `<div class="m-block-empty">Empty — tap Edit to fill it in</div>`);
   }
   const bg = (typeof bldBgCss === 'function') ? bldBgCss() : (bldState.bg || '#020a03');
   return `<div class="m-block${bldSel === s.id ? ' sel' : ''}" data-sid="${s.id}">
