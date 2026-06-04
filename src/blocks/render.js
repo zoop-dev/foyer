@@ -300,16 +300,30 @@ function bXtra(s, h) {
     }
     case 'contactform': {
       if (!s.access_key) return wrap(cont(`<div style="text-align:center;border:1px dashed ${rgb(accent, .25)};border-radius:12px;padding:1.4rem;font-size:.82rem;color:${rgb(text, .45)};">Add your Web3Forms access key in this block’s settings to enable the form.</div>`, '560px'));
-      const ist = `width:100%;background:${rgb(text, .05)};border:1px solid ${rgb(accent, .2)};color:${text};font-family:inherit;font-size:.9rem;padding:.7rem .9rem;border-radius:8px;outline:none;margin-bottom:.7rem;`;
+      const inp = `width:100%;background:${rgb(text, .05)};border:1px solid ${rgb(accent, .2)};color:${text};font-family:inherit;font-size:.9rem;padding:.7rem .9rem;border-radius:8px;outline:none;`;
+      const lbl = (fl) => `<label style="display:block;font-size:.7rem;letter-spacing:.05em;color:${rgb(text, .6)};margin-bottom:.35rem;">${E(fl.label || 'Field')}${fl.required === 'yes' ? ' <span style="color:' + accent + '">*</span>' : ''}</label>`;
+      const fields = (items.length ? items : [{ ftype: 'text', label: 'Name', required: 'yes' }, { ftype: 'email', label: 'Email', required: 'yes' }, { ftype: 'textarea', label: 'Message', required: 'yes' }]).map(fl => {
+        const nm = fl.ftype === 'email' ? 'email' : (fl.name || fl.label || 'field');
+        const req = fl.required === 'yes' ? ' required' : '';
+        const ph = A(fl.placeholder || '');
+        const opts = String(fl.options || '').split('\n').map(o => o.trim()).filter(Boolean);
+        const w = fl.width === 'half' ? '1 1 200px' : '1 1 100%';
+        let inner;
+        if (fl.ftype === 'textarea') inner = lbl(fl) + `<textarea name="${A(nm)}"${req} rows="5" placeholder="${ph}" style="${inp}resize:vertical;"></textarea>`;
+        else if (fl.ftype === 'select') inner = lbl(fl) + `<select name="${A(nm)}"${req} style="${inp}"><option value="" disabled${fl.placeholder ? ' selected' : ''}>${E(fl.placeholder || 'Choose…')}</option>${opts.map(o => `<option value="${A(o)}">${E(o)}</option>`).join('')}</select>`;
+        else if (fl.ftype === 'radio') inner = lbl(fl) + `<div style="display:flex;flex-direction:column;gap:.45rem;">${opts.map((o, j) => `<label style="display:flex;align-items:center;gap:.5rem;font-size:.85rem;font-weight:200;color:${rgb(text, .8)};"><input type="radio" name="${A(nm)}" value="${A(o)}"${req && j === 0 ? ' required' : ''} />${E(o)}</label>`).join('')}</div>`;
+        else if (fl.ftype === 'checkboxes') inner = lbl(fl) + `<div style="display:flex;flex-direction:column;gap:.45rem;">${opts.map(o => `<label style="display:flex;align-items:center;gap:.5rem;font-size:.85rem;font-weight:200;color:${rgb(text, .8)};"><input type="checkbox" name="${A(nm)} (${A(o)})" value="Yes" />${E(o)}</label>`).join('')}</div>`;
+        else if (fl.ftype === 'checkbox') inner = `<label style="display:flex;align-items:center;gap:.5rem;font-size:.85rem;font-weight:200;color:${rgb(text, .8)};"><input type="checkbox" name="${A(nm)}" value="Yes"${req} />${E(fl.label || 'I agree')}</label>`;
+        else { const t = ['email', 'tel', 'number', 'url', 'date', 'time'].includes(fl.ftype) ? fl.ftype : 'text'; inner = lbl(fl) + `<input type="${t}" name="${A(nm)}"${req} placeholder="${ph}" style="${inp}" />`; }
+        return `<div style="flex:${w};min-width:0;margin-bottom:.9rem;">${inner}</div>`;
+      }).join('');
       return wrap(cont(`<div style="max-width:520px;margin:0 auto;">${secHead('center')}
         <form data-w3 data-done="Thanks — I’ll be in touch soon." onsubmit="return false">
           <input type="hidden" name="access_key" value="${A(s.access_key)}" />
-          <input type="hidden" name="subject" value="New contact message" />
+          <input type="hidden" name="subject" value="${A(s.subject || 'New contact message')}" />
           <input type="checkbox" name="botcheck" style="display:none;" tabindex="-1" autocomplete="off" />
-          <input type="text" name="name" required placeholder="Your name" style="${ist}" />
-          <input type="email" name="email" required placeholder="you@email.com" style="${ist}" />
-          <textarea name="message" required rows="5" placeholder="Your message" style="${ist}resize:vertical;"></textarea>
-          <button type="submit" style="width:100%;background:${accent};color:${bg};border:none;font-family:inherit;font-weight:400;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;padding:.8rem;border-radius:8px;cursor:pointer;">${E(s.button || 'Send message')}</button>
+          <div style="display:flex;flex-wrap:wrap;gap:0 .8rem;">${fields}</div>
+          <button type="submit" style="width:100%;margin-top:.4rem;background:${accent};color:${bg};border:none;font-family:inherit;font-weight:400;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;padding:.8rem;border-radius:8px;cursor:pointer;">${E(s.button || 'Send message')}</button>
         </form>
       </div>`, '560px'));
     }

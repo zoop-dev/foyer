@@ -446,7 +446,7 @@ function bDefault(type) {
     case 'socialpost': return { id, type, url:'', pad:'md' };
     case 'booking': return { id, type, url:'', height:'lg', pad:'md' };
     case 'newsletter': return { id, type, access_key:'5a5edde2-d538-44de-9f98-70317e8de72d', heading:'Subscribe', sub:'Get new posts in your inbox.', button:'Subscribe', placeholder:'you@email.com', pad:'md' };
-    case 'contactform': return { id, type, access_key:'5a5edde2-d538-44de-9f98-70317e8de72d', eyebrow:'', heading:'Get in touch', sub:'', button:'Send message', pad:'md' };
+    case 'contactform': return { id, type, access_key:'5a5edde2-d538-44de-9f98-70317e8de72d', eyebrow:'', heading:'Get in touch', sub:'', subject:'New contact message', button:'Send message', items:[{ftype:'text',label:'Name',placeholder:'',required:'yes',options:'',width:'full'},{ftype:'email',label:'Email',placeholder:'you@email.com',required:'yes',options:'',width:'full'},{ftype:'textarea',label:'Message',placeholder:'',required:'yes',options:'',width:'full'}], pad:'md' };
   }
 }
 
@@ -922,10 +922,26 @@ function bEditorFields(s) {
        <div class="bld-ef"><label>Email placeholder</label><input type="text" data-f="placeholder" value="${bA(s.placeholder||'')}" /></div>
        <div class="bld-ef"><label>Button label</label><input type="text" data-f="button" value="${bA(s.button||'')}" /></div>${bPadRow(s.pad)}`;
   } else if (s.type==='contactform') {
-    f=`<div class="bld-ef" style="font-size:.62rem;color:var(--muted);line-height:1.6;border:1px solid var(--border);padding:.6rem .7rem;border-radius:6px;">Delivered via <a href="https://web3forms.com" target="_blank" rel="noopener" style="color:var(--green);">Web3Forms</a> — paste your access key below. The key is safe to be public.</div>
+    const items=s.items||[];
+    const FT=[['text','Text'],['email','Email'],['tel','Phone'],['number','Number'],['url','URL'],['textarea','Long text'],['select','Dropdown'],['radio','Radio choices'],['checkboxes','Checkboxes'],['checkbox','Single checkbox'],['date','Date'],['time','Time']];
+    const opt=(v,cur)=>`<option value="${v}"${(cur||'text')===v?' selected':''}>`;
+    const fieldUI=(it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button>
+       <div class="bld-ef"><label>Field type</label><select data-ci="${i}" data-cf="ftype">${FT.map(([v,l])=>`${opt(v,it.ftype)}${l}</option>`).join('')}</select></div>
+       <div class="bld-ef"><label>Label</label><input type="text" data-ci="${i}" data-cf="label" value="${bA(it.label||'')}" /></div>
+       <div class="bld-ef"><label>Placeholder <span style="opacity:.5">(or dropdown prompt)</span></label><input type="text" data-ci="${i}" data-cf="placeholder" value="${bA(it.placeholder||'')}" /></div>
+       <div class="bld-ef"><label>Options <span style="opacity:.5">(one per line — dropdown/radio/checkboxes)</span></label><textarea data-ci="${i}" data-cf="options" rows="3">${bE(it.options||'')}</textarea></div>
+       <div class="bld-ef"><label>Required</label><select data-ci="${i}" data-cf="required"><option value="no"${it.required!=='yes'?' selected':''}>No</option><option value="yes"${it.required==='yes'?' selected':''}>Yes</option></select></div>
+       <div class="bld-ef"><label>Width</label><select data-ci="${i}" data-cf="width"><option value="full"${it.width!=='half'?' selected':''}>Full</option><option value="half"${it.width==='half'?' selected':''}>Half</option></select></div>
+     </div>`;
+    f=`<div class="bld-ef" style="font-size:.62rem;color:var(--muted);line-height:1.6;border:1px solid var(--border);padding:.6rem .7rem;border-radius:6px;">Delivered via <a href="https://web3forms.com" target="_blank" rel="noopener" style="color:var(--green);">Web3Forms</a> — paste your access key below. The key is safe to be public. An <b>Email</b> field becomes the reply-to.</div>
        <div class="bld-ef"><label>Web3Forms access key</label><input type="text" data-f="access_key" value="${bA(s.access_key||'')}" placeholder="xxxxxxxx-xxxx-…" /></div>
        ${ehs}
-       <div class="bld-ef"><label>Button label</label><input type="text" data-f="button" value="${bA(s.button||'')}" /></div>${bPadRow(s.pad)}`;
+       <div class="bld-ef"><label>Email subject <span style="opacity:.5">(what you receive)</span></label><input type="text" data-f="subject" value="${bA(s.subject||'')}" /></div>
+       <div class="bld-sep" style="margin:.5rem 0;"></div>
+       <div style="font-size:.52rem;letter-spacing:.3em;text-transform:uppercase;color:rgba(var(--accent-rgb),.4);margin:.4rem 0 .5rem;">Form fields (${items.length})</div>
+       <div id="bFORM">${items.map(fieldUI).join('')}</div>
+       <button class="bld-add-li bld-add-item" data-shape='{"ftype":"text","label":"New field","placeholder":"","required":"no","options":"","width":"full"}'>+ Add field</button>
+       <div class="bld-ef"><label>Submit button label</label><input type="text" data-f="button" value="${bA(s.button||'')}" /></div>${bPadRow(s.pad)}`;
   }
 
   if (!['divider','spacer'].includes(s.type)) {
