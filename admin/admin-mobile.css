@@ -168,6 +168,11 @@
   #mThemeHost .bld-tc select { font-size: 16px; max-width: 60%; }
 
   
+  .img-picker-overlay, .file-picker-overlay { z-index: 700; }
+  .img-picker-box, .file-picker-box { width: 96vw !important; max-height: 90dvh !important; }
+  .img-picker-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+
+  
   .bld-picker-ov { padding: 0; }
   .bld-picker { max-height: 100dvh; height: 100dvh; border-radius: 0; max-width: none; }
 
