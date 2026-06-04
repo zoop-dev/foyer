@@ -269,11 +269,20 @@
       if (!_zoomable(img) || !window.Fancybox) return;
       e.preventDefault();
 
+
+      const card = img.closest('.coll-card');
+      let srcs;
+      if (card) {
+        const thumbs = card.querySelectorAll('.coll-thumb');
+        if (thumbs.length) srcs = Array.from(thumbs).map((t) => t.dataset.cover || t.currentSrc || t.src);
+        else { const cov = card.querySelector('.coll-cover') || img; srcs = [cov.currentSrc || cov.src]; }
+      } else {
+        srcs = Array.from(document.querySelectorAll('#scene img'))
+          .filter((im) => _zoomable(im) && !im.closest('.coll-card'))
+          .map((im) => im.currentSrc || im.src);
+      }
       const seen = new Set(), slides = [];
-      Array.from(document.querySelectorAll('#scene img')).filter(_zoomable).forEach((im) => {
-        const src = im.currentSrc || im.src;
-        if (!seen.has(src)) { seen.add(src); slides.push({ src, type: 'image' }); }
-      });
+      srcs.forEach((s) => { if (s && !seen.has(s)) { seen.add(s); slides.push({ src: s, type: 'image' }); } });
       const target = img.currentSrc || img.src;
       const idx = Math.max(0, slides.findIndex((s) => s.src === target));
       window.Fancybox.show(slides, { startIndex: idx });
