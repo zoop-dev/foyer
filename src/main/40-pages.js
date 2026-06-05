@@ -87,7 +87,7 @@
       }, 20000);
     }
 
-    function setMeta(title, desc, slug) {
+    function setMeta(title, desc, slug, image) {
       const origin = 'https://' + __SITE__.domain;
       const url = origin + (slug === '/' ? '/' : (slug.startsWith('/') ? slug : '/' + slug));
       document.title = title;
@@ -97,6 +97,11 @@
       set('og-title', title); set('tw-title', title);
       set('og-desc', desc); set('tw-desc', desc);
       setAttr('og-url', 'content', url); setHref('canonical', url);
+      if (image) {
+        const abs = /^https?:\/\//.test(image) ? image : origin + (image.startsWith('/') ? '' : '/') + image;
+        set('og-image', abs); set('tw-image', abs);
+        const tc = document.getElementById('tw-card'); if (tc) tc.content = 'summary_large_image';
+      }
       document.querySelector('meta[name="description"]').content = desc || title;
       const ldEl = document.getElementById('ld-json');
       if (ldEl) ldEl.textContent = JSON.stringify({"@context":"https://schema.org","@type":"Person","name":title,"url":url,"creator":{"@type":"Organization","name":"zo0p.dev","url":"https://zo0p.dev"}});
@@ -265,7 +270,7 @@
       if (page?.page_json) {
         try {
           const state = JSON.parse(page.page_json);
-          setMeta(state.page_title || page.title || __SITE__.name, state.page_subtitle || '', slug);
+          setMeta(state.page_title || page.title || __SITE__.name, state.page_subtitle || '', slug, state.page_image);
           renderCustomPage(state, session);
           return;
         } catch(e) {}

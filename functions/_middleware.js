@@ -24,6 +24,37 @@ async function blockedState(env, host) {
   } catch { return null; }                             // fail open
 }
 const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const escA = (s) => esc(s).replace(/"/g,'&quot;');
+
+
+
+
+const OG_BOT = /(facebookexternalhit|Facebot|Twitterbot|Slackbot|Discordbot|LinkedInBot|WhatsApp|TelegramBot|Pinterest|redditbot|Applebot|SkypeUriPreview|vkShare|embedly|Iframely|Google-InspectionTool)/i;
+async function injectOg(ctx, url) {
+  const { request, env } = ctx;
+  if (!env.DB) return null;
+  try {
+    const slug = url.pathname === '' ? '/' : url.pathname;
+    const row = await env.DB.prepare('SELECT title, page_json FROM pages WHERE slug = ? AND is_published = 1').bind(slug).first();
+    if (!row) return null;
+    let p = {}; try { p = JSON.parse(row.page_json || '{}'); } catch { p = {}; }
+    const title = p.page_title || row.title || '';
+    const desc  = p.page_subtitle || '';
+    let image = p.page_image || '';
+    if (image && !/^https?:\/\//.test(image)) image = `https://${url.hostname}${image.startsWith('/') ? '' : '/'}${image}`;
+    if (!title && !desc && !image) return null;
+    const res = await env.ASSETS.fetch(new Request(new URL('/index.html', url), { headers: request.headers }));
+    let html = await res.text();
+    const pageUrl = `https://${url.hostname}${slug}`;
+    const setM = (id, val) => { if (!val) return; html = html.replace(new RegExp(`<meta\\b[^>]*\\bid="${id}"[^>]*>`), (tag) => tag.replace(/content="[^"]*"/, `content="${escA(val)}"`)); };
+    if (title) { html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`); setM('og-title', title); setM('tw-title', title); }
+    if (desc)  { setM('og-desc', desc); setM('tw-desc', desc); }
+    if (image) { setM('og-image', image); setM('tw-image', image); setM('tw-card', 'summary_large_image'); }
+    html = html.replace(/<meta\b[^>]*\bid="og-url"[^>]*>/, (t) => t.replace(/content="[^"]*"/, `content="${escA(pageUrl)}"`))
+               .replace(/<link\b[^>]*\bid="canonical"[^>]*>/, (t) => t.replace(/href="[^"]*"/, `href="${escA(pageUrl)}"`));
+    return new Response(html, { status: 200, headers: { 'content-type': 'text/html;charset=utf-8', 'cache-control': 'public, max-age=300' } });
+  } catch { return null; }
+}
 
 async function sha256Hex(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
@@ -65,6 +96,11 @@ export async function onRequest(ctx) {
       swap('foyer-offline-title', state.title);
       swap('foyer-offline-msg', state.message);
       return new Response(html, { status: 200, headers: { 'content-type': 'text/html;charset=utf-8', 'cache-control': 'no-store' } });
+    }
+
+    if (!p.startsWith('/admin') && OG_BOT.test(request.headers.get('user-agent') || '')) {
+      const og = await injectOg(ctx, url);
+      if (og) return og;
     }
   } catch {  }
   return next();
