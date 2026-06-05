@@ -1,5 +1,9 @@
+    let _navData = null;
     async function loadNav(session) {
-      const data = await protectedFetch('/api/nav', session);
+
+
+      let data = _navData;
+      if (!data) { data = await protectedFetch('/api/nav', session); if (data) _navData = data; }
       if (!data) return;
       const { pages = [], custom_links = [], nav_title = '', nav_style = 'blurred', nav_align = 'left', nav_position = 'top' } = data;
       if (!pages.length && !custom_links.length && !nav_title) return;
@@ -223,7 +227,62 @@
       }
     }
 
+
+
+
+    let _session = null, _routerWired = false;
+    const _pageCache = new Map();   // slug → { t, p }  (timestamp + Promise of /api/pages)
+    function fetchPage(slug, session) {
+      const hit = _pageCache.get(slug);
+      if (hit && Date.now() - hit.t < 60000) return hit.p;
+      const p = protectedFetch(`/api/pages?slug=${encodeURIComponent(slug)}`, session);
+      _pageCache.set(slug, { t: Date.now(), p });
+      return p;
+    }
+
+    function _routable(url) {
+      if (url.origin !== location.origin) return false;
+      if (/^\/(api|admin|foyer)(\/|$)/.test(url.pathname)) return false;
+      if (/\.[a-z0-9]+$/i.test(url.pathname)) return false;   // an asset/file
+      return true;
+    }
+    async function navigateTo(path) {
+      if (path !== location.pathname + location.search + location.hash) history.pushState({}, '', path);
+      const scene = document.getElementById('scene'); if (scene) scene.scrollTop = 0;
+      await loadAndShow(_session);
+      if (location.hash) { const el = document.getElementById(decodeURIComponent(location.hash.slice(1))); if (el) el.scrollIntoView(); }
+    }
+    function wireRouter() {
+      if (_routerWired) return; _routerWired = true;
+      document.addEventListener('click', (e) => {
+        if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        const a = e.target.closest && e.target.closest('a[href]');
+        if (!a || a.target === '_blank' || a.hasAttribute('download') || a.hasAttribute('data-no-router')) return;
+        let url; try { url = new URL(a.href, location.href); } catch { return; }
+        if (!_routable(url)) return;
+        if (url.hash && url.pathname === location.pathname) return;   // in-page anchor: let the browser jump
+        e.preventDefault();
+        if (url.pathname === location.pathname && !url.hash) { const sc = document.getElementById('scene'); if (sc) sc.scrollTop = 0; return; }
+        navigateTo(url.pathname + url.search + url.hash);
+      });
+      window.addEventListener('popstate', () => loadAndShow(_session));
+
+      const prefetch = (e) => {
+        const a = e.target.closest && e.target.closest('a[href]');
+        if (!a) return;
+        let url; try { url = new URL(a.href, location.href); } catch { return; }
+        if (!_routable(url) || url.hash) return;
+        const slug = url.pathname.replace(/\/$/, '') || '/';
+        if (/^\/(tutorials|review|reviews)(\/|$)/.test(slug)) return;   // these load via other endpoints
+        if (!_pageCache.has(slug)) fetchPage(slug, _session);
+      };
+      document.addEventListener('mouseover', prefetch);
+      document.addEventListener('touchstart', prefetch, { passive: true });
+      document.addEventListener('focusin', prefetch);
+    }
+
     async function loadAndShow(session) {
+      _session = session; wireRouter();
       if (!versionPollStarted) { versionPollStarted = true; }
 
       const _pgbg = document.getElementById('pg-bg'); if (_pgbg) _pgbg.style.display = 'none';
@@ -265,7 +324,7 @@
         }
       }
 
-      const page = await protectedFetch(`/api/pages?slug=${encodeURIComponent(slug)}`, session);
+      const page = await fetchPage(slug, session);
 
       if (page?.page_json) {
         try {
