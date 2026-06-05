@@ -161,10 +161,12 @@ function renderSites(){
       (s.licensed?'<span class="badge b-ok">licensed</span>':'<span class="badge b-off">unlicensed</span>')+
       (s.offline?'<span class="badge b-warn">offline</span>':'')+
       (s.ai_enabled===false?'<span class="badge b-dim">AI off</span>':'')+
+      (s.hide_branding===true?'<span class="badge b-dim">white-label</span>':'')+
       '</div><div class="row" style="margin-top:.8rem">'+
       '<button class="btn" data-act="offline" data-dom="'+esc(s.domain)+'" data-val="'+(s.offline?'0':'1')+'">'+(s.offline?'Bring online':'Take offline')+'</button>'+
       '<button class="btn '+(s.licensed?'danger':'')+'" data-act="license" data-dom="'+esc(s.domain)+'" data-val="'+(s.licensed?'0':'1')+'">'+(s.licensed?'Unlicense':'License')+'</button>'+
       '<button class="btn" data-act="ai" data-dom="'+esc(s.domain)+'" data-val="'+(s.ai_enabled===false?'1':'0')+'">'+(s.ai_enabled===false?'Enable AI':'Disable AI')+'</button>'+
+      '<button class="btn" data-act="branding" data-dom="'+esc(s.domain)+'" data-val="'+(s.hide_branding===true?'0':'1')+'">'+(s.hide_branding===true?'Show branding':'Hide branding')+'</button>'+
       '</div></div>';
   }).join('');
 }

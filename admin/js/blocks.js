@@ -421,7 +421,7 @@ function bDefault(type) {
     case 'logos':   return { id, type, heading:'Trusted by', items:[{img:'',label:'Brand',url:''},{img:'',label:'Brand',url:''},{img:'',label:'Brand',url:''},{img:'',label:'Brand',url:''}], size:'md', mono:'yes', pad:'md' };
     case 'video':   return { id, type, url:'', caption:'', max_w:'normal', pad:'md' };
     case 'map':     return { id, type, query:'', height:'md', pad:'md' };
-    case 'marquee': return { id, type, text:'Announcement — limited time offer', separator:'•', speed:'normal' };
+    case 'marquee': return { id, type, items:[{text:'Announcement — limited time offer'},{text:'Free shipping this week'}], separator:'•', speed:'normal' };
     case 'sectionhead': return { id, type, eyebrow:'', heading:'Section heading', sub:'', align:'center', pad:'md' };
     case 'lead':    return { id, type, text:'A short, larger introduction that sets up what follows.', align:'center', pad:'md' };
     case 'callout': return { id, type, variant:'info', title:'', body:'Heads up — something worth noting goes here.', icon:'', pad:'md' };
@@ -485,6 +485,7 @@ function bEditorFields(s) {
        <div class="bld-ef"><label>Name Size</label><select data-f="name_size"><option value="sm"${s.name_size==='sm'?' selected':''}>Small</option><option value="md"${s.name_size==='md'?' selected':''}>Medium</option><option value="lg"${(!s.name_size||s.name_size==='lg')?' selected':''}>Large</option><option value="xl"${s.name_size==='xl'?' selected':''}>X-Large</option></select></div>
        <div class="bld-ef"><label>Font Weight</label><select data-f="weight"><option value="200"${s.weight==='200'?' selected':''}>Thin</option><option value="300"${(!s.weight||s.weight==='300')?' selected':''}>Light</option><option value="400"${s.weight==='400'?' selected':''}>Regular</option></select></div>
        <div class="bld-ef"><label>Letter Spacing</label><select data-f="ls"><option value="tight"${s.ls==='tight'?' selected':''}>Tight</option><option value="normal"${(!s.ls||s.ls==='normal')?' selected':''}>Normal</option><option value="wide"${s.ls==='wide'?' selected':''}>Wide</option></select></div>
+       <div class="bld-ef"><label>Scramble in <span style="opacity:.5">(decode effect, live site)</span></label><select data-f="scramble"><option value="no"${s.scramble!=='yes'?' selected':''}>Off</option><option value="yes"${s.scramble==='yes'?' selected':''}>On</option></select></div>
        ${bPadRow(s.pad)}`;
   } else if (s.type==='bio') {
     f=`<div class="bld-ef"><label>Photo <span style="opacity:.5">(optional)</span></label><div style="display:flex;gap:.4rem;"><input type="url" data-f="photo" value="${bA(s.photo||'')}" style="flex:1;" /><button class="btn btn-sm bld-img-pick" data-target-f="photo">Pick</button></div></div>
@@ -541,6 +542,7 @@ function bEditorFields(s) {
        ${bAlignRow(s.align)}
        <div class="bld-ef"><label>Font Weight</label><select data-f="weight"><option value="100"${s.weight==='100'?' selected':''}>Hairline</option><option value="200"${s.weight==='200'?' selected':''}>Thin</option><option value="300"${(!s.weight||s.weight==='300')?' selected':''}>Light</option><option value="400"${s.weight==='400'?' selected':''}>Regular</option></select></div>
        <div class="bld-ef"><label>Letter Spacing</label><select data-f="ls"><option value="tight"${s.ls==='tight'?' selected':''}>Tight</option><option value="normal"${(!s.ls||s.ls==='normal')?' selected':''}>Normal</option><option value="wide"${s.ls==='wide'?' selected':''}>Wide</option><option value="ultra"${s.ls==='ultra'?' selected':''}>Ultra wide</option></select></div>
+       <div class="bld-ef"><label>Scramble in <span style="opacity:.5">(decode effect, live site)</span></label><select data-f="scramble"><option value="no"${s.scramble!=='yes'?' selected':''}>Off</option><option value="yes"${s.scramble==='yes'?' selected':''}>On</option></select></div>
        ${bPadRow(s.pad)}`;
   } else if (s.type==='text') {
     f=`<div class="bld-ef"><label>Text <span style="opacity:.45">(Markdown)</span></label><textarea data-f="text" rows="7">${bE(s.text)}</textarea></div>
@@ -820,7 +822,9 @@ function bEditorFields(s) {
        <div class="bld-ef"><label>Height</label><select data-f="height"><option value="sm"${s.height==='sm'?' selected':''}>Short</option><option value="md"${(!s.height||s.height==='md')?' selected':''}>Medium</option><option value="lg"${s.height==='lg'?' selected':''}>Tall</option></select></div>
        ${bPadRow(s.pad)}`;
   } else if (s.type==='marquee') {
-    f=`<div class="bld-ef"><label>Text</label><input type="text" data-f="text" value="${bA(s.text||'')}" /></div>
+    const items=s.items||(s.text?[{text:s.text}]:[]);
+    f=`<div id="bMARQ">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button><div class="bld-ef"><label>Text</label><input type="text" data-ci="${i}" data-cf="text" value="${bA(it.text||'')}" /></div></div>`).join('')}</div>
+       <button class="bld-add-li bld-add-item" data-shape='{"text":""}'>+ Add text</button>
        <div class="bld-ef"><label>Separator</label><input type="text" data-f="separator" value="${bA(s.separator||'•')}" /></div>
        <div class="bld-ef"><label>Speed</label><select data-f="speed"><option value="slow"${s.speed==='slow'?' selected':''}>Slow</option><option value="normal"${(!s.speed||s.speed==='normal')?' selected':''}>Normal</option><option value="fast"${s.speed==='fast'?' selected':''}>Fast</option></select></div>`;
   } else if (s.type==='sectionhead') {

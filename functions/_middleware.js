@@ -7,21 +7,22 @@ const SB_URL  = 'https://tvtfoghrdqwssdwvebuo.supabase.co';
 
 const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2dGZvZ2hyZHF3c3Nkd3ZlYnVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMzk2ODksImV4cCI6MjA5NTgxNTY4OX0.n_CRdzQQKYNGDHYmoVxyKafFJCfezKKlSiZddx8MXH4';
 
-async function blockedState(env, host) {
+async function siteState(env, host) {
   try {
     const base = (env.SUPABASE_URL || SB_URL).replace(/\/$/, '');
     const key  = env.SUPABASE_ANON_KEY || SB_ANON;
-    const r = await fetch(`${base}/rest/v1/foyer_sites?domain=eq.${encodeURIComponent(host)}&select=offline,licensed,offline_message,offline_bypass_hash,unlicensed_bypass_hash`, {
+    const r = await fetch(`${base}/rest/v1/foyer_sites?domain=eq.${encodeURIComponent(host)}&select=offline,licensed,offline_message,offline_bypass_hash,unlicensed_bypass_hash,hide_branding`, {
       headers: { apikey: key, authorization: `Bearer ${key}` },
       cf: { cacheTtl: 60, cacheEverything: true },   // edge-cache the check ~60s
     });
-    if (!r.ok) return null;                            // fail open
+    if (!r.ok) return { block: null, hideBranding: false };       // fail open
     const row = (await r.json())[0];
-    if (!row) return null;                             // unregistered → fail open (soft)
-    if (row.licensed === false) return { kind: 'unlicensed', eyebrow: 'Unavailable', title: 'This site isn’t licensed', message: row.offline_message || 'This site is not licensed to run Foyer.', bypassHash: row.unlicensed_bypass_hash || '' };
-    if (row.offline === true)   return { kind: 'offline',    eyebrow: 'Temporarily offline', title: 'This site is taking a short break', message: row.offline_message || '', bypassHash: row.offline_bypass_hash || '' };
-    return null;
-  } catch { return null; }                             // fail open
+    if (!row) return { block: null, hideBranding: false };        // unregistered → fail open (soft)
+    const hideBranding = row.hide_branding === true;
+    if (row.licensed === false) return { block: { kind: 'unlicensed', eyebrow: 'Unavailable', title: 'This site isn’t licensed', message: row.offline_message || 'This site is not licensed to run Foyer.', bypassHash: row.unlicensed_bypass_hash || '' }, hideBranding };
+    if (row.offline === true)   return { block: { kind: 'offline',    eyebrow: 'Temporarily offline', title: 'This site is taking a short break', message: row.offline_message || '', bypassHash: row.offline_bypass_hash || '' }, hideBranding };
+    return { block: null, hideBranding };
+  } catch { return { block: null, hideBranding: false }; }        // fail open
 }
 const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const escA = (s) => esc(s).replace(/"/g,'&quot;');
@@ -78,7 +79,7 @@ export async function onRequest(ctx) {
         !accept.includes('text/html')) {
       return next();
     }
-    const state = await blockedState(env, url.hostname);
+    const { block: state, hideBranding } = await siteState(env, url.hostname);
     if (state) {
 
 
@@ -101,6 +102,18 @@ export async function onRequest(ctx) {
     if (!p.startsWith('/admin') && OG_BOT.test(request.headers.get('user-agent') || '')) {
       const og = await injectOg(ctx, url);
       if (og) return og;
+    }
+
+
+
+    if (hideBranding && !p.startsWith('/admin')) {
+      try {
+        const res = await env.ASSETS.fetch(new Request(new URL('/index.html', url), { headers: request.headers }));
+        let html = await res.text();
+        html = html.replace('</head>', '<style>.made-by,.foyer-credit{display:none!important}</style><script>window.__FOYER_NOBRAND=1</script></head>')
+                   .replace(/<meta name="generator"[^>]*>/, '');
+        return new Response(html, { status: res.status, headers: { 'content-type': 'text/html;charset=utf-8', 'cache-control': 'public, max-age=120' } });
+      } catch {  }
     }
   } catch {  }
   return next();

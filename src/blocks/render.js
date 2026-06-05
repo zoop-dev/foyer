@@ -127,8 +127,12 @@ function bXtra(s, h) {
     }
     case 'marquee': {
       const sp = s.speed === 'slow' ? '40s' : s.speed === 'fast' ? '14s' : '24s';
-      const one = `<span style="padding:0 1.5rem;">${E(s.text || 'Announcement')}</span><span style="opacity:.4;">${E(s.separator || '•')}</span>`;
-      const run = one.repeat(8);
+      const sep = E(s.separator || '•');
+
+      let texts = (items.length ? items.map(it => it.text) : [s.text]).filter(Boolean);
+      if (!texts.length) texts = ['Announcement'];
+      const seq = texts.map(t => `<span style="padding:0 1.5rem;">${E(t)}</span><span style="opacity:.4;">${sep}</span>`).join('');
+      const run = seq.repeat(Math.max(2, Math.ceil(8 / texts.length)));
       return `<div style="${f}${c}overflow:hidden;white-space:nowrap;background:${rgb(accent, .07)};border-top:1px solid ${rgb(accent, .12)};border-bottom:1px solid ${rgb(accent, .12)};padding:.85rem 0;font-size:.95rem;font-weight:300;letter-spacing:.04em;"><style>@keyframes foyer-marq{from{transform:translateX(0)}to{transform:translateX(-50%)}}</style><div style="display:inline-block;animation:foyer-marq ${sp} linear infinite;">${run}${run}</div></div>`;
     }
     case 'sectionhead': return wrap(cont(secHead(s.align || 'center'), '720px'));

@@ -34,7 +34,7 @@
           const overlay = s.bg_img?`<div style="position:absolute;inset:0;background:rgba(0,0,0,${s.bg_overlay||'0.45'});"></div>`:'';
           return `<div style="${f}${c}${bgImg}${ta}padding:${p};">${overlay}<div style="position:relative;">
             ${s.eyebrow?`<p style="font-size:.72rem;letter-spacing:.4em;text-transform:uppercase;color:${accent};margin-bottom:1rem;font-weight:200;">${pgE(s.eyebrow)}</p>`:''}
-            <h1 style="font-size:${sz};font-weight:${fw};letter-spacing:${ls2};margin:0 0 .5rem;line-height:1.08;">${pgE(s.name||'')}</h1>
+            <h1${s.scramble==='yes'?' data-scramble':''} style="font-size:${sz};font-weight:${fw};letter-spacing:${ls2};margin:0 0 .5rem;line-height:1.08;">${pgE(s.name||'')}</h1>
             ${s.tagline?`<p style="font-size:.95rem;font-weight:200;font-style:italic;color:${pgRgb(text,.52)};letter-spacing:.1em;margin-top:.3rem;">${pgE(s.tagline)}</p>`:''}
           </div></div>`;
         }
@@ -97,7 +97,7 @@
           const fw = s.weight||'300';
           const ls = s.ls==='tight'?'-.02em':s.ls==='wide'?'.15em':s.ls==='ultra'?'.35em':'.04em';
           const p = s.pad==='sm'?'1.2rem 2rem .4rem':s.pad==='lg'?'4.5rem 2rem 1.5rem':'2.5rem 2rem .8rem';
-          return `<div style="${f}${c}padding:${p};text-align:${s.align||'left'};"><h2 style="font-size:${sz};font-weight:${fw};letter-spacing:${ls};margin:0;">${pgE(s.text||'')}</h2></div>`;
+          return `<div style="${f}${c}padding:${p};text-align:${s.align||'left'};"><h2${s.scramble==='yes'?' data-scramble':''} style="font-size:${sz};font-weight:${fw};letter-spacing:${ls};margin:0;">${pgE(s.text||'')}</h2></div>`;
         }
         case 'text': {
           const ta = `text-align:${s.align||'left'};`;
@@ -429,11 +429,78 @@
 
 
 
-
-    function initSmoothScroll() {
-      if (window._lenisTried) return; window._lenisTried = true;
+    function scrambleEl(el) {
+      const final = el.getAttribute('data-final') || el.textContent;
+      el.setAttribute('data-final', final);
+      const chars = '!<>-_\\/[]{}—=+*^?#________';
+      const queue = [];
+      for (let i = 0; i < final.length; i++) {
+        const start = Math.floor(Math.random() * 16);
+        queue.push({ ch: final[i], start, end: start + 10 + Math.floor(Math.random() * 18), r: '' });
+      }
+      let frame = 0;
+      const tick = () => {
+        let out = '', done = 0;
+        for (const q of queue) {
+          if (frame >= q.end) { done++; out += q.ch; }
+          else if (frame >= q.start) { if (!q.r || Math.random() < 0.28) q.r = chars[Math.floor(Math.random() * chars.length)]; out += `<span style="opacity:.5">${q.r}</span>`; }
+          else out += (q.ch === ' ' ? ' ' : '');
+        }
+        el.innerHTML = out;
+        if (done < queue.length) { frame++; requestAnimationFrame(tick); } else el.textContent = final;
+      };
+      tick();
+    }
+    function initScramble(root) {
       if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-      fetch('/api/settings').then(r => r.json()).then(s => { if (!s || s.smooth_scroll !== '0') loadLenis(); }).catch(() => loadLenis());
+      const els = root.querySelectorAll('[data-scramble]:not([data-sc-wired])');
+      els.forEach(el => {
+        el.setAttribute('data-sc-wired', '1');
+        el.style.cursor = 'default';
+        el.addEventListener('mouseenter', () => scrambleEl(el));
+        if ('IntersectionObserver' in window) {
+          const io = new IntersectionObserver((ents, obs) => ents.forEach(en => { if (en.isIntersecting) { scrambleEl(el); obs.unobserve(el); } }), { threshold: .25 });
+          io.observe(el);
+        } else scrambleEl(el);
+      });
+    }
+
+
+
+    function startTitleScramble(strings) {
+      if (window._titleScrambling || !strings.length) return; window._titleScrambling = true;
+      const chars = '!<>-_\\/[]{}—=+*^?#';
+      let idx = 0;
+      const to = (target, after) => {
+        const len = Math.max((document.title || '').length, target.length), q = [];
+        for (let k = 0; k < len; k++) { const start = Math.floor(Math.random() * 8); q.push({ ch: target[k] || '', start, end: start + 6 + Math.floor(Math.random() * 10), r: '' }); }
+        let frame = 0;
+        const tick = () => {
+          let out = '', done = 0;
+          for (const x of q) { if (frame >= x.end) { done++; out += x.ch; } else if (frame >= x.start) { if (!x.r || Math.random() < 0.3) x.r = chars[Math.floor(Math.random() * chars.length)]; out += x.r; } else out += (x.ch === ' ' ? ' ' : ''); }
+          document.title = out || target;
+          if (done < q.length) { frame++; setTimeout(tick, 45); } else { document.title = target; setTimeout(after, 2600); }
+        };
+        tick();
+      };
+      const loop = () => to(strings[idx % strings.length], () => { idx++; loop(); });
+      loop();
+    }
+
+
+    function initLiveSettings() {
+      if (window._liveSettingsDone) return; window._liveSettingsDone = true;
+      const rm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const apply = (s) => {
+        s = s || {};
+        if (!rm && s.smooth_scroll !== '0') loadLenis();
+        if (!rm && s.scramble_title === '1') {
+          let strings = String(s.scramble_strings || '').split('\n').map(x => x.trim()).filter(Boolean);
+          if (!window.__FOYER_NOBRAND) strings.push('built by foyer');
+          startTitleScramble(strings);
+        }
+      };
+      fetch('/api/settings').then(r => r.json()).then(apply).catch(() => apply(null));
     }
     function loadLenis() {
       const scene = document.getElementById('scene');
@@ -545,6 +612,7 @@
       initForms(scene);
       initStats(scene);
       initReveal(scene);
+      initScramble(scene);
       foyerHL(scene);
       scene.querySelectorAll('a, button').forEach(hookHover);
 

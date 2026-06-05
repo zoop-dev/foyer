@@ -54,7 +54,7 @@
           </div>
 
           <div class="acct-sec" id="acctFoyerSec" style="display:none;">
-            <div class="acct-sec-head"><span>User settings <span style="opacity:.45;font-weight:200;">· powered by Foyer</span></span></div>
+            <div class="acct-sec-head"><span>User settings ${window.__FOYER_NOBRAND ? '' : '<span style="opacity:.45;font-weight:200;">· powered by Foyer</span>'}</span></div>
             <label class="acct-pref"><span>Display name</span><input type="text" id="acctFoyerName" placeholder="Your name" style="background:rgba(255,255,255,.05);border:1px solid rgba(var(--site-accent-rgb),.2);color:inherit;font:inherit;font-size:.8rem;padding:.4rem .6rem;border-radius:6px;width:165px;outline:none;" /></label>
             <label class="acct-pref"><span>Avatar URL</span><input type="url" id="acctFoyerAvatar" placeholder="https://…" style="background:rgba(255,255,255,.05);border:1px solid rgba(var(--site-accent-rgb),.2);color:inherit;font:inherit;font-size:.8rem;padding:.4rem .6rem;border-radius:6px;width:165px;outline:none;" /></label>
             <div style="display:flex;align-items:center;gap:.7rem;margin-top:.55rem;">

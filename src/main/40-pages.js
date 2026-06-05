@@ -286,7 +286,7 @@
     }
 
     async function loadAndShow(session) {
-      _session = session; wireRouter(); initSmoothScroll();
+      _session = session; wireRouter(); initLiveSettings();
       if (!versionPollStarted) { versionPollStarted = true; }
 
       const _pgbg = document.getElementById('pg-bg'); if (_pgbg) _pgbg.style.display = 'none';

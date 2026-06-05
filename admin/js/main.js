@@ -63,6 +63,8 @@ async function fetchSettings() {
   if (s.nav_align) document.getElementById('sNavAlign').value=s.nav_align;
   if (s.nav_position) document.getElementById('sNavPosition').value=s.nav_position;
   document.getElementById('sSmoothScroll').checked = s.smooth_scroll !== '0';   // on by default
+  document.getElementById('sScrambleTitle').checked = s.scramble_title === '1';
+  document.getElementById('sScrambleStrings').value = s.scramble_strings || '';
   if (s.theme_bg)     document.getElementById('sThemeBg').value=s.theme_bg;
   if (s.theme_accent) document.getElementById('sThemeAccent').value=s.theme_accent;
   if (s.theme_text)   document.getElementById('sThemeText').value=s.theme_text;
@@ -98,6 +100,8 @@ document.getElementById('saveSettingsBtn').addEventListener('click', async () =>
       nav_align:document.getElementById('sNavAlign').value,
       nav_position:document.getElementById('sNavPosition').value,
       smooth_scroll:document.getElementById('sSmoothScroll').checked?'1':'0',
+      scramble_title:document.getElementById('sScrambleTitle').checked?'1':'0',
+      scramble_strings:document.getElementById('sScrambleStrings').value,
       theme_bg:document.getElementById('sThemeBg').value,
       theme_accent:document.getElementById('sThemeAccent').value,
       theme_text:document.getElementById('sThemeText').value,

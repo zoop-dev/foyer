@@ -117,7 +117,7 @@
     (async function boot() {
 
       try {
-        console.log(
+        if (!window.__FOYER_NOBRAND) console.log(
           '%c ∩ foyer %c this site runs on the foyer website architecture · v' + VERSION + ' ',
           'background:linear-gradient(135deg,#eef1f5,#a9b1bd);color:#11151b;font-weight:800;padding:3px 9px;border-radius:4px;letter-spacing:.05em',
           'color:#8b94a6;font-style:italic;padding-left:6px'

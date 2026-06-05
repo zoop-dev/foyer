@@ -13,6 +13,7 @@ export async function onRequestPost({ request, env }) {
   switch (a.type) {
     case 'offline': r = await patch(`foyer_sites?domain=eq.${enc(a.domain)}`, { offline: !!a.value, ...(a.value && a.reason ? { offline_message: a.reason } : {}) }); break;
     case 'ai': r = await patch(`foyer_sites?domain=eq.${enc(a.domain)}`, { ai_enabled: !!a.value }); break;
+    case 'branding': r = await patch(`foyer_sites?domain=eq.${enc(a.domain)}`, { hide_branding: !!a.value }); break;
     case 'license': r = await patch(`foyer_sites?domain=eq.${enc(a.domain)}`, { licensed: !!a.value, ...(!a.value && a.reason ? { offline_message: a.reason } : {}) }); break;
     case 'announce':
       if (!a.message || !a.scope) return json({ error: 'message and scope required' }, 400);
