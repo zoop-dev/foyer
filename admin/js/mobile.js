@@ -120,13 +120,17 @@ function mRenderBlockList() {
   list.innerHTML = grouped.map(r => r.length === 1 ? mBlockRow(r[0]) : `<div class="m-blist-row">${r.map(mBlockRow).join('')}</div>`).join('');
   list.querySelectorAll('.m-block').forEach(row => {
     const id = row.dataset.sid;
-    const edit = () => { bldSel = id; bldParentId = null; mOpenEditor(id); };
-    row.querySelector('.m-block-edit').addEventListener('click', e => { e.stopPropagation(); edit(); });
-    row.querySelector('.m-block-prev').addEventListener('click', edit);
+    const prev = row.querySelector('.m-block-prev');
+    let lpFired = false, lpTimer = null;
+    const edit = () => { if (lpFired) { lpFired = false; return; } bldSel = id; bldParentId = null; mOpenEditor(id); };
+    row.querySelector('.m-block-edit').addEventListener('click', e => { e.stopPropagation(); bldSel = id; bldParentId = null; mOpenEditor(id); });
+    prev.addEventListener('click', edit);
+
+    prev.addEventListener('pointerdown', e => { lpFired = false; lpTimer = setTimeout(() => { lpFired = true; if (navigator.vibrate) navigator.vibrate(8); ctxMenu(e.clientX, e.clientY, bldBlockMenuItems(id)); }, 480); });
+    ['pointermove', 'pointerup', 'pointercancel'].forEach(ev => prev.addEventListener(ev, () => { clearTimeout(lpTimer); }));
     row.querySelector('.m-block-del').addEventListener('click', e => { e.stopPropagation(); mDeleteBlock(id); });
     row.querySelector('.m-block-w').addEventListener('click', e => { e.stopPropagation(); mToggleWidth(id); });
     mWireDrag(row);
-    const prev = row.querySelector('.m-block-prev');
     if (prev.scrollHeight > 320) prev.classList.add('tall');
   });
 }
@@ -190,6 +194,8 @@ function mOpenEditor(id) {
     if (mode === 'group-edit') { mOpenEditor(bldSel); return; }   // entered a group child
     if (mode === 're-editor') mOpenEditor(id);                    // list add/remove → re-render fields
   });
+  if (typeof bldInitPickers === 'function') bldInitPickers(document.getElementById('mSheetBody'));
+  if (typeof bldInitColoris === 'function') bldInitColoris();
 }
 
 function mOpenPages() {

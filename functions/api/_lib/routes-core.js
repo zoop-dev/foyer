@@ -73,9 +73,9 @@ The current page is:
 ${current.length ? JSON.stringify(current) : '(empty — no sections yet)'}
 
 How to respond:
-- Reply in plain, brief conversational text. Ask a clarifying question or propose a short plan when useful.
-- ONLY when you are actually creating or changing the page, append the FULL updated page as a JSON array of blocks at the very end of your message inside a fenced code block: \`\`\`json … \`\`\`. Include EVERY block (unchanged ones too). If you are just chatting or planning, do NOT include any JSON.
-- Write real, specific copy (never lorem ipsum). Leave image/url fields out unless you have a real value. A good page is 8-14 blocks, starts with a hero/banner and ends with a contact form or CTA.`;
+- Keep your text reply to ONE short sentence. Ask a clarifying question or give a one-line plan when useful.
+- ONLY when you are actually creating or changing the page, append the FULL updated page as a JSON array of blocks at the very END of your message, exactly ONCE, inside a single fenced code block: \`\`\`json … \`\`\`. Include EVERY block (unchanged ones too). If you are just chatting or planning, do NOT include any JSON at all.
+- Never write JSON anywhere except that one final code block. Write real, specific copy (never lorem ipsum). Leave image/url fields out unless you have a real value. A good page is 8-14 blocks, starts with a hero/banner and ends with a contact form or CTA.`;
 
     let out;
     try {
@@ -87,14 +87,35 @@ How to respond:
 
     const txt = (out && out.response) || '';
 
+
+
+
     let sections = null, reply = txt;
-    const fence = txt.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/i);
-    const bare = fence ? null : txt.match(/\n(\[[\s\S]*\])\s*$/);
-    const raw = fence ? fence[1] : (bare ? bare[1] : null);
-    if (raw) {
-      try { const parsed = JSON.parse(raw); if (Array.isArray(parsed)) { sections = parsed; reply = txt.replace(fence ? fence[0] : bare[1], '').trim(); } } catch {}
+    const cands = [];
+    for (let i = 0; i < txt.length; i++) {
+      if (txt[i] !== '[') continue;
+      let depth = 0, inStr = false, esc = false, j = i;
+      for (; j < txt.length; j++) {
+        const ch = txt[j];
+        if (esc) { esc = false; continue; }
+        if (ch === '\\') { esc = true; continue; }
+        if (ch === '"') { inStr = !inStr; continue; }
+        if (inStr) continue;
+        if (ch === '[') depth++;
+        else if (ch === ']') { if (--depth === 0) break; }
+      }
+      if (depth === 0 && j < txt.length) {
+        const sub = txt.slice(i, j + 1);
+        try { const p = JSON.parse(sub); if (Array.isArray(p) && p.length && p.every(x => x && typeof x === 'object' && x.type)) cands.push({ start: i, end: j + 1, arr: p }); } catch {}
+        i = j;
+      }
     }
-    if (!reply) reply = sections ? 'Done — updated the page.' : '…';
+    if (cands.length) {
+      sections = cands[cands.length - 1].arr;          // the last/most complete page
+      for (const c of cands.slice().reverse()) reply = reply.slice(0, c.start) + reply.slice(c.end);
+      reply = reply.replace(/```json/gi, '').replace(/```/g, '').replace(/\n{3,}/g, '\n\n').trim();
+    }
+    if (!reply || reply.length < 2) reply = sections ? 'Done — I’ve updated the page. ✓' : '…';
     return respond({ reply, sections });
   }
 

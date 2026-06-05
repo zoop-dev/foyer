@@ -577,7 +577,7 @@ function bEditorFields(s) {
       <div class="bld-ef"><label>Price <span style="opacity:.5">(if for sale)</span></label><input type="text" data-ci="${i}" data-cf="price" value="${bA(it.price||'')}" placeholder="$200" /></div>
       <div class="bld-ef"><label>On sale <span style="opacity:.5">(crosses out the price)</span></label><select data-ci="${i}" data-cf="sale"><option value="no"${it.sale!=='yes'?' selected':''}>No</option><option value="yes"${it.sale==='yes'?' selected':''}>Yes</option></select></div>
       <div class="bld-ef"><label>Sale price</label><input type="text" data-ci="${i}" data-cf="sale_price" value="${bA(it.sale_price||'')}" placeholder="$150" /></div>
-      <div class="bld-ef"><label>Sale ends <span style="opacity:.5">(optional — blank = no end)</span></label><input type="datetime-local" data-ci="${i}" data-cf="sale_until" value="${bA(it.sale_until||'')}" /></div>
+      <div class="bld-ef"><label>Sale ends <span style="opacity:.5">(optional — blank = no end)</span></label><input type="text" class="bld-fp" data-ci="${i}" data-cf="sale_until" value="${bA(it.sale_until||'')}" /></div>
       <div class="bld-ef"><label>Buy button</label><select data-ci="${i}" data-cf="buy"><option value="no"${it.buy!=='yes'?' selected':''}>Off</option><option value="yes"${it.buy==='yes'?' selected':''}>On</option></select></div>
       <div class="bld-ef"><label>Button text</label><input type="text" data-ci="${i}" data-cf="buy_label" value="${bA(it.buy_label||'')}" placeholder="Buy" /></div>
       <div class="bld-ef"><label>Button link</label><input type="url" data-ci="${i}" data-cf="buy_url" value="${bA(it.buy_url||'')}" placeholder="https://…" /></div>
@@ -867,7 +867,7 @@ function bEditorFields(s) {
        <div class="bld-ef"><label>Label <span style="opacity:.5">(optional)</span></label><input type="text" data-f="label" value="${bA(s.label||'')}" placeholder="on Google" /></div>${bAlignRow(s.align)}${bPadRow(s.pad)}`;
   } else if (s.type==='countdown') {
     f=`<div class="bld-ef"><label>Heading <span style="opacity:.5">(optional)</span></label><input type="text" data-f="heading" value="${bA(s.heading||'')}" /></div>
-       <div class="bld-ef"><label>Target date &amp; time</label><input type="datetime-local" data-f="target" value="${bA(s.target||'')}" /></div>
+       <div class="bld-ef"><label>Target date &amp; time</label><input type="text" class="bld-fp" data-f="target" value="${bA(s.target||'')}" /></div>
        <div class="bld-ef"><label>Message when done</label><input type="text" data-f="done_text" value="${bA(s.done_text||'')}" /></div>${bAlignRow(s.align)}${bPadRow(s.pad)}`;
   } else if (s.type==='badges') {
     const items=s.items||[];
