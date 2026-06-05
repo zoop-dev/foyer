@@ -1,5 +1,5 @@
 
-export async function buildCtx({ request, env, params }) {
+export async function buildCtx({ request, env, params, waitUntil }) {
   const route  = (params.route || []).join('/');
   const method = request.method;
 
@@ -170,7 +170,7 @@ export async function buildCtx({ request, env, params }) {
 
   _adminRole = await resolveAdminRole();
 
-  return { route, method, request, env, headers, respond, compressJson, decompressJson,
+  return { route, method, request, env, headers, respond, compressJson, decompressJson, waitUntil,
            CREATE_SESSIONS, CREATE_BANNED_EMAILS, CREATE_PAGES, authed, visitorAuthed, _adminRole,
            ensureSessionCols, newSession, currentVisitor, sitePublic, canView };
 }

@@ -78,17 +78,24 @@ The current page (index: type):
 ${pageList}
 
 How to respond — keep your text reply to ONE short sentence (a question or a one-line plan), then, ONLY when actually changing the page, end your message with ONE fenced \`\`\`json … \`\`\` block. Inside it, do the SMALLEST change — do NOT resend unchanged blocks:
-- ADD section(s): output the new block object(s), each with "_op":"add". Add "_at":N to insert before index N (omit to append at the end). e.g. {"_op":"add","type":"cta","text":"…","button_label":"…"}
-- EDIT a section: output {"_op":"update","_at":N, …only the fields you're changing}.
-- REMOVE a section: output {"_op":"remove","_at":N}.
-- BUILD FROM SCRATCH or a big restructure only: output the full page as a plain JSON array of blocks (no "_op").
-Rules: never write JSON outside that one final fence. Write real, specific copy (never lorem ipsum). Omit image/url fields unless you have a real value. If you're just chatting or planning, include NO JSON at all. A good fresh page is 8-14 blocks, opens with a hero/banner and ends with a contact form or CTA.`;
+- ADD section(s): the new block object(s), each with "_op":"add". Add "_at":N to insert before index N (omit = append at the end).
+- EDIT a section: {"_op":"update","_at":N, ...only the fields you're changing}.
+- REMOVE a section: {"_op":"remove","_at":N}.
+- BUILD FROM SCRATCH / big restructure only: the full page as a plain JSON array of blocks (no "_op").
+
+Example — user says "add an FAQ after the quote", you reply EXACTLY like:
+Sure — adding an FAQ section after your quote.
+\`\`\`json
+{"_op":"add","_at":3,"type":"faq","heading":"Frequently Asked Questions","items":[{"q":"What's your specialty?","a":"Building fast, clean web apps."},{"q":"How can I reach you?","a":"Use the contact form below."}]}
+\`\`\`
+
+Hard rules: the JSON MUST sit inside the fence and be VALID JSON (real double-quotes, real commas, a real "type"). NEVER describe a block in prose or in the "type — field=value" shorthand — that shorthand is ONLY how I list the current page TO you; your output is ALWAYS real JSON. Never write JSON outside the one fence. Write real, specific copy (never lorem ipsum). Omit image/url fields unless you have a real value. If you're only chatting or planning, include NO JSON. A good fresh page is 8-14 blocks, opens with a hero/banner and ends with a contact form or CTA.`;
 
     let out;
     try {
-      out = await env.AI.run('@cf/meta/llama-3.2-3b-instruct', {
+      out = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
         messages: [{ role: 'system', content: system }, ...history],
-        max_tokens: 4096, temperature: 0.5,
+        max_tokens: 4096, temperature: 0.3,
       });
     } catch { return respond({ error: 'The AI request failed — try again.' }, 502); }
 

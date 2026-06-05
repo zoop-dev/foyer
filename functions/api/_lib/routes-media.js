@@ -1,6 +1,15 @@
 
+
+
+function b64ToBytes(data) {
+  const bin = atob(String(data).replace(/^data:[^;]+;base64,/, ''));
+  const len = bin.length, bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
 export async function handleMedia(ctx) {
-  const { route, method, request, env, headers, respond, compressJson, decompressJson, CREATE_SESSIONS, CREATE_BANNED_EMAILS, CREATE_PAGES, authed, visitorAuthed, _adminRole } = ctx;
+  const { route, method, request, env, headers, respond, compressJson, decompressJson, waitUntil, CREATE_SESSIONS, CREATE_BANNED_EMAILS, CREATE_PAGES, authed, visitorAuthed, _adminRole } = ctx;
 
   const CREATE_IMAGES = `CREATE TABLE IF NOT EXISTS images (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,12 +43,19 @@ export async function handleMedia(ctx) {
   const imageSingle = route.match(/^images\/(\d+)$/);
 
   if (imageSingle && method === 'GET') {
-    await env.DB.prepare(CREATE_IMAGES).run();
+
+
+
+
+    const cache = caches.default;
+    const cacheKey = new Request(new URL(request.url).toString(), { method: 'GET' });
+    const hit = await cache.match(cacheKey);
+    if (hit) return hit;
+
+
     const row = await env.DB.prepare('SELECT data, mime FROM images WHERE id = ?').bind(parseInt(imageSingle[1])).first();
     if (!row) return new Response('Not found', { status: 404 });
-    const base64 = row.data.replace(/^data:[^;]+;base64,/, '');
-    const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
-    return new Response(bytes, {
+    const resp = new Response(b64ToBytes(row.data), {
       headers: {
         'Content-Type': row.mime,
 
@@ -47,6 +63,9 @@ export async function handleMedia(ctx) {
         'Access-Control-Allow-Origin': '*',
       },
     });
+
+    if (waitUntil) waitUntil(cache.put(cacheKey, resp.clone()));
+    return resp;
   }
 
   if (imageSingle && method === 'PUT') {
@@ -58,6 +77,8 @@ export async function handleMedia(ctx) {
       await env.DB.prepare('UPDATE images SET data = ?, mime = ?, size = ? WHERE id = ?')
         .bind(data, mime || 'image/jpeg', size || 0, id).run();
       if (typeof name === 'string') await env.DB.prepare('UPDATE images SET name = ? WHERE id = ?').bind(name, id).run();
+
+      await caches.default.delete(new Request(new URL(request.url).toString(), { method: 'GET' })).catch(() => {});
     } else {
       await env.DB.prepare('UPDATE images SET name = ? WHERE id = ?').bind(name || '', id).run();
     }
@@ -67,6 +88,7 @@ export async function handleMedia(ctx) {
   if (imageSingle && method === 'DELETE') {
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
     await env.DB.prepare('DELETE FROM images WHERE id = ?').bind(parseInt(imageSingle[1])).run();
+    await caches.default.delete(new Request(new URL(request.url).toString(), { method: 'GET' })).catch(() => {});
     return respond({ ok: true });
   }
 
@@ -102,15 +124,16 @@ export async function handleMedia(ctx) {
   const fileSingle = route.match(/^files\/(\d+)$/);
 
   if (fileSingle && method === 'GET') {
-    await env.DB.prepare(CREATE_FILES).run();
+    const cache = caches.default;
+    const cacheKey = new Request(new URL(request.url).toString(), { method: 'GET' });
+    const hit = await cache.match(cacheKey);
+    if (hit) return hit;
     const row = await env.DB.prepare('SELECT data, mime, name FROM files WHERE id = ?').bind(parseInt(fileSingle[1])).first();
     if (!row) return new Response('Not found', { status: 404 });
-    const base64 = row.data.replace(/^data:[^;]+;base64,/, '');
-    const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
     const filename = encodeURIComponent(row.name || `file-${fileSingle[1]}`);
     const url2 = new URL(request.url);
     const inline = url2.searchParams.has('preview') || url2.searchParams.has('inline');
-    return new Response(bytes, {
+    const resp = new Response(b64ToBytes(row.data), {
       headers: {
         'Content-Type': row.mime,
         'Content-Disposition': `${inline ? 'inline' : 'attachment'}; filename*=UTF-8''${filename}`,
@@ -118,11 +141,14 @@ export async function handleMedia(ctx) {
         'Access-Control-Allow-Origin': '*',
       },
     });
+    if (waitUntil) waitUntil(cache.put(cacheKey, resp.clone()));
+    return resp;
   }
 
   if (fileSingle && method === 'DELETE') {
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
     await env.DB.prepare('DELETE FROM files WHERE id = ?').bind(parseInt(fileSingle[1])).run();
+    await caches.default.delete(new Request(new URL(request.url).toString(), { method: 'GET' })).catch(() => {});
     return respond({ ok: true });
   }
 

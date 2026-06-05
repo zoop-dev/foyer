@@ -6,7 +6,8 @@ import { handlePeople } from './_lib/routes-people.js';
 import { handleMedia } from './_lib/routes-media.js';
 import { handleCollections } from './_lib/routes-collections.js';
 
-export async function onRequest({ request, env, params }) {
+export async function onRequest(context) {
+  const { request, env, params } = context;
   if (request.method === 'OPTIONS') {
     return new Response(null, {
       headers: {
@@ -17,7 +18,7 @@ export async function onRequest({ request, env, params }) {
     });
   }
 
-  const ctx = await buildCtx({ request, env, params });
+  const ctx = await buildCtx({ request, env, params, waitUntil: context.waitUntil?.bind(context) });
 
   for (const handler of [handleCore, handleAuth, handleContent, handlePeople, handleMedia, handleCollections]) {
     const res = await handler(ctx);
