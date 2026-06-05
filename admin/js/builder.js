@@ -573,12 +573,30 @@ function bldDrawCanvas() {
     }
     return `<div style="display:flex;gap:.4rem;align-items:stretch;">${row.map(s=>`<div style="flex:1;min-width:0;">${swHtml(s)}</div>`).join('')}</div>`;
   }).join('');
-  el.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();bldSel=b.dataset.edit;bldParentId=null;bldDrawCanvas();bldDrawEditor();}));
+
+
+  el.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',e=>{
+    e.stopPropagation();
+    bldSel=b.dataset.edit; bldParentId=null;
+    el.querySelectorAll('.bld-sw.sel').forEach(x=>x.classList.remove('sel'));
+    b.closest('.bld-sw')?.classList.add('sel');
+    bldDrawEditor();
+  }));
   el.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',e=>{
     e.stopPropagation();
-    bldState.sections=bldState.sections.filter(x=>x.id!==b.dataset.del);
-    if (bldSel===b.dataset.del){bldSel=null;bldParentId=null;}
-    bldDrawCanvas(); bldDrawEditor();
+    const id=b.dataset.del, sec=bldState.sections.find(x=>x.id===id);
+    const wasFull=!sec||(sec.width||'full')==='full';
+    bldState.sections=bldState.sections.filter(x=>x.id!==id);
+    if (bldSel===id){bldSel=null;bldParentId=null;}
+
+
+    if (wasFull && bldState.sections.length){
+      bldSaveDraft();
+      b.closest('.bld-sw')?.remove();
+      bldDrawEditor();
+    } else {
+      bldDrawCanvas(); bldDrawEditor();
+    }
   }));
   el.querySelectorAll('[data-wtog]').forEach(b=>b.addEventListener('click',e=>{
     e.stopPropagation();
