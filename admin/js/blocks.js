@@ -995,6 +995,13 @@ function bEditorFields(s) {
       <option value="mobile"${s.hide==='mobile'?' selected':''}>Hide on mobile</option>
       <option value="desktop"${s.hide==='desktop'?' selected':''}>Hide on desktop</option>
     </select></div>
+    <div class="bld-ef"><label>Reveal on scroll <span style="opacity:.45">(live site)</span></label>
+    <select data-f="reveal">
+      <option value=""${!s.reveal?' selected':''}>None</option>
+      <option value="fade"${s.reveal==='fade'?' selected':''}>Fade in</option>
+      <option value="up"${s.reveal==='up'?' selected':''}>Slide up</option>
+      <option value="zoom"${s.reveal==='zoom'?' selected':''}>Zoom in</option>
+    </select></div>
     <div class="bld-ef"><label>Anchor ID <span style="opacity:.45">(optional — link to it with #id)</span></label>
     <input type="text" data-f="anchor" value="${bA(s.anchor||'')}" placeholder="e.g. about" /></div>`;
   }

@@ -136,7 +136,7 @@
           const p = s.pad==='sm'?'1.5rem 2rem':s.pad==='lg'?'4.5rem 2rem':'2.5rem 2rem';
           const cols = s.cols==='2'?'repeat(2,1fr)':s.cols==='3'?'repeat(3,1fr)':s.cols==='4'?'repeat(4,1fr)':'';
           const gs = cols?`display:grid;grid-template-columns:${cols};gap:2rem;`:'display:flex;flex-wrap:wrap;gap:2rem;justify-content:center;';
-          return `<div style="${f}${c}padding:${p};text-align:center;"><div style="${gs}">${items.map(it=>`<div><div style="font-size:clamp(2rem,6vw,3rem);font-weight:300;letter-spacing:-.02em;color:${accent};">${pgE(it.number||'')}</div><div style="font-size:.65rem;font-weight:200;letter-spacing:.2em;text-transform:uppercase;color:${pgRgb(text,.45)};margin-top:.35rem;">${pgE(it.label||'')}</div></div>`).join('')}</div></div>`;
+          return `<div style="${f}${c}padding:${p};text-align:center;"><div style="${gs}">${items.map(it=>`<div><div class="stat-n" data-count="${escAttr(it.number||'')}" style="font-size:clamp(2rem,6vw,3rem);font-weight:300;letter-spacing:-.02em;color:${accent};font-variant-numeric:tabular-nums;">${pgE(it.number||'')}</div><div style="font-size:.65rem;font-weight:200;letter-spacing:.2em;text-transform:uppercase;color:${pgRgb(text,.45)};margin-top:.35rem;">${pgE(it.label||'')}</div></div>`).join('')}</div></div>`;
         }
         case 'divider': {
           const sp = s.spacing==='sm'?'.8rem':s.spacing==='lg'?'3rem':'1.8rem';
@@ -385,6 +385,49 @@
     }
 
 
+    function initStats(root) {
+      const els = root.querySelectorAll('.stat-n[data-count]:not([data-counted])');
+      if (!els.length) return;
+      const animate = (el) => {
+        if (el.dataset.counted) return; el.dataset.counted = '1';
+        const raw = el.dataset.count || '';
+        const m = raw.match(/^(\D*)([\d.,]+)(.*)$/);
+        if (!m) { el.textContent = raw; return; }
+        const pre = m[1], suf = m[3], numStr = m[2].replace(/,/g, '');
+        const target = parseFloat(numStr);
+        if (!isFinite(target)) { el.textContent = raw; return; }
+        const dec = (numStr.split('.')[1] || '').length;
+        const fmt = (v) => pre + (dec ? v.toFixed(dec) : Math.round(v).toLocaleString()) + suf;
+        const t0 = performance.now(), dur = 1400;
+        const step = (now) => { const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3); el.textContent = fmt(target * e); if (p < 1) requestAnimationFrame(step); else el.textContent = fmt(target); };
+        requestAnimationFrame(step);
+      };
+      if (!('IntersectionObserver' in window)) { els.forEach(animate); return; }
+      const io = new IntersectionObserver((ents, obs) => ents.forEach(en => { if (en.isIntersecting) { animate(en.target); obs.unobserve(en.target); } }), { threshold: .4 });
+      els.forEach(el => io.observe(el));
+    }
+
+
+
+
+    function initReveal(root) {
+      if (!root.querySelector('[data-aos]')) return;
+      const go = () => {
+        if (!window.AOS) return;
+        window.AOS.init({ duration: 650, easing: 'ease-out-cubic', once: true, offset: 60 });
+        const sc = document.getElementById('scene');
+        if (sc && !sc._aosScroll) { sc._aosScroll = 1; sc.addEventListener('scroll', () => window.dispatchEvent(new Event('scroll')), { passive: true }); }
+      };
+      const reveal = () => root.querySelectorAll('[data-aos]').forEach(e => { e.style.opacity = '1'; e.style.transform = 'none'; });
+      if (window.AOS) return go();
+      if (window._aosLoading) { const iv = setInterval(() => { if (window.AOS) { clearInterval(iv); go(); } }, 120); setTimeout(() => clearInterval(iv), 8000); return; }
+      window._aosLoading = true;
+      const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css'; document.head.appendChild(css);
+      const sc = document.createElement('script'); sc.src = 'https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js'; sc.onload = go; sc.onerror = () => { window._aosLoading = false; reveal(); }; document.head.appendChild(sc);
+      setTimeout(() => { if (!window.AOS) reveal(); }, 5000);
+    }
+
+
 
     function startGranim(canvas, c1, c2, accent, angle) {
       const a = ((angle % 180) + 180) % 180;
@@ -455,21 +498,25 @@
         if (r) style += `border-radius:${r};overflow:hidden;`;
         if (s.hide === 'mobile') cls += ' foyer-hide-mobile';
         if (s.hide === 'desktop') cls += ' foyer-hide-desktop';
-        return { style, cls };
+        const rv = s.reveal === 'fade' ? 'fade' : s.reveal === 'up' ? 'fade-up' : s.reveal === 'zoom' ? 'zoom-in' : '';
+        const attr = rv ? ` data-aos="${rv}"` : '';
+        return { style, cls, attr };
       };
       const rows = groupRows(sections || []);
       scene.innerHTML = rows.map(row => {
         if (row.length === 1) {
-          const s = row[0], h = pgRenderSec(s, accent, text, font, bg), { style, cls } = secWrap(s);
-          if (!s.anchor && !style && !cls) return h;
-          return `<div${s.anchor ? ` id="${escAttr(s.anchor)}"` : ''} class="pg-sec${cls}" style="scroll-margin-top:64px;${style}">${h}</div>`;
+          const s = row[0], h = pgRenderSec(s, accent, text, font, bg), { style, cls, attr } = secWrap(s);
+          if (!s.anchor && !style && !cls && !attr) return h;
+          return `<div${s.anchor ? ` id="${escAttr(s.anchor)}"` : ''}${attr} class="pg-sec${cls}" style="scroll-margin-top:64px;${style}">${h}</div>`;
         }
-        return `<div class="pg-row" style="display:flex;gap:0;">${row.map(s => { const { style, cls } = secWrap(s); return `<div${s.anchor ? ` id="${escAttr(s.anchor)}"` : ''} class="pg-sec${cls}" style="flex:1;min-width:0;scroll-margin-top:64px;${style}">${pgRenderSec(s, accent, text, font, bg)}</div>`; }).join('')}</div>`;
+        return `<div class="pg-row" style="display:flex;gap:0;">${row.map(s => { const { style, cls, attr } = secWrap(s); return `<div${s.anchor ? ` id="${escAttr(s.anchor)}"` : ''}${attr} class="pg-sec${cls}" style="flex:1;min-width:0;scroll-margin-top:64px;${style}">${pgRenderSec(s, accent, text, font, bg)}</div>`; }).join('')}</div>`;
       }).join('');
       initCarousels(scene);
       initCollGalleries(scene);
       initCountdowns(scene);
       initForms(scene);
+      initStats(scene);
+      initReveal(scene);
       foyerHL(scene);
       scene.querySelectorAll('a, button').forEach(hookHover);
 
