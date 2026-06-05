@@ -634,6 +634,12 @@ async function bldBoot() {
 
   document.getElementById('bldOpenPicker').addEventListener('click', bldOpenPicker);
   document.getElementById('bldAiBtn')?.addEventListener('click', bldAssistant);
+
+  const _fab = document.getElementById('bldAddFab'), _picker = document.getElementById('bldOpenPicker');
+  if (_fab && _picker && 'IntersectionObserver' in window) {
+    _fab.addEventListener('click', bldOpenPicker);
+    new IntersectionObserver(es => { _fab.classList.toggle('visible', !es[0].isIntersecting); }, { threshold: 0 }).observe(_picker);
+  }
   document.addEventListener('keydown', e => { if (e.key === 'Escape') bldClosePicker(); });
 
   document.getElementById('bldAddPageBtn').addEventListener('click',()=>{

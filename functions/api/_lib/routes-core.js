@@ -90,10 +90,11 @@ How to respond:
 
 
 
+
     let sections = null, reply = txt;
-    const cands = [];
+    const blocks = [], seen = new Set(); let firstStart = -1;
     for (let i = 0; i < txt.length; i++) {
-      if (txt[i] !== '[') continue;
+      if (txt[i] !== '{') continue;
       let depth = 0, inStr = false, esc = false, j = i;
       for (; j < txt.length; j++) {
         const ch = txt[j];
@@ -101,19 +102,23 @@ How to respond:
         if (ch === '\\') { esc = true; continue; }
         if (ch === '"') { inStr = !inStr; continue; }
         if (inStr) continue;
-        if (ch === '[') depth++;
-        else if (ch === ']') { if (--depth === 0) break; }
+        if (ch === '{') depth++;
+        else if (ch === '}') { if (--depth === 0) break; }
       }
       if (depth === 0 && j < txt.length) {
-        const sub = txt.slice(i, j + 1);
-        try { const p = JSON.parse(sub); if (Array.isArray(p) && p.length && p.every(x => x && typeof x === 'object' && x.type)) cands.push({ start: i, end: j + 1, arr: p }); } catch {}
-        i = j;
+        try {
+          const o = JSON.parse(txt.slice(i, j + 1));
+          if (o && typeof o === 'object' && typeof o.type === 'string') {
+            const k = JSON.stringify(o);
+            if (!seen.has(k)) { seen.add(k); blocks.push(o); if (firstStart < 0) firstStart = i; }
+          }
+        } catch {}
+        i = j;   // skip past this object (nested items aren't matched separately)
       }
     }
-    if (cands.length) {
-      sections = cands[cands.length - 1].arr;          // the last/most complete page
-      for (const c of cands.slice().reverse()) reply = reply.slice(0, c.start) + reply.slice(c.end);
-      reply = reply.replace(/```json/gi, '').replace(/```/g, '').replace(/\n{3,}/g, '\n\n').trim();
+    if (blocks.length) {
+      sections = blocks.slice(0, 40);
+      reply = txt.slice(0, firstStart).replace(/```json/gi, '').replace(/```/g, '').replace(/\n{3,}/g, '\n\n').trim();
     }
     if (!reply || reply.length < 2) reply = sections ? 'Done — I’ve updated the page. ✓' : '…';
     return respond({ reply, sections });

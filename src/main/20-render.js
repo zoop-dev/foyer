@@ -384,11 +384,33 @@
       });
     }
 
+
+
+    function startGranim(canvas, c1, c2, accent, angle) {
+      const a = ((angle % 180) + 180) % 180;
+      const dir = (a < 25 || a > 155) ? 'left-right' : (a > 65 && a < 115) ? 'top-bottom' : 'diagonal';
+      const states = { 'default-state': { gradients: [[c1, c2], [c2, accent], [accent, c1]], transitionSpeed: 5000 } };
+      const make = () => {
+        try { if (window._pgGranim) { window._pgGranim.destroy(); window._pgGranim = null; } } catch (e) {}
+        try { window._pgGranim = new window.Granim({ element: canvas, direction: dir, isPausedWhenNotInView: true, states }); } catch (e) {}
+      };
+      if (window.Granim) return make();
+      if (window._granimLoading) { const iv = setInterval(() => { if (window.Granim) { clearInterval(iv); make(); } }, 120); setTimeout(() => clearInterval(iv), 7000); return; }
+      window._granimLoading = true;
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/granim@2.0.0/dist/granim.min.js';
+      s.onload = make; s.onerror = () => { window._granimLoading = false; };
+      document.head.appendChild(s);
+    }
+    function stopGranim(layer) { try { if (window._pgGranim) { window._pgGranim.destroy(); window._pgGranim = null; } } catch (e) {} if (layer) layer.innerHTML = ''; }
+
     function applyPageBg(state, scene) {
       const bg = state.bg || '#020a03';
       const accent = state.accent || '#4dbd6a';
       const style = state.bg_style || 'solid';
       let layer = document.getElementById('pg-bg');
+      const anim = !!state.bg_anim;
+      if (!(style === 'gradient' && anim)) stopGranim(layer);  // leaving granim → tear it down
       if (style === 'solid') {
         if (layer) layer.style.display = 'none';
         scene.style.background = bg;
@@ -396,11 +418,15 @@
       }
       if (!layer) { layer = document.createElement('div'); layer.id = 'pg-bg'; document.body.appendChild(layer); }
       scene.style.background = 'transparent';
-      const anim = !!state.bg_anim;
       let css = 'position:fixed;inset:0;z-index:1;pointer-events:none;display:block;';
       if (style === 'gradient') {
+        if (anim) {
+          layer.style.cssText = css;
+          layer.innerHTML = '<canvas id="pg-granim" style="width:100%;height:100%;display:block"></canvas>';
+          startGranim(layer.querySelector('#pg-granim'), bg, state.bg_color2 || accent, accent, +state.bg_angle || 135);
+          return;
+        }
         css += `background:linear-gradient(${state.bg_angle||135}deg, ${bg}, ${state.bg_color2||accent});`;
-        if (anim) css += 'background-size:300% 300%;animation:pgGrad 16s ease infinite;';
       } else if (style === 'aurora') {
         const a = c => pgRgb(accent, c);
         css += `background:radial-gradient(40% 50% at 20% 25%, ${a(.18)}, transparent 60%), radial-gradient(45% 55% at 80% 30%, ${a(.14)}, transparent 60%), radial-gradient(55% 60% at 50% 95%, ${a(.12)}, transparent 60%), ${bg};`;
