@@ -144,46 +144,62 @@ function bldSanitizeSections(arr){
     return { ...def, ...b, id:Math.random().toString(36).slice(2,9) };
   }).filter(Boolean);
 }
-let _aiBusy=false;
+
+
+let bldAiChat=[];
+const _foyerMark='<svg viewBox="0 0 44 50" width="15" height="17" fill="none" stroke="var(--green)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg>';
 function bldAssistant(){
   if(!bldPageId){ toast('Pick or create a page first.', true); return; }
   if(document.getElementById('bldAiOv')) return;
-  const editing=(bldState.sections||[]).length>0;
-  const chips=editing?['Add a pricing section','Add an FAQ','Add a contact form','Make the copy punchier']
-                     :['A photography portfolio','A coffee-shop landing page','A SaaS product page','A personal résumé site'];
   const ov=document.createElement('div'); ov.id='bldAiOv'; ov.className='bld-ai-ov';
-  ov.innerHTML=`<div class="bld-ai-box">
-    <div class="bld-ai-head"><span class="bld-ai-title"><svg viewBox="0 0 44 50" width="15" height="17" fill="none" stroke="var(--green)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg> Foyer assistant</span><button class="bld-ai-x" id="bldAiX" aria-label="Close">✕</button></div>
-    <textarea id="bldAiPrompt" class="bld-ai-input" rows="3" placeholder="${editing?'Describe a change — e.g. “add a pricing section” or “rewrite the hero for a bakery”':'Describe the page — e.g. “a site for my karate dojo with classes, pricing and a contact form”'}"></textarea>
-    <div class="bld-ai-chips">${chips.map(x=>`<button class="bld-ai-chip" type="button">${x}</button>`).join('')}</div>
-    <div class="bld-ai-foot"><span class="bld-ai-note">${editing?'Edits this page — saved as a draft you can discard.':'Fills this page.'}</span><button class="btn btn-primary btn-sm" id="bldAiGo">Generate</button></div>
-    <div class="bld-ai-loading"><div class="bld-loading-spin"></div><span>Thinking…</span></div>
+  ov.innerHTML=`<div class="bld-ai-box bld-ai-chat">
+    <div class="bld-ai-head"><span class="bld-ai-title">${_foyerMark} Foyer assistant</span><div style="display:flex;gap:.4rem;align-items:center;"><button class="bld-ai-mini" id="bldAiNew" title="New chat">⟲</button><button class="bld-ai-x" id="bldAiX" aria-label="Close">✕</button></div></div>
+    <div class="bld-ai-msgs" id="bldAiMsgs"></div>
+    <form class="bld-ai-compose" id="bldAiForm"><input class="bld-ai-input2" id="bldAiPrompt" placeholder="Ask, plan, or describe a change…" autocomplete="off" /><button class="bld-ai-send" id="bldAiSend" type="submit" aria-label="Send">↑</button></form>
   </div>`;
   document.body.appendChild(ov);
   const close=()=>ov.remove();
-  ov.addEventListener('click',e=>{ if(e.target===ov && !_aiBusy) close(); });
-  document.getElementById('bldAiX').onclick=()=>{ if(!_aiBusy) close(); };
+  ov.addEventListener('click',e=>{ if(e.target===ov) close(); });
+  document.getElementById('bldAiX').onclick=close;
+  document.getElementById('bldAiNew').onclick=()=>{ bldAiChat=[]; render(); ta.focus(); };
+  const msgsEl=document.getElementById('bldAiMsgs');
   const ta=document.getElementById('bldAiPrompt');
-  ov.querySelectorAll('.bld-ai-chip').forEach(c=>c.onclick=()=>{ ta.value=c.textContent; ta.focus(); });
+  function render(){
+    if(!bldAiChat.length){
+      const editing=(bldState.sections||[]).length>0;
+      const chips=editing?['Add a pricing section','Add an FAQ','Make the copy punchier']:['A coffee-shop landing page','A photography portfolio','A résumé site'];
+      msgsEl.innerHTML=`<div class="bld-ai-welcome">${_foyerMark}<p>${editing?'What should we change? I can plan it with you before touching the page.':'Tell me about the page you want — or just describe your site and we’ll shape it together.'}</p><div class="bld-ai-chips">${chips.map(x=>`<button class="bld-ai-chip" type="button">${escHtml(x)}</button>`).join('')}</div></div>`;
+      msgsEl.querySelectorAll('.bld-ai-chip').forEach(c=>c.onclick=()=>{ ta.value=c.textContent; ta.focus(); });
+      return;
+    }
+    msgsEl.innerHTML=bldAiChat.map(m=>`<div class="bld-ai-msg ${m.role}">${m.role==='assistant'?`<span class="bld-ai-av">${_foyerMark}</span>`:''}<div class="bld-ai-bubble">${m.thinking?'<span class="bld-ai-dots"><i></i><i></i><i></i></span>':escHtml(m.content)}${m.applied?`<div class="bld-ai-applied">✓ Updated the page · ${m.applied} section${m.applied===1?'':'s'}</div>`:''}</div></div>`).join('');
+    msgsEl.scrollTop=msgsEl.scrollHeight;
+  }
+  render();
   setTimeout(()=>ta.focus(),50);
-  document.getElementById('bldAiGo').onclick=async ()=>{
-    const prompt=ta.value.trim(); if(prompt.length<3){ ta.focus(); return; }
-    if(_aiBusy) return; _aiBusy=true; ov.querySelector('.bld-ai-box').classList.add('busy');
-    const fail=(m)=>{ toast(m, true); _aiBusy=false; ov.querySelector('.bld-ai-box')?.classList.remove('busy'); };
+  let busy=false;
+  document.getElementById('bldAiForm').addEventListener('submit',async e=>{
+    e.preventDefault();
+    const text=ta.value.trim(); if(!text||busy) return;
+    busy=true; ta.value='';
+    bldAiChat.push({role:'user',content:text});
+    const thinking={role:'assistant',thinking:true}; bldAiChat.push(thinking); render();
+    const site={name:__SITE__.name,pages:(bldPages||[]).map(p=>({title:p.title,slug:p.slug}))};
     try{
-      const site={name:__SITE__.name,pages:(bldPages||[]).map(p=>({title:p.title,slug:p.slug}))};
-      const r=await fetch('/api/ai/page',{method:'POST',headers:{...authHeaders(),'Content-Type':'application/json'},body:JSON.stringify({prompt,sections:bldState.sections,schema:bldAiSchema(),site})});
+      const msgs=bldAiChat.filter(m=>!m.thinking).map(m=>({role:m.role,content:m.content}));
+      const r=await fetch('/api/ai/page',{method:'POST',headers:{...authHeaders(),'Content-Type':'application/json'},body:JSON.stringify({messages:msgs,sections:bldState.sections,schema:bldAiSchema(),site})});
       const d=await r.json().catch(()=>({}));
-      if(!r.ok||!d.sections) return fail(d.error||'Generation failed.');
-      const secs=bldSanitizeSections(d.sections);
-      if(!secs.length) return fail('Got nothing usable — try rephrasing.');
-      _aiBusy=false; close();
-      if(editing && !(await dlg.confirm(`Replace this page with the assistant’s version? ${secs.length} sections — it’s saved as a draft you can discard.`, {confirm:'Replace'}))) return;
-      bldState.sections=secs; bldSel=null; bldParentId=null;
-      bldDrawCanvas(); bldDrawEditor();
-      toast(editing?'Page updated ✓':'Page generated ✓');
-    }catch{ fail('Network error — try again.'); }
-  };
+      bldAiChat=bldAiChat.filter(m=>m!==thinking);
+      if(!r.ok){ bldAiChat.push({role:'assistant',content:d.error||'Something went wrong — try again.'}); render(); busy=false; ta.focus(); return; }
+      const am={role:'assistant',content:d.reply||'…'};
+      if(Array.isArray(d.sections)){
+        const secs=bldSanitizeSections(d.sections);
+        if(secs.length){ bldState.sections=secs; bldSel=null; bldParentId=null; bldDrawCanvas(); bldDrawEditor(); am.applied=secs.length; }
+      }
+      bldAiChat.push(am); render();
+    }catch{ bldAiChat=bldAiChat.filter(m=>m!==thinking); bldAiChat.push({role:'assistant',content:'Network error — try again.'}); render(); }
+    busy=false; ta.focus();
+  });
 }
 
 
@@ -537,6 +553,10 @@ function bldDrawEditor() {
 
 async function bldBoot() {
   if (bldBooted) return; bldBooted=true;
+
+  fetch('/api/ai/page',{headers:authHeaders()}).then(r=>r.json()).then(d=>{
+    if(d&&d.enabled===false){ document.getElementById('bldAiBtn')?.style.setProperty('display','none'); document.getElementById('mBldAi')?.style.setProperty('display','none'); }
+  }).catch(()=>{});
 
   document.getElementById('bldBg').addEventListener('input',e=>{bldState.bg=e.target.value;bldDrawCanvas();});
   document.getElementById('bldAccent').addEventListener('input',e=>{bldState.accent=e.target.value;bldDrawCanvas();if(bldSel)bldDrawEditor();});

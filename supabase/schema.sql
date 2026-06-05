@@ -27,6 +27,7 @@ create table if not exists foyer_sites (
 -- For tables created before the bypass columns existed:
 alter table foyer_sites add column if not exists offline_bypass_hash    text not null default '';
 alter table foyer_sites add column if not exists unlicensed_bypass_hash text not null default '';
+alter table foyer_sites add column if not exists ai_enabled             boolean not null default true;  -- per-site AI assistant toggle (operator dashboard)
 drop trigger if exists trg_foyer_sites_touch on foyer_sites;
 create trigger trg_foyer_sites_touch before update on foyer_sites
   for each row execute function foyer_touch_updated_at();

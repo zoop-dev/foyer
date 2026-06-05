@@ -181,5 +181,13 @@
   .bld-picker { max-height: 100dvh; height: 100dvh; border-radius: 0; max-width: none; }
 
   
+  .bld-ai-ov { padding: 0; }
+  .bld-ai-box { max-width: none; border-radius: 0; }
+  .bld-ai-chat { height: 100dvh; }
+  .bld-ai-head { padding-top: calc(1rem + env(safe-area-inset-top, 0)); }
+  .bld-ai-input2 { font-size: 16px; }
+  .bld-ai-compose { padding-bottom: calc(.8rem + env(safe-area-inset-bottom, 0)); }
+
+  
   body #toast-shelf { bottom: calc(1.2rem + env(safe-area-inset-bottom, 0)); }
 }
