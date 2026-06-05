@@ -470,6 +470,7 @@
       initCollGalleries(scene);
       initCountdowns(scene);
       initForms(scene);
+      foyerHL(scene);
       scene.querySelectorAll('a, button').forEach(hookHover);
 
       if (session) {

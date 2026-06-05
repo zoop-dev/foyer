@@ -168,6 +168,7 @@ function bldBlockMenuItems(id){
   const i=bldState.sections.findIndex(s=>s.id===id);
   return [
     {label:'Edit', icon:'✎', action:()=>{ bldSel=id; bldParentId=null; bldDrawCanvas(); bldDrawEditor(); }},
+    ...(bldAiOn?[{label:'Polish copy with AI', icon:'✨', action:()=>bldPolishBlock(id)}]:[]),
     {label:'Duplicate', icon:'⧉', action:()=>bldDuplicateBlock(id)},
     {label:'Move up', icon:'↑', action:()=>bldMoveBlock(id,-1)},
     {label:'Move down', icon:'↓', action:()=>bldMoveBlock(id,1)},
@@ -246,6 +247,31 @@ function bldApplyAi(arr){
 
 
 let bldAiChat=[];
+let bldAiOn=true;   // flipped off in bldBoot if the assistant is disabled for this site
+
+
+
+async function bldPolishBlock(id){
+  if(!bldAiOn) return;
+  const idx=bldState.sections.findIndex(s=>s.id===id); if(idx<0) return;
+  const sec=bldState.sections[idx];
+  const setBtn=t=>{const b=document.querySelector(`[data-polish="${id}"]`); if(b){b.disabled=t!=='✨';b.textContent=t;}};
+  setBtn('⏳');
+  const site={name:__SITE__.name,pages:(bldPages||[]).map(p=>({title:p.title,slug:p.slug}))};
+  const msg=`Polish the "${sec.type}" block at index ${idx}: tighten and improve its writing, fix awkward phrasing, make the copy specific and compelling. Keep the SAME block type and structure — only rewrite text fields. Respond with a single {"_op":"update","_at":${idx}, …changed fields}.`;
+  try{
+    const r=await fetch('/api/ai/page',{method:'POST',headers:{...authHeaders(),'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'user',content:msg}],sections:bldState.sections,schema:bldAiSchema(),site})});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok){ toast(d.error||'Could not reach the assistant', true); setBtn('✨'); return; }
+    const arr=Array.isArray(d.sections)?d.sections:[];
+
+    let op=arr.find(o=>o&&o._op==='update'&&o._at===idx)||arr.find(o=>o&&o._op==='update');
+    if(!op&&arr.length===1&&arr[0]&&arr[0].type===sec.type&&!arr[0]._op) op=arr[0];
+    if(op){ const {_op,_at,...rest}=op; bldState.sections[idx]={...sec,...rest,id:sec.id,type:sec.type}; bldDrawCanvas(); bldDrawEditor(); toast('✨ Polished'); }
+    else toast('No changes suggested');
+  }catch{ toast('Network error — try again.', true); }
+  setBtn('✨');
+}
 const _foyerMark='<svg viewBox="0 0 44 50" width="15" height="17" fill="none" stroke="var(--green)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg>';
 function bldAssistant(){
   if(!bldPageId){ toast('Pick or create a page first.', true); return; }
@@ -555,6 +581,7 @@ function bldDrawCanvas() {
       <div class="bld-ov">
         <span class="bld-drag-handle" title="Drag to reorder">⠿</span>
         <button class="bld-ob bld-w-tog" data-wtog="${s.id}" title="Change column width">${wLabel}</button>
+        ${bldAiOn&&s.type!=='group'?`<button class="bld-ob bld-polish" data-polish="${s.id}" title="Polish copy with AI">✨</button>`:''}
         <button class="bld-ob" data-edit="${s.id}">Edit</button>
         <button class="bld-ob rm" data-del="${s.id}">✕</button>
       </div>
@@ -582,6 +609,7 @@ function bldDrawCanvas() {
     b.closest('.bld-sw')?.classList.add('sel');
     bldDrawEditor();
   }));
+  el.querySelectorAll('[data-polish]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();bldPolishBlock(b.dataset.polish);}));
   el.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',e=>{
     e.stopPropagation();
     const id=b.dataset.del, sec=bldState.sections.find(x=>x.id===id);
@@ -624,6 +652,7 @@ function bldDrawCanvas() {
   });
   bSetupDnD(el, bldState.sections, (newId)=>{bldSel=newId;bldParentId=null;bldDrawCanvas();bldDrawEditor();});
   initCarousels(el);
+  foyerHL(el);
 }
 
 function bldPatch(s) {
@@ -677,7 +706,7 @@ async function bldBoot() {
   if (bldBooted) return; bldBooted=true;
 
   fetch('/api/ai/page',{headers:authHeaders()}).then(r=>r.json()).then(d=>{
-    if(d&&d.enabled===false){ document.getElementById('bldAiBtn')?.style.setProperty('display','none'); document.getElementById('mBldAi')?.style.setProperty('display','none'); }
+    if(d&&d.enabled===false){ bldAiOn=false; document.getElementById('bldAiBtn')?.style.setProperty('display','none'); document.getElementById('mBldAi')?.style.setProperty('display','none'); if(bldPageId) bldDrawCanvas(); }
   }).catch(()=>{});
 
   bldInitColoris(); if(!_colorisReady) setTimeout(bldInitColoris, 600);

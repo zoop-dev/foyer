@@ -143,7 +143,11 @@ function bXtra(s, h) {
       return wrap(cont(`<div style="display:flex;gap:.9rem;border:1px solid ${rgb(text, .1)};border-left:3px solid ${col};background:${rgb(text, .03)};border-radius:10px;padding:1.1rem 1.3rem;"><div style="font-size:1.2rem;line-height:1.3;flex-shrink:0;">${E(ic)}</div><div>${s.title ? `<div style="font-weight:400;font-size:.95rem;margin-bottom:.3rem;color:${col};">${E(s.title)}</div>` : ''}<div class="md-content" style="font-size:.88rem;font-weight:200;line-height:1.7;color:${rgb(text, .72)};">${md(s.body)}</div></div></div>`, '720px'));
     }
     case 'code': {
-      return wrap(cont(`<div style="border:1px solid ${rgb(accent, .14)};border-radius:10px;overflow:hidden;background:rgba(0,0,0,.35);">${s.lang ? `<div style="padding:.45rem .9rem;border-bottom:1px solid ${rgb(accent, .1)};font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:${rgb(text, .45)};">${E(s.lang)}</div>` : ''}<pre style="margin:0;padding:1rem 1.1rem;overflow-x:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.82rem;line-height:1.6;color:${rgb(text, .85)};white-space:pre;">${E(s.code || '')}</pre></div>`, '760px'));
+
+
+      const lang = String(s.lang || '').trim().toLowerCase().replace(/[^a-z0-9+#-]/g, '');
+      const cc = lang ? ` class="language-${lang}"` : '';
+      return wrap(cont(`<div style="border:1px solid ${rgb(accent, .14)};border-radius:10px;overflow:hidden;background:rgba(0,0,0,.35);">${s.lang ? `<div style="padding:.45rem .9rem;border-bottom:1px solid ${rgb(accent, .1)};font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:${rgb(text, .45)};">${E(s.lang)}</div>` : ''}<pre style="margin:0;overflow-x:auto;"><code${cc} style="display:block;padding:1rem 1.1rem;background:transparent;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.82rem;line-height:1.6;color:${rgb(text, .85)};white-space:pre;">${E(s.code || '')}</code></pre></div>`, '760px'));
     }
     case 'specs': {
       const rows = items.map(it => `<div style="display:flex;justify-content:space-between;gap:1.5rem;padding:.7rem 0;border-bottom:1px solid ${rgb(accent, .1)};"><span style="font-size:.85rem;font-weight:200;color:${rgb(text, .55)};">${E(it.label || '')}</span><span style="font-size:.85rem;font-weight:300;color:${rgb(text, .9)};text-align:right;">${E(it.value || '')}</span></div>`).join('');
@@ -338,4 +342,19 @@ function bXtra(s, h) {
     }
     default: return '';
   }
+}
+
+
+
+function foyerHL(root) {
+  if (!root || !root.querySelectorAll) return;
+  const codes = root.querySelectorAll('pre code[class*="language-"]:not([data-hl])');
+  if (!codes.length) return;
+  const run = () => codes.forEach(c => { if (window.hljs && !c.dataset.hl) { try { window.hljs.highlightElement(c); } catch (e) {} c.dataset.hl = '1'; } });
+  if (window.hljs) return run();
+  if (window._foyerHLLoading) { const iv = setInterval(() => { if (window.hljs) { clearInterval(iv); run(); } }, 120); setTimeout(() => clearInterval(iv), 8000); return; }
+  window._foyerHLLoading = true;
+  const base = 'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build';
+  const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = base + '/styles/github-dark.min.css'; document.head.appendChild(css);
+  const sc = document.createElement('script'); sc.src = base + '/highlight.min.js'; sc.onload = run; sc.onerror = () => { window._foyerHLLoading = false; }; document.head.appendChild(sc);
 }
