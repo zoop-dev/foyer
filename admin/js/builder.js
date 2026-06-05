@@ -122,6 +122,71 @@ function bldOpenPicker(){
 function bldClosePicker(){ document.getElementById('bldPickerOv')?.classList.remove('open'); }
 
 
+const AI_BLOCK_DENY = new Set(['video','audio','map','embed','socialpost','booking','qrcode','fileprev','filedown','tutorials','reviews','group','carousel','masonry','gallery','collection','image','compare','countdown']);
+
+function bldAiSchema(){
+  return BLOCK_CATALOG.filter(b=>!AI_BLOCK_DENY.has(b.t)).map(b=>{
+    const def=bDefault(b.t); if(!def) return null;
+    const keys=Object.keys(def).filter(k=>k!=='id'&&k!=='type');
+    const scalar=keys.filter(k=>k!=='items'&&!Array.isArray(def[k]));
+    let items='';
+    if(Array.isArray(def.items)&&def.items[0]&&typeof def.items[0]==='object') items=` items:[{${Object.keys(def.items[0]).join(', ')}}]`;
+    return `- ${b.t}: ${scalar.join(', ')}${items}`;
+  }).filter(Boolean).join('\n');
+}
+
+
+function bldSanitizeSections(arr){
+  if(!Array.isArray(arr)) return [];
+  return arr.map(b=>{
+    if(!b||typeof b!=='object'||!b.type) return null;
+    const def=bDefault(b.type); if(!def) return null;
+    return { ...def, ...b, id:Math.random().toString(36).slice(2,9) };
+  }).filter(Boolean);
+}
+let _aiBusy=false;
+function bldAssistant(){
+  if(!bldPageId){ toast('Pick or create a page first.', true); return; }
+  if(document.getElementById('bldAiOv')) return;
+  const editing=(bldState.sections||[]).length>0;
+  const chips=editing?['Add a pricing section','Add an FAQ','Add a contact form','Make the copy punchier']
+                     :['A photography portfolio','A coffee-shop landing page','A SaaS product page','A personal résumé site'];
+  const ov=document.createElement('div'); ov.id='bldAiOv'; ov.className='bld-ai-ov';
+  ov.innerHTML=`<div class="bld-ai-box">
+    <div class="bld-ai-head"><span class="bld-ai-title"><svg viewBox="0 0 44 50" width="15" height="17" fill="none" stroke="var(--green)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg> Foyer assistant</span><button class="bld-ai-x" id="bldAiX" aria-label="Close">✕</button></div>
+    <textarea id="bldAiPrompt" class="bld-ai-input" rows="3" placeholder="${editing?'Describe a change — e.g. “add a pricing section” or “rewrite the hero for a bakery”':'Describe the page — e.g. “a site for my karate dojo with classes, pricing and a contact form”'}"></textarea>
+    <div class="bld-ai-chips">${chips.map(x=>`<button class="bld-ai-chip" type="button">${x}</button>`).join('')}</div>
+    <div class="bld-ai-foot"><span class="bld-ai-note">${editing?'Edits this page — saved as a draft you can discard.':'Fills this page.'}</span><button class="btn btn-primary btn-sm" id="bldAiGo">Generate</button></div>
+    <div class="bld-ai-loading"><div class="bld-loading-spin"></div><span>Thinking…</span></div>
+  </div>`;
+  document.body.appendChild(ov);
+  const close=()=>ov.remove();
+  ov.addEventListener('click',e=>{ if(e.target===ov && !_aiBusy) close(); });
+  document.getElementById('bldAiX').onclick=()=>{ if(!_aiBusy) close(); };
+  const ta=document.getElementById('bldAiPrompt');
+  ov.querySelectorAll('.bld-ai-chip').forEach(c=>c.onclick=()=>{ ta.value=c.textContent; ta.focus(); });
+  setTimeout(()=>ta.focus(),50);
+  document.getElementById('bldAiGo').onclick=async ()=>{
+    const prompt=ta.value.trim(); if(prompt.length<3){ ta.focus(); return; }
+    if(_aiBusy) return; _aiBusy=true; ov.querySelector('.bld-ai-box').classList.add('busy');
+    const fail=(m)=>{ toast(m, true); _aiBusy=false; ov.querySelector('.bld-ai-box')?.classList.remove('busy'); };
+    try{
+      const site={name:__SITE__.name,pages:(bldPages||[]).map(p=>({title:p.title,slug:p.slug}))};
+      const r=await fetch('/api/ai/page',{method:'POST',headers:{...authHeaders(),'Content-Type':'application/json'},body:JSON.stringify({prompt,sections:bldState.sections,schema:bldAiSchema(),site})});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok||!d.sections) return fail(d.error||'Generation failed.');
+      const secs=bldSanitizeSections(d.sections);
+      if(!secs.length) return fail('Got nothing usable — try rephrasing.');
+      _aiBusy=false; close();
+      if(editing && !(await dlg.confirm(`Replace this page with the assistant’s version? ${secs.length} sections — it’s saved as a draft you can discard.`, {confirm:'Replace'}))) return;
+      bldState.sections=secs; bldSel=null; bldParentId=null;
+      bldDrawCanvas(); bldDrawEditor();
+      toast(editing?'Page updated ✓':'Page generated ✓');
+    }catch{ fail('Network error — try again.'); }
+  };
+}
+
+
 function bldOpenSlotWidth(sections){
   if(!sections.length) return null;
   const w=sections[sections.length-1].width;
@@ -486,6 +551,7 @@ async function bldBoot() {
   document.getElementById('bldBgAnim').addEventListener('change',e=>{bldState.bg_anim=e.target.checked;bldDrawCanvas();});
 
   document.getElementById('bldOpenPicker').addEventListener('click', bldOpenPicker);
+  document.getElementById('bldAiBtn')?.addEventListener('click', bldAssistant);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') bldClosePicker(); });
 
   document.getElementById('bldAddPageBtn').addEventListener('click',()=>{

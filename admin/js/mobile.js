@@ -272,6 +272,7 @@ function mWatchListEditor(secId, editorId, saveBtnId, backLabel) {
   on('mSheetX', 'click', mCloseSheet);
   on('mSheetBack', 'click', mCloseSheet);
   on('mBldPage', 'click', mOpenPages);
+  on('mBldAi', 'click', () => { if (typeof bldAssistant === 'function') bldAssistant(); });
   on('mBldTheme', 'click', mOpenTheme);
   on('mBldAdd', 'click', () => { if (typeof bldOpenPicker === 'function') bldOpenPicker(); });
 

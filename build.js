@@ -48,6 +48,10 @@ await stripComments();
 const wrangler = `name = "${cfg.cloudflare.project}"
 compatibility_date = "2024-09-23"
 pages_build_output_dir = "dist"
+
+# Workers AI — powers the builder's "Generate page" assistant (env.AI).
+[ai]
+binding = "AI"
 ${cfg.publicAccess === true ? `
 [vars]
 FOYER_PUBLIC = "1"
