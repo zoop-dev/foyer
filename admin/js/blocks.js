@@ -75,6 +75,7 @@ const BLOCK_CATALOG = [
   { t:'resume', l:'Resume timeline', c:'Portfolio', i:'📜', k:'experience education cv' },
   { t:'qrcode', l:'QR code', c:'Portfolio', i:'🔳', k:'qr link' },
 
+  { t:'faq', l:'FAQ', c:'Interactive', i:'❓', k:'faq questions answers accordion frequently asked' },
   { t:'accordion', l:'Accordion', c:'Interactive', i:'🪗', k:'faq collapse' },
   { t:'toggle', l:'Toggle', c:'Interactive', i:'🔽', k:'show hide spoiler' },
   { t:'copyfield', l:'Copy field', c:'Interactive', i:'📋', k:'clipboard copy' },
@@ -405,6 +406,7 @@ function bDefault(type) {
     case 'imgtext':   return { id, type, img:'', reverse:'no', img_w:'md', img_h:'md', radius:'none', eyebrow:'', heading:'Heading', body:'', btn_label:'', btn_url:'', pad:'md' };
     case 'group':     return { id, type, label:'Group', default_open:'yes', sections:[] };
     case 'accordion': return { id, type, items:[{q:'Question one',a:'Answer one'},{q:'Question two',a:'Answer two'}], style:'minimal', pad:'md' };
+    case 'faq':     return { id, type, eyebrow:'', heading:'Frequently Asked Questions', sub:'', items:[{q:'What do you offer?',a:'A short, helpful answer.'},{q:'How can I get in touch?',a:'Use the contact form below.'}], style:'minimal', pad:'md' };
     case 'carousel':  return { id, type, items:[{img:'',caption:''},{img:'',caption:''}], height:'md', radius:'none', pad:'md' };
     case 'fileprev':  return { id, type, url:'', height:'md', pad:'md' };
     case 'filedown':  return { id, type, url:'', label:'Download', filename:'', align:'center', btn_style:'solid', pad:'md' };
@@ -647,6 +649,15 @@ function bEditorFields(s) {
       <select id="bGrpAddType" style="flex:1;background:var(--panel);border:1px solid var(--border);color:var(--white);font-size:.72rem;padding:.3rem .45rem;outline:none;">${tOpts}</select>
       <button class="btn btn-xs" id="bGrpAddSec">+ Add</button>
     </div>`;
+  } else if (s.type==='faq') {
+    const items=s.items||[];
+    f=`${ehs}<div id="bFAQ">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button>
+      <div class="bld-ef"><label>Question</label><input type="text" data-ci="${i}" data-cf="q" value="${bA(it.q||'')}" /></div>
+      <div class="bld-ef"><label>Answer <span style="opacity:.45">(Markdown)</span></label><textarea data-ci="${i}" data-cf="a" rows="3">${bE(it.a||'')}</textarea></div>
+    </div>`).join('')}</div>
+    <button class="bld-add-li bld-add-item" data-shape='{"q":"","a":""}'>+ Add question</button>
+    <div class="bld-ef"><label>Style</label><select data-f="style"><option value="minimal"${(!s.style||s.style==='minimal')?' selected':''}>Minimal</option><option value="bordered"${s.style==='bordered'?' selected':''}>Bordered cards</option></select></div>
+    ${bPadRow(s.pad)}`;
   } else if (s.type==='accordion') {
     const items=s.items||[];
     f=`<div id="bACRI">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-acrrm="${i}">✕</button>

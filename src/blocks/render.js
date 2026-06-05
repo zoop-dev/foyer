@@ -254,6 +254,14 @@ function bXtra(s, h) {
     case 'toggle': {
       return wrap(cont(`<details style="border:1px solid ${rgb(accent, .15)};border-radius:10px;padding:.2rem .3rem;"><summary style="cursor:pointer;padding:.8rem 1rem;font-size:.9rem;font-weight:300;color:${rgb(text, .85)};list-style:none;">${E(s.label || 'Show more')}</summary><div class="md-content" style="padding:.2rem 1rem 1rem;font-size:.88rem;font-weight:200;line-height:1.7;color:${rgb(text, .7)};">${md(s.body)}</div></details>`, '680px'));
     }
+    case 'faq': {
+      const bordered = s.style === 'bordered';
+      const rows = items.map(it => `<details style="border-bottom:1px solid ${rgb(accent, .12)};${bordered ? `border:1px solid ${rgb(accent, .12)};border-radius:8px;margin-bottom:.5rem;` : ''}">
+        <summary style="cursor:pointer;padding:.95rem ${bordered ? '1rem' : '0'};font-weight:300;font-size:.94rem;letter-spacing:.01em;color:${rgb(text, .9)};list-style:none;display:flex;justify-content:space-between;align-items:center;gap:1rem;">${E(it.q || '')}<span style="font-size:.7rem;color:${rgb(accent, .5)};flex-shrink:0;">▼</span></summary>
+        <div class="md-content" style="padding:.4rem ${bordered ? '1rem' : '0'} 1.15rem;font-size:.88rem;font-weight:200;line-height:1.8;color:${rgb(text, .65)};">${md(it.a)}</div>
+      </details>`).join('');
+      return wrap(cont(secHead() + `<div>${rows}</div>`, '720px'));
+    }
     case 'copyfield': {
       const val = s.value || '';
       return wrap(cont(`<div style="max-width:420px;margin:0 auto;">${s.label ? `<div style="font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:${rgb(accent, .6)};margin-bottom:.4rem;">${E(s.label)}</div>` : ''}<button type="button" data-v="${A(val)}" onclick="navigator.clipboard&&navigator.clipboard.writeText(this.getAttribute('data-v'));var b=this;b.lastChild.textContent='Copied';setTimeout(function(){b.lastChild.textContent='Copy'},1400)" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:1rem;border:1px solid ${rgb(accent, .25)};background:${rgb(accent, .04)};border-radius:9px;padding:.7rem 1rem;cursor:pointer;font-family:inherit;"><span style="font-family:ui-monospace,monospace;font-size:.85rem;color:${rgb(text, .85)};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${E(val)}</span><span style="font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:${accent};flex-shrink:0;">Copy</span></button></div>`, '480px'));
