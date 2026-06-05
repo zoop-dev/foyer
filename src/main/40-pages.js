@@ -250,6 +250,8 @@
       if (path !== location.pathname + location.search + location.hash) history.pushState({}, '', path);
       const scene = document.getElementById('scene'); if (scene) scene.scrollTop = 0;
       await loadAndShow(_session);
+
+      if (scene) { scene.classList.remove('pg-anim-in'); void scene.offsetWidth; scene.classList.add('pg-anim-in'); }
       if (location.hash) { const el = document.getElementById(decodeURIComponent(location.hash.slice(1))); if (el) el.scrollIntoView(); }
     }
     function wireRouter() {
