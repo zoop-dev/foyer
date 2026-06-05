@@ -429,6 +429,34 @@
 
 
 
+
+    function initSmoothScroll() {
+      if (window._lenisTried) return; window._lenisTried = true;
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      fetch('/api/settings').then(r => r.json()).then(s => { if (!s || s.smooth_scroll !== '0') loadLenis(); }).catch(() => loadLenis());
+    }
+    function loadLenis() {
+      const scene = document.getElementById('scene');
+      if (!scene) return;
+      const start = () => {
+        if (window._lenis || !window.Lenis) return;
+        try {
+          const lenis = new window.Lenis({ wrapper: scene, content: scene, duration: 1.1, smoothWheel: true, syncTouch: false });
+          window._lenis = lenis;
+          const raf = (t) => { lenis.raf(t); requestAnimationFrame(raf); };
+          requestAnimationFrame(raf);
+          lenis.on('scroll', () => window.dispatchEvent(new Event('scroll')));   // keep AOS & friends in sync
+          new MutationObserver(() => lenis.resize()).observe(scene, { childList: true });
+          lenis.resize();
+        } catch (e) {}
+      };
+      if (window.Lenis) return start();
+      const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.css'; document.head.appendChild(css);
+      const sc = document.createElement('script'); sc.src = 'https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js'; sc.onload = start; sc.onerror = () => {}; document.head.appendChild(sc);
+    }
+
+
+
     function startGranim(canvas, c1, c2, accent, angle) {
       const a = ((angle % 180) + 180) % 180;
       const dir = (a < 25 || a > 155) ? 'left-right' : (a > 65 && a < 115) ? 'top-bottom' : 'diagonal';

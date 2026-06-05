@@ -248,11 +248,13 @@
     }
     async function navigateTo(path) {
       if (path !== location.pathname + location.search + location.hash) history.pushState({}, '', path);
-      const scene = document.getElementById('scene'); if (scene) scene.scrollTop = 0;
+      const scene = document.getElementById('scene');
+      if (window._lenis) window._lenis.scrollTo(0, { immediate: true }); else if (scene) scene.scrollTop = 0;
       await loadAndShow(_session);
+      if (window._lenis) window._lenis.resize();
 
       if (scene) { scene.classList.remove('pg-anim-in'); void scene.offsetWidth; scene.classList.add('pg-anim-in'); }
-      if (location.hash) { const el = document.getElementById(decodeURIComponent(location.hash.slice(1))); if (el) el.scrollIntoView(); }
+      if (location.hash) { const el = document.getElementById(decodeURIComponent(location.hash.slice(1))); if (el) { if (window._lenis) window._lenis.scrollTo(el); else el.scrollIntoView(); } }
     }
     function wireRouter() {
       if (_routerWired) return; _routerWired = true;
@@ -264,7 +266,7 @@
         if (!_routable(url)) return;
         if (url.hash && url.pathname === location.pathname) return;   // in-page anchor: let the browser jump
         e.preventDefault();
-        if (url.pathname === location.pathname && !url.hash) { const sc = document.getElementById('scene'); if (sc) sc.scrollTop = 0; return; }
+        if (url.pathname === location.pathname && !url.hash) { if (window._lenis) window._lenis.scrollTo(0); else { const sc = document.getElementById('scene'); if (sc) sc.scrollTop = 0; } return; }
         navigateTo(url.pathname + url.search + url.hash);
       });
       window.addEventListener('popstate', () => loadAndShow(_session));
@@ -284,7 +286,7 @@
     }
 
     async function loadAndShow(session) {
-      _session = session; wireRouter();
+      _session = session; wireRouter(); initSmoothScroll();
       if (!versionPollStarted) { versionPollStarted = true; }
 
       const _pgbg = document.getElementById('pg-bg'); if (_pgbg) _pgbg.style.display = 'none';
