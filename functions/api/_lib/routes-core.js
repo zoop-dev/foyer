@@ -47,7 +47,7 @@ export async function handleCore(ctx) {
     let current = Array.isArray(body.sections) ? body.sections : [];
     current = current.map(({ id, anchor, ...rest }) => rest).slice(0, 40);
 
-    const schema = String(body.schema || '').slice(0, 6000) ||
+    const schema = String(body.schema || '').slice(0, 14000) ||
       `- hero: eyebrow, name, tagline
 - features: heading, sub, items:[{icon, title, text}]
 - pricing: heading, items:[{name, price, period, features, featured}]
@@ -64,18 +64,25 @@ export async function handleCore(ctx) {
       siteCtx += ` Keep copy on-brand.`;
     }
 
+
+    const pageList = current.length
+      ? current.map((s, i) => `[${i}] ${s.type}${s.heading ? ` — "${String(s.heading).slice(0, 40)}"` : s.name ? ` — "${String(s.name).slice(0, 40)}"` : ''}`).join('\n')
+      : '(empty — no sections yet)';
+
     const system = `You are the Foyer assistant — a friendly, concise helper for building one web page, chatting with the site's owner.
-A page is a JSON array of "sections" (blocks). Available block types and fields (icon = a single emoji; pricing "features" is a newline-separated string; yes/no fields use "yes"/"no"):
+A page is a list of "sections" (blocks). Each block is a JSON object with a "type". Available block types and their fields (a|b|c = pick one of those values; field="example" shows the kind of value; items:[{…}] is a list of objects; icon = one emoji; pricing "features" is a newline-separated string; yes/no fields use "yes"/"no"):
 ${schema}
 ${siteCtx}
 
-The current page is:
-${current.length ? JSON.stringify(current) : '(empty — no sections yet)'}
+The current page (index: type):
+${pageList}
 
-How to respond:
-- Keep your text reply to ONE short sentence. Ask a clarifying question or give a one-line plan when useful.
-- ONLY when you are actually creating or changing the page, append the FULL updated page as a JSON array of blocks at the very END of your message, exactly ONCE, inside a single fenced code block: \`\`\`json … \`\`\`. Include EVERY block (unchanged ones too). If you are just chatting or planning, do NOT include any JSON at all.
-- Never write JSON anywhere except that one final code block. Write real, specific copy (never lorem ipsum). Leave image/url fields out unless you have a real value. A good page is 8-14 blocks, starts with a hero/banner and ends with a contact form or CTA.`;
+How to respond — keep your text reply to ONE short sentence (a question or a one-line plan), then, ONLY when actually changing the page, end your message with ONE fenced \`\`\`json … \`\`\` block. Inside it, do the SMALLEST change — do NOT resend unchanged blocks:
+- ADD section(s): output the new block object(s), each with "_op":"add". Add "_at":N to insert before index N (omit to append at the end). e.g. {"_op":"add","type":"cta","text":"…","button_label":"…"}
+- EDIT a section: output {"_op":"update","_at":N, …only the fields you're changing}.
+- REMOVE a section: output {"_op":"remove","_at":N}.
+- BUILD FROM SCRATCH or a big restructure only: output the full page as a plain JSON array of blocks (no "_op").
+Rules: never write JSON outside that one final fence. Write real, specific copy (never lorem ipsum). Omit image/url fields unless you have a real value. If you're just chatting or planning, include NO JSON at all. A good fresh page is 8-14 blocks, opens with a hero/banner and ends with a contact form or CTA.`;
 
     let out;
     try {
@@ -108,7 +115,8 @@ How to respond:
       if (depth === 0 && j < txt.length) {
         try {
           const o = JSON.parse(txt.slice(i, j + 1));
-          if (o && typeof o === 'object' && typeof o.type === 'string') {
+
+          if (o && typeof o === 'object' && (typeof o.type === 'string' || typeof o._op === 'string')) {
             const k = JSON.stringify(o);
             if (!seen.has(k)) { seen.add(k); blocks.push(o); if (firstStart < 0) firstStart = i; }
           }
@@ -118,7 +126,13 @@ How to respond:
     }
     if (blocks.length) {
       sections = blocks.slice(0, 40);
-      reply = txt.slice(0, firstStart).replace(/```json/gi, '').replace(/```/g, '').replace(/\n{3,}/g, '\n\n').trim();
+
+
+      reply = txt.slice(0, firstStart)
+        .replace(/```json/gi, '').replace(/```/g, '')
+        .replace(/\bjson\s*$/i, '')
+        .replace(/[\[\](){}:<>\-–—\s]+$/, '')
+        .replace(/\n{3,}/g, '\n\n').trim();
     }
     if (!reply || reply.length < 2) reply = sections ? 'Done — I’ve updated the page. ✓' : '…';
     return respond({ reply, sections });

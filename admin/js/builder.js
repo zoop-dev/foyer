@@ -182,11 +182,25 @@ const AI_BLOCK_DENY = new Set(['video','audio','map','embed','socialpost','booki
 function bldAiSchema(){
   return BLOCK_CATALOG.filter(b=>!AI_BLOCK_DENY.has(b.t)).map(b=>{
     const def=bDefault(b.t); if(!def) return null;
-    const keys=Object.keys(def).filter(k=>k!=='id'&&k!=='type');
-    const scalar=keys.filter(k=>k!=='items'&&!Array.isArray(def[k]));
-    let items='';
-    if(Array.isArray(def.items)&&def.items[0]&&typeof def.items[0]==='object') items=` items:[{${Object.keys(def.items[0]).join(', ')}}]`;
-    return `- ${b.t}: ${scalar.join(', ')}${items}`;
+
+
+    const opts={};
+    try{
+      const html=bEditorFields(JSON.parse(JSON.stringify(def)));
+      const re=/<select[^>]*\bdata-f="([^"]+)"[^>]*>([\s\S]*?)<\/select>/g; let m;
+      while((m=re.exec(html))){ const v=[...m[2].matchAll(/value="([^"]*)"/g)].map(x=>x[1]).filter(Boolean); if(v.length) opts[m[1]]=[...new Set(v)]; }
+    }catch(e){}
+    const hint=(k,v)=>{
+      if(opts[k]) return `${k}:${opts[k].join('|')}`;
+      if(Array.isArray(v)){
+        if(v[0]&&typeof v[0]==='object') return `${k}:[{${Object.keys(v[0]).join(',')}}]`;
+        return `${k}:[…]`;
+      }
+      if(typeof v==='string'&&v) return `${k}="${v.slice(0,24)}"`;
+      return k;
+    };
+    const fields=Object.keys(def).filter(k=>k!=='id'&&k!=='type'&&k!=='access_key').map(k=>hint(k,def[k])).join(', ');
+    return `- ${b.t} (${b.l}): ${fields}`;
   }).filter(Boolean).join('\n');
 }
 
@@ -196,8 +210,38 @@ function bldSanitizeSections(arr){
   return arr.map(b=>{
     if(!b||typeof b!=='object'||!b.type) return null;
     const def=bDefault(b.type); if(!def) return null;
-    return { ...def, ...b, id:Math.random().toString(36).slice(2,9) };
+    const {_op,_at,...rest}=b;
+    return { ...def, ...rest, id:Math.random().toString(36).slice(2,9) };
   }).filter(Boolean);
+}
+
+
+
+function bldApplyAi(arr){
+  if(!Array.isArray(arr)||!arr.length) return 0;
+  if(!arr.some(b=>b&&b._op)){
+    const secs=bldSanitizeSections(arr);
+    if(secs.length){ bldState.sections=secs; }
+    return secs.length;
+  }
+  const S=bldState.sections; let n=0;
+
+  arr.filter(b=>b&&b._op==='remove'&&Number.isInteger(b._at)).sort((a,b)=>b._at-a._at)
+     .forEach(b=>{ if(S[b._at]){ S.splice(b._at,1); n++; } });
+  for(const b of arr){
+    if(!b||!b._op||b._op==='remove') continue;
+    const {_op,_at,...rest}=b;
+    if(_op==='update'){
+      if(Number.isInteger(_at)&&S[_at]){ S[_at]={...S[_at],...rest,id:S[_at].id,type:S[_at].type}; n++; }
+      continue;
+    }
+
+    if(!rest.type||!bDefault(rest.type)) continue;
+    const ns={...bDefault(rest.type),...rest,id:Math.random().toString(36).slice(2,9)};
+    if(Number.isInteger(_at)&&_at>=0&&_at<=S.length) S.splice(_at,0,ns); else S.push(ns);
+    n++;
+  }
+  return n;
 }
 
 
@@ -248,8 +292,8 @@ function bldAssistant(){
       if(!r.ok){ bldAiChat.push({role:'assistant',content:d.error||'Something went wrong — try again.'}); render(); busy=false; ta.focus(); return; }
       const am={role:'assistant',content:d.reply||'…'};
       if(Array.isArray(d.sections)){
-        const secs=bldSanitizeSections(d.sections);
-        if(secs.length){ bldState.sections=secs; bldSel=null; bldParentId=null; bldDrawCanvas(); bldDrawEditor(); am.applied=secs.length; }
+        const n=bldApplyAi(d.sections);
+        if(n){ bldSel=null; bldParentId=null; bldDrawCanvas(); bldDrawEditor(); am.applied=n; }
       }
       bldAiChat.push(am); render();
     }catch{ bldAiChat=bldAiChat.filter(m=>m!==thinking); bldAiChat.push({role:'assistant',content:'Network error — try again.'}); render(); }
