@@ -822,7 +822,8 @@ function bEditorFields(s) {
        <div class="bld-ef"><label>Height</label><select data-f="height"><option value="sm"${s.height==='sm'?' selected':''}>Short</option><option value="md"${(!s.height||s.height==='md')?' selected':''}>Medium</option><option value="lg"${s.height==='lg'?' selected':''}>Tall</option></select></div>
        ${bPadRow(s.pad)}`;
   } else if (s.type==='marquee') {
-    const items=s.items||(s.text?[{text:s.text}]:[]);
+    if(!s.items) s.items = s.text ? [{text:s.text}] : [{text:''}];   // migrate legacy single-text marquees
+    const items=s.items;
     f=`<div id="bMARQ">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button><div class="bld-ef"><label>Text</label><input type="text" data-ci="${i}" data-cf="text" value="${bA(it.text||'')}" /></div></div>`).join('')}</div>
        <button class="bld-add-li bld-add-item" data-shape='{"text":""}'>+ Add text</button>
        <div class="bld-ef"><label>Separator</label><input type="text" data-f="separator" value="${bA(s.separator||'•')}" /></div>
@@ -1066,7 +1067,7 @@ function bBindEditor(panel, s, onUpdate) {
 
   panel.querySelectorAll('[data-ci][data-cf]').forEach(inp => {
     const ev=inp.tagName==='SELECT'?'change':'input';
-    inp.addEventListener(ev, () => { s.items[+inp.dataset.ci][inp.dataset.cf]=inp.value; onUpdate(s); });
+    inp.addEventListener(ev, () => { const i=+inp.dataset.ci; if(!s.items)s.items=[]; if(!s.items[i])s.items[i]={}; s.items[i][inp.dataset.cf]=inp.value; onUpdate(s); });
   });
   panel.querySelectorAll('[data-crm]').forEach(btn => {
     btn.addEventListener('click', () => { s.items.splice(+btn.dataset.crm,1); onUpdate(s,'re-editor'); });
