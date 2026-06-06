@@ -3,7 +3,7 @@
 function isMobile() { return window.innerWidth <= 640; }
 
 const M_SECTIONS = [
-  { tab: 'builder',   label: 'Page Builder', ico: '▦' },
+  { tab: 'builder',   label: 'Pages',        ico: '▦' },
   { tab: 'images',    label: 'Images',       ico: '🖼' },
   { tab: 'files',     label: 'Files',        ico: '📄' },
   { tab: 'settings',  label: 'Settings',     ico: '⚙' },
@@ -201,14 +201,16 @@ function mOpenEditor(id) {
 }
 
 function mOpenPages() {
-  const rows = (bldPages || []).map(p => `<div class="m-page-row${p.id === bldPageId ? ' on' : ''}" data-pid="${p.id}"><div style="flex:1;min-width:0;"><div class="m-page-row-t">${escHtml(p.title || 'Untitled')}</div><div class="m-page-row-s">${escHtml(p.slug || '')}</div></div><button class="btn btn-xs" data-edit="${p.id}" style="flex-shrink:0;">Rename</button></div>`).join('') || '<p style="color:var(--muted);font-size:.8rem;padding:1rem 0;">No pages yet.</p>';
+  const unsaved = p => typeof bldPageUnsaved === 'function' && bldPageUnsaved(p);
+  const rows = (bldPages || []).map(p => `<div class="m-page-row${p.id === bldPageId ? ' on' : ''}" data-pid="${p.id}"><div style="flex:1;min-width:0;"><div class="m-page-row-t">${escHtml(p.title || 'Untitled')}${unsaved(p) ? ' <span style="color:var(--accent);font-size:.7rem;">• unsaved</span>' : ''}</div><div class="m-page-row-s">${escHtml(p.slug || '')}</div></div>${unsaved(p) ? `<button class="btn btn-xs btn-danger" data-disc="${p.id}" style="flex-shrink:0;">Discard</button>` : ''}<button class="btn btn-xs" data-edit="${p.id}" style="flex-shrink:0;">Rename</button></div>`).join('') || '<p style="color:var(--muted);font-size:.8rem;padding:1rem 0;">No pages yet.</p>';
   mSheetMode = 'pages';
   mOpenSheet('Pages', rows + `<button class="btn btn-primary" style="width:100%;margin-top:.7rem" id="mNewPage">+ New page</button>`, true);
   document.querySelectorAll('#mSheetBody [data-pid]').forEach(r => r.addEventListener('click', (e) => {
-    if (e.target.closest('[data-edit]')) return;
+    if (e.target.closest('[data-edit]') || e.target.closest('[data-disc]')) return;
     bldPickPage(+r.dataset.pid); mCloseSheet(); mSyncTitle(); mUpdatePageChip(); mRenderBlockList();
   }));
   document.querySelectorAll('#mSheetBody [data-edit]').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); mEditPageForm(+b.dataset.edit); }));
+  document.querySelectorAll('#mSheetBody [data-disc]').forEach(b => b.addEventListener('click', async (e) => { e.stopPropagation(); await bldDiscardDraft(+b.dataset.disc); mOpenPages(); }));
   document.getElementById('mNewPage').addEventListener('click', mNewPageForm);
 }
 function mEditPageForm(id) {

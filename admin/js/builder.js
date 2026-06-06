@@ -480,6 +480,20 @@ function bldBgCss() {
   return bg;
 }
 
+async function bldDiscardDraft(pid) {
+  if (!await dlg.confirm('Discard unsaved changes for this page? It reverts to the last published version.', { confirm: 'Discard', danger: true })) return;
+  bldClearDraft(pid);
+  if (pid === bldPageId) {
+    const p = bldPages.find(x => x.id === pid);
+    try { bldState = { bg:__SITE__.bg,accent:__SITE__.accent,text:__SITE__.text,font:'Josefin Sans',sections:[], ...JSON.parse(p.page_json||'{}') }; }
+    catch { bldState = { bg:__SITE__.bg,accent:__SITE__.accent,text:__SITE__.text,font:'Josefin Sans',sections:[] }; }
+    bldSel = null; bldParentId = null; _lastDraftJson = JSON.stringify(bldState);
+    if (typeof bldThemeFromState === 'function') bldThemeFromState();
+    bldDrawCanvas(); bldDrawEditor(); bldSetAutosave('saved');
+  }
+  bldDrawPages();
+  toast('Draft discarded');
+}
 function bldDrawPages() {
   const list=document.getElementById('bldPageList');
   list.innerHTML=bldPages.map(p=>`
@@ -495,24 +509,7 @@ function bldDrawPages() {
     if (e.target.closest('.bld-pi-del') || e.target.closest('[data-discard]')) return;
     bldPickPage(+el.dataset.pid);
   }));
-  list.querySelectorAll('[data-discard]').forEach(badge => badge.addEventListener('click', async e => {
-    e.stopPropagation();
-    const pid = +badge.dataset.discard;
-    if (!await dlg.confirm('Discard unsaved changes for this page? It will revert to the last published version.', { confirm: 'Discard', danger: true })) return;
-    bldClearDraft(pid);
-    if (pid === bldPageId) {
-
-      const p = bldPages.find(x => x.id === pid);
-      try { bldState = { bg:__SITE__.bg,accent:__SITE__.accent,text:__SITE__.text,font:'Josefin Sans',sections:[], ...JSON.parse(p.page_json||'{}') }; }
-      catch { bldState = { bg:__SITE__.bg,accent:__SITE__.accent,text:__SITE__.text,font:'Josefin Sans',sections:[] }; }
-      bldSel = null; bldParentId = null;
-      _lastDraftJson = JSON.stringify(bldState);
-      bldThemeFromState(); bldDrawCanvas(); bldDrawEditor();
-      bldSetAutosave('saved');
-    }
-    bldDrawPages();
-    toast('Draft discarded');
-  }));
+  list.querySelectorAll('[data-discard]').forEach(badge => badge.addEventListener('click', e => { e.stopPropagation(); bldDiscardDraft(+badge.dataset.discard); }));
   list.querySelectorAll('[data-pdel]').forEach(btn => btn.addEventListener('click', async e => {
     e.stopPropagation();
     const p=bldPages.find(x=>x.id===+btn.dataset.pdel);
@@ -801,6 +798,12 @@ async function bldBoot() {
   document.getElementById('bldPreview').addEventListener('click',()=>{
     const p=bldPages.find(x=>x.id===bldPageId); if (!p) return;
     window.open(p.slug==='/'?'/':'/'+p.slug.replace(/^\//,''),'_blank');
+  });
+
+  document.getElementById('bldDiscardBtn')?.addEventListener('click',()=>{
+    if (!bldPageId) { toast('Pick a page first.', true); return; }
+    const p=bldPages.find(x=>x.id===bldPageId);
+    if (p && bldPageUnsaved(p)) bldDiscardDraft(bldPageId); else toast('No unsaved changes to discard.');
   });
 
   document.getElementById('bldPublish').addEventListener('click',async()=>{
