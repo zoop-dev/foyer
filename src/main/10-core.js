@@ -82,9 +82,9 @@
       const h = hex.replace('#','');
       return `rgba(${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)},${a})`;
     }
-    function pgE(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function pgE(s) { return foyerIconText(String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')); }
     marked.use({ breaks: true, gfm: true });
 
 
-    const md = s => marked.parse(String(s||'')).replace(/<\/a>(?=[A-Za-z0-9])/g, '</a> ');
+    const md = s => foyerIconText(marked.parse(String(s||'')).replace(/<\/a>(?=[A-Za-z0-9])/g, '</a> '));
 

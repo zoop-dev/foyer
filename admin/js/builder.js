@@ -190,7 +190,7 @@ function bldOpenIconPicker(cb) {
     if (!window._foyerEmojiIcons) {
       const out = {};
       await Promise.all(icons.map(async n => {
-        try { let t = await fetch('/assets/icons/' + n + '.svg').then(r => r.text()); t = t.replace(/#000/g, '#d9f0df'); out[n] = 'data:image/svg+xml;utf8,' + encodeURIComponent(t); } catch (_) {}
+        try { let t = await fetch('/assets/icons/' + n + '.svg').then(r => r.text()); t = t.replace(/#000/g, '#d9f0df'); out[n] = URL.createObjectURL(new Blob([t], { type: 'image/svg+xml' })); } catch (_) {}
       }));
       window._foyerEmojiIcons = out;
     }

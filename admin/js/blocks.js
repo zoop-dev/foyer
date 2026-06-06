@@ -5,9 +5,9 @@
 
 
 
-function bE(s)   { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function bE(s)   { return foyerIconText(String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')); }
 marked.use({ breaks: true, gfm: true });
-const md = s => marked.parse(String(s||''));
+const md = s => foyerIconText(marked.parse(String(s||'')));
 function bA(s)   { return String(s||'').replace(/"/g,'&quot;'); }
 function bRgb(hex, a) {
   const h=(hex||'#000000').replace('#','');
@@ -1115,13 +1115,28 @@ function bBindEditor(panel, s, onUpdate) {
     });
   });
 
-
-
   panel.querySelectorAll('.bld-iconpick').forEach(btn => {
     const inp = btn.closest('.bld-ef')?.querySelector('input[data-cf="icon"]');
-    const open = () => { if (inp && typeof bldOpenIconPicker === 'function') bldOpenIconPicker(name => { inp.value = name; inp.dispatchEvent(new Event('input', { bubbles: true })); }); };
-    btn.addEventListener('click', open);
-    if (inp) inp.addEventListener('contextmenu', e => { e.preventDefault(); open(); });
+    btn.addEventListener('click', () => { if (inp && typeof bldOpenIconPicker === 'function') bldOpenIconPicker(name => { inp.value = name; inp.dispatchEvent(new Event('input', { bubbles: true })); }); });
+  });
+
+
+
+  panel.addEventListener('contextmenu', e => {
+    const t = e.target;
+    if (!t || (t.tagName !== 'TEXTAREA' && !(t.tagName === 'INPUT' && /^(text|url|search|email|tel|)$/i.test(t.type || 'text')))) return;
+    if (typeof bldOpenIconPicker !== 'function') return;
+    e.preventDefault();
+    const isIcon = t.matches('[data-cf="icon"]');
+    bldOpenIconPicker(val => {
+      if (isIcon) { t.value = val; }
+      else {
+        const a = t.selectionStart ?? t.value.length, b = t.selectionEnd ?? t.value.length;
+        t.value = t.value.slice(0, a) + val + t.value.slice(b);
+        const p = a + val.length; try { t.setSelectionRange(p, p); } catch (_) {}
+      }
+      t.dispatchEvent(new Event('input', { bubbles: true })); t.focus();
+    });
   });
 
   panel.querySelector('#bFilePrevPick')?.addEventListener('click', () => openFilePicker(url => { s.url=url; const inp=panel.querySelector('[data-f="url"]'); if(inp){inp.value=url;} onUpdate(s); }));

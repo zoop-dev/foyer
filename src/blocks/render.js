@@ -368,6 +368,20 @@ function foyerIcon(val, size, esc) {
   return esc(val);
 }
 
+var FOYER_ICON_SET = new Set(((typeof __ICONS__ !== 'undefined' && __ICONS__) || []).map(function (s) { return String(s).toLowerCase(); }));
+
+
+
+
+function foyerIconText(s) {
+  if (s == null) return s;
+  s = String(s);
+  if (s.indexOf('@') < 0) return s;
+  return s.replace(/(^|[^\w@/])@([a-z][a-z0-9-]*)/gi, function (m, pre, n) {
+    return FOYER_ICON_SET.has(n.toLowerCase()) ? pre + foyerIcon('@' + n.toLowerCase(), '1em', function (x) { return x; }) : m;
+  });
+}
+
 function foyerHL(root) {
   if (!root || !root.querySelectorAll) return;
   const codes = root.querySelectorAll('pre code[class*="language-"]:not([data-hl])');
