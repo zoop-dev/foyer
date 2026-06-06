@@ -40,7 +40,8 @@
       const extLinks = custom_links.map(l =>
         `<a href="${escAttr(l.url || '#')}" class="nav-a" target="${l.new_tab !== false ? '_blank' : '_self'}" rel="noopener">${pgE(l.label || '')}</a>`
       );
-      const links = [...pageLinks, ...extLinks].join('');
+      const searchBtn = `<button type="button" class="nav-a nav-search" aria-label="Search" title="Search (⌘K)" style="background:none;border:none;cursor:pointer;font:inherit;color:inherit;display:inline-flex;align-items:center;gap:.4rem;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Search</button>`;
+      const links = [...pageLinks, ...extLinks, searchBtn].join('');
       const wrapStyle = vertical
         ? `display:flex;flex-direction:column;gap:1rem;align-items:${j};width:100%;`
         : `flex:1;display:flex;gap:2rem;justify-content:${j};`;
@@ -48,6 +49,7 @@
         ? `<span style="font-family:'Josefin Sans',sans-serif;font-weight:200;font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(var(--site-muted-rgb),0.75);flex-shrink:0;${vertical?'margin-bottom:.5rem;':''}">${nav_title}</span>`
         : '';
       nav.innerHTML = titleSpan + `<div style="${wrapStyle}">${links}</div>`;
+      nav.querySelector('.nav-search')?.addEventListener('click', foyerOpenSearch);
       nav.className = 'on pos-' + pos;
       const scene = document.getElementById('scene');
       scene.classList.remove('nav-pad-top','nav-pad-bottom','nav-pad-left','nav-pad-right');
@@ -283,6 +285,64 @@
       document.addEventListener('mouseover', prefetch);
       document.addEventListener('touchstart', prefetch, { passive: true });
       document.addEventListener('focusin', prefetch);
+
+      document.addEventListener('keydown', (e) => { if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); foyerOpenSearch(); } });
+    }
+
+    async function _foyerLoadFuse() {
+      if (window.Fuse) return;
+      await new Promise((res, rej) => { const s = document.createElement('script'); s.src = '/deps/fuse.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+    }
+    async function _foyerSearchIndex() {
+      if (window._foyerSearchIdx) return window._foyerSearchIdx;
+      const r = await protectedFetch('/api/search', _session);
+      window._foyerSearchIdx = Array.isArray(r) ? r : [];
+      return window._foyerSearchIdx;
+    }
+    function _foyerSnippet(txt, term) {
+      if (!txt) return '';
+      const i = txt.toLowerCase().indexOf(term.toLowerCase());
+      const start = i < 0 ? 0 : Math.max(0, i - 30);
+      let s = txt.slice(start, start + 120);
+      if (start > 0) s = '…' + s;
+      if (start + 120 < txt.length) s += '…';
+      return pgE(s);
+    }
+    function foyerOpenSearch() {
+      if (document.getElementById('foyer-search')) return;
+      const cs = getComputedStyle(document.documentElement);
+      const accent = cs.getPropertyValue('--site-accent').trim() || '#4dbd6a';
+      const bg = cs.getPropertyValue('--site-bg').trim() || '#020a03';
+      const text = cs.getPropertyValue('--site-text').trim() || '#c8e6aa';
+      const hrefOf = s => s === '/' ? '/' : (s.startsWith('/') ? s : '/' + s);
+      const ov = document.createElement('div'); ov.id = 'foyer-search';
+      ov.style.cssText = 'position:fixed;inset:0;z-index:9995;background:rgba(0,0,0,.5);backdrop-filter:blur(5px);display:flex;align-items:flex-start;justify-content:center;padding:14vh 1rem 1rem;';
+      ov.innerHTML = `<div style="width:100%;max-width:540px;background:${bg};border:1px solid ${pgRgb(accent, .25)};border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.5);font-family:'Josefin Sans',sans-serif;">
+        <input id="fsq" type="text" placeholder="Search this site…" autocomplete="off" style="width:100%;box-sizing:border-box;padding:1.05rem 1.3rem;background:transparent;border:none;border-bottom:1px solid ${pgRgb(accent, .15)};color:${text};font-family:inherit;font-weight:300;font-size:1.05rem;letter-spacing:.02em;outline:none;" />
+        <div id="fsr" style="max-height:52vh;overflow-y:auto;"></div>
+      </div>`;
+      const close = () => { ov.remove(); document.removeEventListener('keydown', onKey); };
+      const onKey = (e) => { if (e.key === 'Escape') close(); };
+      ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+      document.addEventListener('keydown', onKey);
+      document.body.appendChild(ov);
+      const q = ov.querySelector('#fsq'), res = ov.querySelector('#fsr');
+      setTimeout(() => q.focus(), 30);
+      let fuse = null, t;
+      const ensure = async () => { if (fuse) return fuse; await _foyerLoadFuse(); fuse = new window.Fuse(await _foyerSearchIndex(), { keys: [{ name: 't', weight: 2 }, { name: 'x', weight: 1 }], threshold: 0.4, ignoreLocation: true, minMatchCharLength: 2 }); return fuse; };
+      const run = async () => {
+        const term = q.value.trim();
+        if (term.length < 2) { res.innerHTML = ''; return; }
+        let f; try { f = await ensure(); } catch { res.innerHTML = `<div style="padding:1.1rem 1.3rem;color:${pgRgb(text, .5)};font-weight:200;font-size:.85rem;">Search is unavailable.</div>`; return; }
+        if (q.value.trim() !== term) return;   // a newer keystroke superseded this
+        const hits = f.search(term).slice(0, 8);
+        res.innerHTML = hits.length
+          ? hits.map(h => `<a href="${escAttr(hrefOf(h.item.s))}" data-fs style="display:block;padding:.75rem 1.3rem;border-bottom:1px solid ${pgRgb(accent, .08)};text-decoration:none;color:${text};"><div style="font-weight:300;font-size:.95rem;">${pgE(h.item.t || h.item.s)}</div><div style="font-size:.74rem;font-weight:200;color:${pgRgb(text, .5)};margin-top:.2rem;line-height:1.5;">${_foyerSnippet(h.item.x, term)}</div></a>`).join('')
+          : `<div style="padding:1.1rem 1.3rem;color:${pgRgb(text, .5)};font-weight:200;font-size:.88rem;">No results for &ldquo;${pgE(term)}&rdquo;.</div>`;
+      };
+      q.addEventListener('input', () => { clearTimeout(t); t = setTimeout(run, 120); });
+      q.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const a = res.querySelector('a[data-fs]'); if (a) a.click(); } });
+      res.addEventListener('click', (e) => { if (e.target.closest('a[data-fs]')) close(); });   // the router handles the navigation
     }
 
     async function loadAndShow(session) {

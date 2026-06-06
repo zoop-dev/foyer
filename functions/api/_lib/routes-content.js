@@ -42,6 +42,29 @@ export async function handleContent(ctx) {
     return respond(pages);
   }
 
+
+  if (route === 'search' && method === 'GET') {
+    await env.DB.prepare(CREATE_PAGES).run();
+    const vAuth = await visitorAuthed();
+    if (vAuth === 'banned') return respond({ error: 'account_banned' }, 403);
+    if (!authed() && vAuth !== 'ok' && !(await sitePublic())) return respond({ error: 'unauthorized' }, 401);
+    const { results } = await env.DB.prepare('SELECT title, slug, page_json FROM pages WHERE is_published = 1').all();
+    const SKIP = new Set(['id', 'type', 'url', 'href', 'img', 'photo', 'src', 'bg_img', 'bg_image', 'image', 'avatar', 'cover_image', 'data', 'anchor', 'access_key', 'target', 'buy_url', 'btn_url', 'btn2_url', 'button_url']);
+    const collect = (o, out, d) => {
+      if (d > 7 || o == null) return;
+      if (typeof o === 'string') { if (o.length > 1 && !/^(https?:|\/|#|data:|mailto:|tel:)/i.test(o) && !/^#?[0-9a-f]{3,8}$/i.test(o)) out.push(o); return; }
+      if (Array.isArray(o)) { for (const v of o) collect(v, out, d + 1); return; }
+      if (typeof o === 'object') { for (const k in o) if (!SKIP.has(k)) collect(o[k], out, d + 1); }
+    };
+    const idx = [];
+    for (const p of (results || [])) {
+      let x = '';
+      try { const st = JSON.parse((await decompressJson(p.page_json)) || '{}'); const out = []; collect(st.sections || [], out, 0); x = out.join(' '); } catch {}
+      idx.push({ t: p.title || '', s: p.slug, x: x.slice(0, 3000) });
+    }
+    return respond(idx);
+  }
+
   if (route === 'pages' && method === 'POST') {
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
     await env.DB.prepare(CREATE_PAGES).run();
