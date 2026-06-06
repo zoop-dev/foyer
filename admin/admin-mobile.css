@@ -48,7 +48,11 @@
   
   .section { display: none; }
   
-  .section.active { display: flex !important; position: fixed !important; top: calc(54px + env(safe-area-inset-top, 0)); left: 0; right: 0; bottom: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; flex-direction: column; }
+  
+  .section.active { display: flex !important; position: fixed !important; top: calc(54px + env(safe-area-inset-top, 0)); left: 0; right: 0;
+    height: calc(100vh - 54px - env(safe-area-inset-top, 0));
+    height: calc(100dvh - 54px - env(safe-area-inset-top, 0));
+    overflow-y: auto; -webkit-overflow-scrolling: touch; flex-direction: column; }
   .settings-wrap, .an-wrap, .visitors-wrap, .img-wrap { padding: 1rem .9rem 3rem; }
 
   
@@ -141,7 +145,9 @@
   .m-block { max-width: 100%; box-sizing: border-box; }
   .m-block-bar { flex-wrap: nowrap; }
   .m-block-prev { position: relative; max-height: 320px; overflow: hidden; cursor: pointer; }
-  .m-block-prev > * { max-width: 100% !important; }             
+  .m-block-prev > *, .m-block-prev * { max-width: 100% !important; }   
+  .m-block-prev { word-break: break-word; }
+  .bld-add-fab { display: none !important; }                    
   .m-block-prev * { pointer-events: none !important; }          
   .m-block-prev::after { content: ''; position: absolute; inset: 0; }  
   .m-block-prev.tall::before { content: '⋯ tap to edit'; position: absolute; bottom: 0; left: 0; right: 0; padding: .5rem; text-align: center; font-size: .58rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); background: linear-gradient(transparent, var(--surface) 70%); z-index: 1; }
