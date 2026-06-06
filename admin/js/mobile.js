@@ -9,6 +9,7 @@ const M_SECTIONS = [
   { tab: 'settings',  label: 'Settings',     ico: '⚙' },
   { tab: 'tutorials', label: 'Tutorials',    ico: '🎓' },
   { tab: 'reviews',   label: 'Reviews',      ico: '★' },
+  { tab: 'collections', label: 'Collections', ico: '🗂' },
   { tab: 'analytics', label: 'Analytics',    ico: '📊' },
 ];
 let mCurTab = 'builder';

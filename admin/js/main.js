@@ -10,6 +10,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'files')    fetchAndRenderFiles();
     if (btn.dataset.tab === 'tutorials') fetchTutorials();
     if (btn.dataset.tab === 'reviews') fetchReviews();
+    if (btn.dataset.tab === 'collections' && typeof fetchColls === 'function') fetchColls();
     if (btn.dataset.tab === 'settings') { fetchBlocklist(); fetchAllowlist(); loadNavEditor(); }
   });
 });

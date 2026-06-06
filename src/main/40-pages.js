@@ -208,6 +208,67 @@
       }
     }
 
+    let _foyerColls = null;
+    async function _foyerCollections(session) {
+      if (_foyerColls) return _foyerColls;
+      const r = await protectedFetch('/api/collections', session);
+      _foyerColls = Array.isArray(r) ? r : [];
+      return _foyerColls;
+    }
+    function _foyerUserBadge(session) {
+      if (!session) return;
+      document.getElementById('userAvatar').src = session.picture || '';
+      document.getElementById('userAvatar').style.display = session.picture ? '' : 'none';
+      document.getElementById('userNameText').textContent = session.name || session.email || '';
+      document.getElementById('userBadge').style.display = 'flex';
+    }
+    async function renderCollIndex(coll, session) {
+      dismissLoading();
+      const _pgbg = document.getElementById('pg-bg'); if (_pgbg) _pgbg.style.display = 'none';
+      const bg = getComputedStyle(document.documentElement).getPropertyValue('--site-bg').trim() || '#020a03';
+      const accent = getComputedStyle(document.documentElement).getPropertyValue('--site-accent').trim() || '#4dbd6a';
+      const text = getComputedStyle(document.documentElement).getPropertyValue('--site-text').trim() || '#c8e6aa';
+      const scene = document.getElementById('scene');
+      scene.style.cssText = 'position:fixed;inset:0;z-index:10;display:block;overflow-y:auto;padding:0;';
+      scene.style.background = bg; loadNav(session);
+      let items = [];
+      try { const r = await fetch(`/api/collections/${encodeURIComponent(coll.slug)}/items`, { headers: sessionHeaders(session) }); items = await r.json(); } catch (e) {}
+      if (!Array.isArray(items)) items = [];
+      const base = '/' + coll.slug;
+      const cards = items.map(t => `<a href="${escAttr(base + '/' + t.slug)}" style="display:block;text-decoration:none;border:1px solid ${pgRgb(accent, .12)};background:${pgRgb(accent, .03)};border-radius:10px;overflow:hidden;transition:border-color .2s,transform .2s;">
+        ${t.cover_image ? `<img src="${escAttr(t.cover_image)}" alt="" style="width:100%;height:150px;object-fit:cover;display:block;" />` : `<div style="width:100%;height:150px;background:${pgRgb(accent, .06)};"></div>`}
+        <div style="padding:.9rem 1rem;"><div style="font-weight:300;font-size:.95rem;letter-spacing:.03em;color:${pgRgb(text, .92)};">${pgE(t.title || t.slug)}</div>${t.description ? `<div style="font-size:.72rem;font-weight:200;line-height:1.65;color:${pgRgb(text, .5)};margin-top:.35rem;">${pgE(t.description)}</div>` : ''}</div></a>`).join('');
+      scene.innerHTML = `<div style="max-width:920px;margin:0 auto;padding:4rem 1.5rem 6rem;font-family:'Josefin Sans',sans-serif;color:${text};">
+        <h1 style="font-weight:200;font-size:clamp(1.8rem,5vw,2.6rem);letter-spacing:.02em;margin-bottom:.4rem;">${pgE(coll.name)}</h1>
+        <p style="font-weight:200;font-size:.8rem;color:${pgRgb(text, .45)};margin-bottom:2rem;">${items.length} ${items.length === 1 ? 'entry' : 'entries'}</p>
+        ${items.length ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1.4rem;">${cards}</div>` : `<p style="font-weight:200;font-size:.85rem;color:${pgRgb(text, .4)};">Nothing here yet — check back soon.</p>`}
+      </div>`;
+      scene.querySelectorAll('a, button').forEach(hookHover);
+      _foyerUserBadge(session);
+    }
+    function renderCollItem(coll, item, session) {
+      dismissLoading();
+      const _pgbg = document.getElementById('pg-bg'); if (_pgbg) _pgbg.style.display = 'none';
+      const bg = getComputedStyle(document.documentElement).getPropertyValue('--site-bg').trim() || '#020a03';
+      const accent = getComputedStyle(document.documentElement).getPropertyValue('--site-accent').trim() || '#4dbd6a';
+      const text = getComputedStyle(document.documentElement).getPropertyValue('--site-text').trim() || '#c8e6aa';
+      const scene = document.getElementById('scene');
+      scene.style.cssText = 'position:fixed;inset:0;z-index:10;display:block;overflow-y:auto;padding:0;';
+      scene.style.background = bg; loadNav(session);
+      const cover = item.cover_image
+        ? `<div style="margin:1.6rem 0 2.4rem;border:1px solid ${pgRgb(accent, .12)};border-radius:12px;overflow:hidden;"><img src="${escAttr(item.cover_image)}" alt="" style="width:100%;max-height:380px;object-fit:cover;display:block;" /></div>`
+        : `<div style="height:1px;background:${pgRgb(accent, .12)};margin:1.8rem 0 2.4rem;"></div>`;
+      scene.innerHTML = `<article style="max-width:720px;margin:0 auto;padding:4rem 1.5rem 6rem;font-family:'Josefin Sans',sans-serif;color:${text};">
+        <a href="/${escAttr(coll.slug)}/all" style="font-size:.6rem;font-weight:200;letter-spacing:.2em;text-transform:uppercase;color:${pgRgb(accent, .6)};text-decoration:none;">← ${pgE(coll.name)}</a>
+        <h1 style="font-weight:300;font-size:clamp(1.9rem,5vw,2.9rem);letter-spacing:-.01em;line-height:1.1;margin:1.3rem 0 .6rem;">${pgE(item.title || '')}</h1>
+        ${item.description ? `<p style="font-weight:200;font-style:italic;font-size:1.05rem;color:${pgRgb(text, .55)};margin:0 0 .4rem;">${pgE(item.description)}</p>` : ''}
+        ${cover}
+        <div class="md-content" style="font-weight:200;font-size:1rem;line-height:1.95;color:${pgRgb(text, .85)};">${md(item.content || '')}</div>
+      </article>`;
+      scene.querySelectorAll('a, button').forEach(hookHover);
+      foyerHL(scene); _foyerUserBadge(session);
+    }
+
     function renderTutorialDetail(tut, session) {
       dismissLoading();
       const bg = getComputedStyle(document.documentElement).getPropertyValue('--site-bg').trim() || '#020a03';
@@ -422,6 +483,18 @@
           setMeta(rev.title || 'Review', rev.description || '', slug);
           renderReviewDetail(rev, session);
           return;
+        }
+      }
+
+      {
+        const parts = slug.replace(/^\//, '').split('/');
+        const coll = (await _foyerCollections(session)).find(c => c.slug === parts[0]);
+        if (coll) {
+          const sub = parts.slice(1).join('/');
+          if (!sub || sub === 'all') { setMeta(coll.name, '', slug); renderCollIndex(coll, session); return; }
+          const item = await protectedFetch(`/api/collections/${encodeURIComponent(coll.slug)}/items/by-slug/${encodeURIComponent(sub)}`, session);
+          if (item && item.id) { setMeta(item.title || coll.name, item.description || '', slug, item.cover_image); renderCollItem(coll, item, session); return; }
+
         }
       }
 

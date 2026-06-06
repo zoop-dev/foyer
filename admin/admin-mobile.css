@@ -106,6 +106,13 @@
   .m-edit-back { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--accent); font-family: 'Josefin Sans', sans-serif; font-size: .82rem; font-weight: 300; letter-spacing: .04em; padding: 0 0 1rem; cursor: pointer; }
 
   
+  #sec-collections.active { overflow-y: auto; }
+  #sec-collections > div:last-child { flex-direction: column !important; }
+  #collItemList { width: 100% !important; flex-shrink: 0; border-right: none !important; border-bottom: 1px solid var(--border); max-height: 38vh; }
+  #collItemEditor { padding: 1rem !important; }
+  #sec-collections input, #sec-collections textarea, #sec-collections select { font-size: 16px; }
+
+  
   .bld-loading { inset: 0; }
   .bld-topbar { display: none !important; }
   .bld-workspace { flex-direction: column; flex: 1; min-height: 0; }
