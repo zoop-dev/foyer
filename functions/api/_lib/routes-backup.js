@@ -6,7 +6,7 @@
 
 
 
-const _b64 = (buf) => { const b = new Uint8Array(buf); let s = ''; for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s); };
+const _b64 = (buf) => { const b = new Uint8Array(buf); let s = ''; const CH = 0x8000; for (let i = 0; i < b.length; i += CH) s += String.fromCharCode.apply(null, b.subarray(i, i + CH)); return btoa(s); };
 const _unb64 = (str) => { const bin = atob(str); const b = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i); return b; };
 async function _aesKey(secret) {
   const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(secret));
