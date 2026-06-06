@@ -91,14 +91,22 @@ export async function handleContent(ctx) {
     const current = await env.DB.prepare('SELECT * FROM pages WHERE id=?').bind(id).first();
     if (!current) return respond({ error: 'not found' }, 404);
     const newPageJson = body.page_json != null ? await compressJson(body.page_json) : current.page_json;
-    await env.DB.prepare(
-      'UPDATE pages SET title=?, page_json=?, is_published=? WHERE id=?'
-    ).bind(
-      body.title ?? current.title,
-      newPageJson,
-      body.is_published != null ? (body.is_published ? 1 : 0) : current.is_published,
-      id
-    ).run();
+    let newSlug = current.slug;
+    if (body.slug != null) {
+      let s = String(body.slug).trim();
+      if (s) { newSlug = s.startsWith('/') ? s : '/' + s; }
+    }
+    try {
+      await env.DB.prepare(
+        'UPDATE pages SET title=?, slug=?, page_json=?, is_published=? WHERE id=?'
+      ).bind(
+        body.title ?? current.title,
+        newSlug,
+        newPageJson,
+        body.is_published != null ? (body.is_published ? 1 : 0) : current.is_published,
+        id
+      ).run();
+    } catch (e) { return respond({ error: 'slug already exists' }, 409); }
     return respond({ ok: true });
   }
 

@@ -201,13 +201,27 @@ function mOpenEditor(id) {
 }
 
 function mOpenPages() {
-  const rows = (bldPages || []).map(p => `<div class="m-page-row${p.id === bldPageId ? ' on' : ''}" data-pid="${p.id}"><div><div class="m-page-row-t">${escHtml(p.title || 'Untitled')}</div><div class="m-page-row-s">${escHtml(p.slug || '')}</div></div>${p.id === bldPageId ? '<span style="color:var(--accent)">●</span>' : ''}</div>`).join('') || '<p style="color:var(--muted);font-size:.8rem;padding:1rem 0;">No pages yet.</p>';
+  const rows = (bldPages || []).map(p => `<div class="m-page-row${p.id === bldPageId ? ' on' : ''}" data-pid="${p.id}"><div style="flex:1;min-width:0;"><div class="m-page-row-t">${escHtml(p.title || 'Untitled')}</div><div class="m-page-row-s">${escHtml(p.slug || '')}</div></div><button class="btn btn-xs" data-edit="${p.id}" style="flex-shrink:0;">Rename</button></div>`).join('') || '<p style="color:var(--muted);font-size:.8rem;padding:1rem 0;">No pages yet.</p>';
   mSheetMode = 'pages';
   mOpenSheet('Pages', rows + `<button class="btn btn-primary" style="width:100%;margin-top:.7rem" id="mNewPage">+ New page</button>`, true);
-  document.querySelectorAll('#mSheetBody [data-pid]').forEach(r => r.addEventListener('click', () => {
+  document.querySelectorAll('#mSheetBody [data-pid]').forEach(r => r.addEventListener('click', (e) => {
+    if (e.target.closest('[data-edit]')) return;
     bldPickPage(+r.dataset.pid); mCloseSheet(); mSyncTitle(); mUpdatePageChip(); mRenderBlockList();
   }));
+  document.querySelectorAll('#mSheetBody [data-edit]').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); mEditPageForm(+b.dataset.edit); }));
   document.getElementById('mNewPage').addEventListener('click', mNewPageForm);
+}
+function mEditPageForm(id) {
+  const p = (bldPages || []).find(x => x.id === id); if (!p) return;
+  mSheetMode = 'editpage';
+  mOpenSheet('Rename page', `
+    <div class="bld-ef"><label>Page name</label><input type="text" id="mEPName" value="${escHtml(p.title || '')}" /></div>
+    <div class="bld-ef"><label>URL slug</label><input type="text" id="mEPSlug" value="${escHtml(p.slug || '')}" placeholder="/slug" /></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:.4rem" id="mEPSave">Save</button>`, true);
+  document.getElementById('mEPSave').addEventListener('click', async () => {
+    const ok = await bldSavePageMeta(id, document.getElementById('mEPName').value, document.getElementById('mEPSlug').value);
+    if (ok) mCloseSheet();
+  });
 }
 function mNewPageForm() {
   mSheetMode = 'newpage';
