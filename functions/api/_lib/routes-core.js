@@ -25,6 +25,27 @@ export async function handleCore(ctx) {
 
 
 
+  if (route === 'sb' && method === 'GET') {
+    const host = new URL(request.url).hostname;
+    let row = null;
+    try {
+      const base = (env.SUPABASE_URL || AI_SB_URL).replace(/\/$/, '');
+      const key = env.SUPABASE_ANON_KEY || AI_SB_ANON;
+      const r = await fetch(`${base}/rest/v1/foyer_sites?domain=eq.${encodeURIComponent(host)}&select=offline,licensed,hide_branding,ai_enabled`, {
+        headers: { apikey: key, authorization: `Bearer ${key}` }, cf: { cacheTtl: 30, cacheEverything: true },
+      });
+      if (r.ok) row = (await r.json())[0] || null;
+    } catch {}
+    return respond({
+      offline:       !!(row && row.offline === true),
+      licensed:      !(row && row.licensed === false),
+      hide_branding: !!(row && row.hide_branding === true),
+      ai_enabled:    !(row && row.ai_enabled === false),
+    });
+  }
+
+
+
 
 
   if (route === 'ai/page' && method === 'GET') {
