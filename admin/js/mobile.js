@@ -114,6 +114,7 @@ function mRenderBlockList() {
   if (!list) { list = document.createElement('div'); list.id = 'mBldList'; list.className = 'm-blist'; col.appendChild(list); }
   const secs = (typeof bldState !== 'undefined' && bldState.sections) || [];
   if (!bldPageId) { list.innerHTML = `<div class="m-blist-empty">Pick or create a page to start.<br>Tap the page name above.</div>`; return; }
+  if (bldState.kind === 'text' && typeof bldTextEditorHtml === 'function') { list.innerHTML = bldTextEditorHtml(); bldWireTextEditor(list); return; }
   if (!secs.length) { list.innerHTML = `<div class="m-blist-empty">No sections yet.<br>Tap <b>＋ Section</b> to start building.</div>`; return; }
 
   const grouped = (typeof groupRows === 'function') ? groupRows(secs) : secs.map(s => [s]);

@@ -175,6 +175,39 @@
       }
     }
 
+
+    function renderTextPage(state, session, pageTitle) {
+      dismissLoading();
+      const _pgbg = document.getElementById('pg-bg'); if (_pgbg) _pgbg.style.display = 'none';
+      const bg = getComputedStyle(document.documentElement).getPropertyValue('--site-bg').trim() || '#020a03';
+      const accent = getComputedStyle(document.documentElement).getPropertyValue('--site-accent').trim() || '#4dbd6a';
+      const text = getComputedStyle(document.documentElement).getPropertyValue('--site-text').trim() || '#c8e6aa';
+      const font = state.font || 'Josefin Sans';
+      const scene = document.getElementById('scene');
+      scene.style.cssText = 'position:fixed;inset:0;z-index:10;display:block;overflow-y:auto;padding:0;';
+      scene.style.background = bg;
+      loadNav(session);
+      const title = state.page_title || pageTitle || '';
+      const cover = state.cover
+        ? `<div style="margin:1.8rem 0 2.4rem;border:1px solid ${pgRgb(accent, .12)};border-radius:12px;overflow:hidden;"><img src="${escAttr(state.cover)}" alt="" style="width:100%;max-height:380px;object-fit:cover;display:block;" /></div>`
+        : `<div style="height:1px;background:${pgRgb(accent, .12)};margin:1.8rem 0 2.4rem;"></div>`;
+      scene.innerHTML = `
+        <article style="max-width:720px;margin:0 auto;padding:4rem 1.5rem 6rem;font-family:'${font}',sans-serif;color:${text};">
+          <h1 style="font-weight:300;font-size:clamp(1.9rem,5vw,3rem);letter-spacing:-.01em;line-height:1.1;margin:0 0 .6rem;">${pgE(title)}</h1>
+          ${state.desc ? `<p style="font-weight:200;font-style:italic;font-size:1.05rem;color:${pgRgb(text, .55)};letter-spacing:.02em;margin:0 0 .4rem;">${pgE(state.desc)}</p>` : ''}
+          ${cover}
+          <div class="md-content" style="font-weight:200;font-size:1rem;line-height:1.95;color:${pgRgb(text, .85)};">${md(state.body || '')}</div>
+        </article>`;
+      scene.querySelectorAll('a, button').forEach(hookHover);
+      foyerHL(scene);
+      if (session) {
+        document.getElementById('userAvatar').src = session.picture || '';
+        document.getElementById('userAvatar').style.display = session.picture ? '' : 'none';
+        document.getElementById('userNameText').textContent = session.name || session.email || '';
+        document.getElementById('userBadge').style.display = 'flex';
+      }
+    }
+
     function renderTutorialDetail(tut, session) {
       dismissLoading();
       const bg = getComputedStyle(document.documentElement).getPropertyValue('--site-bg').trim() || '#020a03';
@@ -397,6 +430,11 @@
       if (page?.page_json) {
         try {
           const state = JSON.parse(page.page_json);
+          if (state.kind === 'text') {
+            setMeta(state.page_title || page.title || __SITE__.name, state.page_subtitle || state.desc || '', slug, state.page_image || state.cover);
+            renderTextPage(state, session, page.title);
+            return;
+          }
           setMeta(state.page_title || page.title || __SITE__.name, state.page_subtitle || '', slug, state.page_image);
           renderCustomPage(state, session);
           return;

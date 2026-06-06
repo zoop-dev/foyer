@@ -115,6 +115,7 @@
   #mBldList { width: 100%; }
   .bld-browser { display: none; }       
   .bld-add-sec { display: none; }        
+  .bld-text-edit input, .bld-text-edit textarea { font-size: 16px; }   
 
   .m-bldbar {
     display: flex; align-items: center; gap: .5rem; position: sticky; top: 0; z-index: 20;

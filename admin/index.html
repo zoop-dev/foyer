@@ -496,6 +496,10 @@
           <input type="text" id="bldNPTitle" placeholder="Page title" />
           <input type="text" id="bldNPSlug" placeholder="/slug" />
           <p class="bld-npf-hint">Slug = URL path e.g. /about</p>
+          <select id="bldNPType" style="width:100%;background:var(--panel);border:1px solid var(--border);color:var(--white);font-size:.78rem;padding:.5rem .55rem;outline:none;border-radius:6px;margin-bottom:.5rem;">
+            <option value="blocks">Type: Blocks (visual builder)</option>
+            <option value="text">Type: Text page (article / blog)</option>
+          </select>
           <div style="display:flex;gap:.35rem">
             <button class="btn btn-primary btn-xs" style="flex:1" id="bldNPCreate">Create</button>
             <button class="btn btn-xs" id="bldNPCancel">Cancel</button>

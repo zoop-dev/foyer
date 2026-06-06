@@ -111,6 +111,7 @@ function bldBuildPicker(){
 }
 function bldOpenPicker(){
   if(!bldPageId){ toast('Select or create a page first.', true); return; }
+  if(bldState.kind==='text'){ toast('Text pages have a fixed format — edit the article instead.'); return; }
   bldBuildPicker();
   bldPickerCat='all'; bldPickerQ='';
   const s=document.getElementById('bldPickerSearch'); if(s) s.value='';
@@ -275,6 +276,7 @@ async function bldPolishBlock(id){
 const _foyerMark='<svg viewBox="0 0 44 50" width="15" height="17" fill="none" stroke="var(--green)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg>';
 function bldAssistant(){
   if(!bldPageId){ toast('Pick or create a page first.', true); return; }
+  if(bldState.kind==='text'){ toast('The assistant builds block pages — not text pages.'); return; }
   if(document.getElementById('bldAiOv')) return;
   const ov=document.createElement('div'); ov.id='bldAiOv'; ov.className='bld-ai-ov';
   ov.innerHTML=`<div class="bld-ai-box bld-ai-chat">
@@ -566,10 +568,25 @@ function bSecWrap(s, inner) {
   return (ws||badge) ? `<div style="position:relative;${ws}${s.hide?'opacity:.5;':''}">${badge}${inner}</div>` : inner;
 }
 
+function bldTextEditorHtml() {
+  return `<div class="bld-text-edit" style="max-width:720px;margin:0 auto;padding:1.2rem;display:flex;flex-direction:column;gap:1rem;">
+    <p style="font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:200;margin:0;">Text page · fixed article layout</p>
+    <div class="bld-ef"><label>Description <span style="opacity:.5">(shown under the title)</span></label><input type="text" id="txtDesc" value="${bA(bldState.desc||'')}" /></div>
+    <div class="bld-ef"><label>Cover image <span style="opacity:.5">(optional)</span></label><div style="display:flex;gap:.4rem;"><input type="text" id="txtCover" value="${bA(bldState.cover||'')}" style="flex:1;" placeholder="/api/images/… or URL" /><button class="btn btn-sm" id="txtCoverPick" type="button">Pick</button></div></div>
+    <div class="bld-ef"><label>Body <span style="opacity:.45">(Markdown — headings, **bold**, links, lists, \`code\`)</span></label><textarea id="txtBody" rows="18" style="font-family:ui-monospace,monospace;line-height:1.6;">${bE(bldState.body||'')}</textarea></div>
+  </div>`;
+}
+function bldWireTextEditor(root) {
+  root.querySelector('#txtDesc')?.addEventListener('input',e=>{bldState.desc=e.target.value;bldSaveDraft();});
+  root.querySelector('#txtCover')?.addEventListener('input',e=>{bldState.cover=e.target.value;bldSaveDraft();});
+  root.querySelector('#txtCoverPick')?.addEventListener('click',()=>openImgPicker(url=>{bldState.cover=url;const i=root.querySelector('#txtCover');if(i)i.value=url;bldSaveDraft();}));
+  root.querySelector('#txtBody')?.addEventListener('input',e=>{bldState.body=e.target.value;bldSaveDraft();});
+}
 function bldDrawCanvas() {
   const el=document.getElementById('bldCanvas'); if (!el) return;
   bldSaveDraft();   // persist on every canvas change
   el.style.background=bldBgCss();
+  if (bldState.kind==='text') { el.innerHTML=bldTextEditorHtml(); bldWireTextEditor(el); return; }
   if (!bldState.sections||!bldState.sections.length) {
     el.innerHTML=`<div class="bld-canvas-empty" style="color:${bRgb(bldState.accent||__SITE__.accent,.18)}">Add a section below to build this page</div>`;
     return;
@@ -747,7 +764,10 @@ async function bldBoot() {
     const rawSlug=document.getElementById('bldNPSlug').value.trim();
     if (!title||!rawSlug) { toast('Title and slug are required.', true); return; }
     const slug=rawSlug.startsWith('/')?rawSlug:'/'+rawSlug;
-    const initJson=JSON.stringify({bg:__SITE__.bg,accent:__SITE__.accent,text:__SITE__.text,font:'Josefin Sans',sections:[]});
+    const isText=document.getElementById('bldNPType')?.value==='text';
+    const initJson=JSON.stringify(isText
+      ? {kind:'text',font:'Josefin Sans',desc:'',cover:'',body:''}
+      : {bg:__SITE__.bg,accent:__SITE__.accent,text:__SITE__.text,font:'Josefin Sans',sections:[]});
     const res=await fetch('/api/pages',{method:'POST',headers:{...authHeaders(),'Content-Type':'application/json'},body:JSON.stringify({title,slug,page_json:initJson})});
     if (!res.ok) { const d=await res.json(); toast(d.error||'Error creating page.', true); return; }
     const data=await res.json();
