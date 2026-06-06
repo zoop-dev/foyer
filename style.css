@@ -276,6 +276,13 @@
         flex-direction: row; align-items: center; gap: 2rem; padding: 0 1.8rem; overflow: visible;
       }
       .scene.nav-pad-left, .scene.nav-pad-right { padding-left: 0 !important; padding-right: 0 !important; padding-top: 44px !important; }
+      
+      #site-nav { gap: .8rem; padding: 0 .9rem; }
+      #site-nav > div { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; gap: 1.25rem !important; flex-wrap: nowrap; }
+      #site-nav > div::-webkit-scrollbar { display: none; }
+      .nav-search { padding: .4rem .5rem; flex-shrink: 0; }
+      .nav-search span { display: none; }
+      #site-nav .nav-a { flex-shrink: 0; }   
     }
     .nav-a {
       font-family: 'Josefin Sans', sans-serif; font-weight: 200; font-size: .58rem;
