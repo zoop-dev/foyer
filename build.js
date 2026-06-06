@@ -39,7 +39,7 @@ async function stripComments() {
     } else if (d.name.endsWith(".css")) {
       const s = await readFile(fp, "utf8");
       await writeFile(fp, s.replace(/\/\*[\s\S]*?\*\//g, ""));
-    } else if (d.name.endsWith(".js") && fp.includes(`${path.sep}functions${path.sep}`)) {
+    } else if (d.name.endsWith(".js") && (fp.includes(`${path.sep}functions${path.sep}`) || d.name === "sw.js")) {
       await writeFile(fp, await stripJs(await readFile(fp, "utf8")));
     }
   }));
