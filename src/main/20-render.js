@@ -467,24 +467,35 @@
 
 
 
-    function startTitleScramble(strings, hold) {
+    function startTitleScramble(strings, hold, restTitle) {
       if (window._titleScrambling || !strings.length) return; window._titleScrambling = true;
       hold = hold > 0 ? hold : 2600;   // ms to hold each string before scrambling to the next
       const chars = '!<>-_\\/[]{}—=+*^?#';
-      let idx = 0;
+      let idx = 0, gen = 0, hidden = false;
       const to = (target, after) => {
+        const my = ++gen;   // bump generation so an in-flight scramble cancels itself
         const len = Math.max((document.title || '').length, target.length), q = [];
         for (let k = 0; k < len; k++) { const start = Math.floor(Math.random() * 8); q.push({ ch: target[k] || '', start, end: start + 6 + Math.floor(Math.random() * 10), r: '' }); }
         let frame = 0;
         const tick = () => {
+          if (my !== gen) return;   // superseded (tab hidden, or a newer scramble started)
           let out = '', done = 0;
           for (const x of q) { if (frame >= x.end) { done++; out += x.ch; } else if (frame >= x.start) { if (!x.r || Math.random() < 0.3) x.r = chars[Math.floor(Math.random() * chars.length)]; out += x.r; } else out += (x.ch === ' ' ? ' ' : ''); }
           document.title = out || target;
-          if (done < q.length) { frame++; setTimeout(tick, 45); } else { document.title = target; setTimeout(after, hold); }
+          if (done < q.length) { frame++; setTimeout(tick, 45); } else { document.title = target; if (after) setTimeout(() => { if (my === gen) after(); }, hold); }
         };
         tick();
       };
-      const loop = () => to(strings[idx % strings.length], () => { idx++; loop(); });
+      const loop = () => { if (hidden) return; to(strings[idx % strings.length], () => { idx++; loop(); }); };
+
+
+
+      if (restTitle) {
+        document.addEventListener('visibilitychange', () => {
+          if (document.hidden) { hidden = true; gen++; document.title = restTitle; }
+          else if (hidden) { hidden = false; loop(); }
+        });
+      }
       loop();
     }
 
@@ -499,7 +510,8 @@
           let strings = String(s.scramble_strings || '').split('\n').map(x => x.trim()).filter(Boolean);
           if (!window.__FOYER_NOBRAND) strings.push('built by foyer');
           const secs = parseFloat(s.scramble_interval);
-          startTitleScramble(strings, (secs > 0 ? secs : 2.6) * 1000);
+          const restTitle = (__SITE__ && __SITE__.name) || strings[0] || '';
+          startTitleScramble(strings, (secs > 0 ? secs : 2.6) * 1000, restTitle);
         }
       };
       fetch('/api/settings').then(r => r.json()).then(apply).catch(() => apply(null));
