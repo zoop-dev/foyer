@@ -511,6 +511,7 @@ function renderImgTabGallery() {
     btn.addEventListener('click', async () => {
       if (!await dlg.confirm('Delete this image?', { danger: true, confirm: 'Delete' })) return;
       await fetch(`/api/images/${btn.dataset.del}`, { method: 'DELETE', headers: authHeaders() });
+      bustImgCache(btn.dataset.del);
       _imgList = _imgList.filter(i => i.id != btn.dataset.del);
       renderImgTabGallery();
     });
@@ -624,6 +625,11 @@ async function openCamera() {
 }
 document.getElementById('imgCamBtn')?.addEventListener('click', openCamera);
 
+
+
+function bustImgCache(id) {
+  try { if (window.caches) caches.open('foyer-img-v1').then(c => c.delete('/api/images/' + id)).catch(() => {}); } catch (e) {}
+}
 async function recropImage(id) {
   let resp = null;
   try { resp = await fetch(`/api/images/${id}?t=${Date.now()}`, { cache: 'reload' }); } catch {}
@@ -639,6 +645,7 @@ async function recropImage(id) {
     body: JSON.stringify({ data, mime, size }),
   });
   if (!r.ok) { toast('Crop failed to save.', true); return; }
+  bustImgCache(id);
   toast('Image updated ✓');
   const thumb = document.querySelector(`.img-card[data-img-id="${id}"] img`);
   if (thumb) thumb.src = `/api/images/${id}?t=${Date.now()}`;   // bust the cached thumbnail

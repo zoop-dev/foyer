@@ -471,7 +471,7 @@
       if (window._titleScrambling || !strings.length) return; window._titleScrambling = true;
       hold = hold > 0 ? hold : 2600;   // ms to hold each string before scrambling to the next
       const chars = '!<>-_\\/[]{}—=+*^?#';
-      let idx = 0, gen = 0, hidden = false;
+      let last = -1, gen = 0, hidden = false;
       const to = (target, after) => {
         const my = ++gen;   // bump generation so an in-flight scramble cancels itself
         const len = Math.max((document.title || '').length, target.length), q = [];
@@ -486,7 +486,13 @@
         };
         tick();
       };
-      const loop = () => { if (hidden) return; to(strings[idx % strings.length], () => { idx++; loop(); }); };
+      const loop = () => {
+        if (hidden) return;
+        let i = Math.floor(Math.random() * strings.length);
+        if (strings.length > 1 && i === last) i = (i + 1) % strings.length;   // no immediate repeat
+        last = i;
+        to(strings[i], loop);
+      };
 
 
 

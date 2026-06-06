@@ -145,6 +145,9 @@
 
       try { foyerControlPlane(); } catch {}
 
+
+      if ('serviceWorker' in navigator) { try { navigator.serviceWorker.register('/sw.js').catch(() => {}); } catch {} }
+
       const [cfg, settings] = await Promise.all([
         fetch('/api/config').then(r => r.json()).catch(() => ({})),
         fetch('/api/settings').then(r => r.json()).catch(() => ({})),
