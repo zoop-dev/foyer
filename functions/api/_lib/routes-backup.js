@@ -24,6 +24,24 @@ async function decryptBundle(envlp, secret) {
   return JSON.parse(new TextDecoder().decode(pt));
 }
 
+
+
+
+const SB_URL = 'https://tvtfoghrdqwssdwvebuo.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2dGZvZ2hyZHF3c3Nkd3ZlYnVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMzk2ODksImV4cCI6MjA5NTgxNTY4OX0.n_CRdzQQKYNGDHYmoVxyKafFJCfezKKlSiZddx8MXH4';
+let _bkKeyCache = null, _bkKeyAt = 0;
+async function backupSecret(env) {
+  if (env.BACKUP_KEY) return env.BACKUP_KEY;
+  if (_bkKeyCache && Date.now() - _bkKeyAt < 300000) return _bkKeyCache;
+  const base = (env.SUPABASE_URL || SB_URL).replace(/\/$/, '');
+  const key = env.SUPABASE_ANON_KEY || SB_ANON;
+  try {
+    const r = await fetch(`${base}/rest/v1/foyer_meta?key=eq.backup_key&select=value`, { headers: { apikey: key, Authorization: `Bearer ${key}` }, cf: { cacheTtl: 300, cacheEverything: true } });
+    if (r.ok) { const rows = await r.json(); const v = Array.isArray(rows) && rows[0] && rows[0].value; if (v) { _bkKeyCache = v; _bkKeyAt = Date.now(); return v; } }
+  } catch (e) {}
+  return null;
+}
+
 export async function handleBackup(ctx) {
   const { route, method, request, env, respond, compressJson, decompressJson, authed } = ctx;
   if (route !== 'backup' && route !== 'backup/restore') return null;
@@ -89,14 +107,16 @@ export async function handleBackup(ctx) {
       if (imgIds.size) { const ph = [...imgIds].map(() => '?').join(','); const r = await env.DB.prepare(`SELECT id, name, data, mime, size FROM images WHERE id IN (${ph})`).bind(...imgIds).all(); out.data.images = r.results || []; } else out.data.images = [];
       if (fileIds.size) { const ph = [...fileIds].map(() => '?').join(','); const r = await env.DB.prepare(`SELECT id, name, data, mime, size FROM files WHERE id IN (${ph})`).bind(...fileIds).all(); out.data.files = r.results || []; } else out.data.files = [];
     }
-    return respond(env.BACKUP_KEY ? await encryptBundle(out, env.BACKUP_KEY) : out);
+    const bkKey = await backupSecret(env);
+    return respond(bkKey ? await encryptBundle(out, bkKey) : out);
   }
 
   if (route === 'backup/restore' && method === 'POST') {
     let bundle = await request.json().catch(() => null);
     if (bundle && bundle.foyer_enc === 1) {
-      if (!env.BACKUP_KEY) return respond({ error: 'this backup is encrypted, but BACKUP_KEY is not configured on this site' }, 400);
-      try { bundle = await decryptBundle(bundle, env.BACKUP_KEY); } catch (e) { return respond({ error: 'could not decrypt — wrong key or corrupt file' }, 400); }
+      const bkKey = await backupSecret(env);
+      if (!bkKey) return respond({ error: 'this backup is encrypted, but no Foyer backup key is configured' }, 400);
+      try { bundle = await decryptBundle(bundle, bkKey); } catch (e) { return respond({ error: 'could not decrypt — wrong key or corrupt file' }, 400); }
     }
     if (!bundle || bundle.foyer_backup !== 1 || !bundle.data) return respond({ error: 'not a valid .foyer backup' }, 400);
     await ensureAll();

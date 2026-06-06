@@ -53,6 +53,7 @@
     #sec-backup select { appearance:none; -webkit-appearance:none; background:rgba(255,255,255,.04); border:1px solid var(--border); color:rgba(220,245,225,.9); border-radius:8px; padding:.6rem 2rem .6rem .75rem; font-family:'Josefin Sans',sans-serif; font-weight:300; font-size:.82rem; outline:none; cursor:pointer; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d9f0df' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right .7rem center; background-size:13px; transition:border-color .15s; }
     #sec-backup select:hover { border-color:rgba(var(--accent-rgb),.4); }
     #sec-backup select:focus { border-color:var(--green-d); }
+    #sec-backup select option { background:#0d140e; color:rgba(220,245,225,.9); }
     #sec-backup code { background:rgba(var(--accent-rgb),.1); padding:.05rem .35rem; border-radius:4px; font-size:.85em; }
     #bkFile { max-width:100%; }
     #bkFile::-webkit-file-selector-button, #bkFile::file-selector-button { font-family:'Josefin Sans',sans-serif; font-weight:300; font-size:.7rem; letter-spacing:.06em; text-transform:uppercase; padding:.5rem .95rem; margin-right:.85rem; background:rgba(var(--accent-rgb),.1); color:var(--green); border:1px solid var(--green-d); border-radius:8px; cursor:pointer; transition:background .15s; }
