@@ -214,14 +214,15 @@ async function bldOpenIconPicker(cb, anchor) {
 
 function bldBlockMenuItems(id){
   const i=bldState.sections.findIndex(s=>s.id===id);
+  const ico = n => (typeof foyerIcon === 'function' ? foyerIcon('@' + n, '1em') : '');
   return [
-    {label:'Edit', icon:'✎', action:()=>{ bldSel=id; bldParentId=null; bldDrawCanvas(); bldDrawEditor(); }},
-    ...(bldAiOn?[{label:'Polish copy with AI', icon:'✨', action:()=>bldPolishBlock(id)}]:[]),
-    {label:'Duplicate', icon:'⧉', action:()=>bldDuplicateBlock(id)},
-    {label:'Move up', icon:'↑', action:()=>bldMoveBlock(id,-1)},
-    {label:'Move down', icon:'↓', action:()=>bldMoveBlock(id,1)},
+    {label:'Edit', icon:ico('edit'), action:()=>{ bldSel=id; bldParentId=null; bldDrawCanvas(); bldDrawEditor(); }},
+    ...(bldAiOn?[{label:'Polish copy with AI', icon:ico('sparkles'), action:()=>bldPolishBlock(id)}]:[]),
+    {label:'Duplicate', icon:ico('copy'), action:()=>bldDuplicateBlock(id)},
+    {label:'Move up', icon:ico('arrow-up'), action:()=>bldMoveBlock(id,-1)},
+    {label:'Move down', icon:ico('arrow-down'), action:()=>bldMoveBlock(id,1)},
     '-',
-    {label:'Delete', icon:'✕', danger:true, action:()=>{ bldState.sections=bldState.sections.filter(x=>x.id!==id); if(bldSel===id){bldSel=null;bldParentId=null;} bldDrawCanvas(); bldDrawEditor(); }},
+    {label:'Delete', icon:ico('trash'), danger:true, action:()=>{ bldState.sections=bldState.sections.filter(x=>x.id!==id); if(bldSel===id){bldSel=null;bldParentId=null;} bldDrawCanvas(); bldDrawEditor(); }},
   ];
 }
 

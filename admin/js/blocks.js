@@ -1139,13 +1139,14 @@ function bBindEditor(panel, s, onUpdate) {
       t.dispatchEvent(new Event('input', { bubbles: true })); t.focus();
     };
     const sel = () => t.value.slice(t.selectionStart || 0, t.selectionEnd || 0);
+    const ico = n => (typeof foyerIcon === 'function' ? foyerIcon('@' + n, '1em') : '');
     const items = [
-      { label: isIcon ? 'Pick icon' : 'Add emoji / icon', icon: '☺', action: () => bldOpenIconPicker(insert, t) },
+      { label: isIcon ? 'Pick icon' : 'Add emoji / icon', icon: ico('smile'), action: () => bldOpenIconPicker(insert, t) },
       '-',
-      { label: 'Cut', icon: '✂', action: () => { const s = sel(); if (!s) return; try { navigator.clipboard.writeText(s); } catch (_) {} const a = t.selectionStart, b = t.selectionEnd; t.value = t.value.slice(0, a) + t.value.slice(b); try { t.setSelectionRange(a, a); } catch (_) {} t.dispatchEvent(new Event('input', { bubbles: true })); t.focus(); } },
-      { label: 'Copy', icon: '⧉', action: () => { const s = sel(); if (s) { try { navigator.clipboard.writeText(s); } catch (_) {} } } },
-      { label: 'Paste', icon: '📋', action: async () => { try { const txt = await navigator.clipboard.readText(); if (txt) insert(txt); } catch (_) {} } },
-      { label: 'Select all', icon: '⊞', action: () => { t.focus(); try { t.select(); } catch (_) {} } },
+      { label: 'Cut', icon: ico('scissors'), action: () => { const s = sel(); if (!s) return; try { navigator.clipboard.writeText(s); } catch (_) {} const a = t.selectionStart, b = t.selectionEnd; t.value = t.value.slice(0, a) + t.value.slice(b); try { t.setSelectionRange(a, a); } catch (_) {} t.dispatchEvent(new Event('input', { bubbles: true })); t.focus(); } },
+      { label: 'Copy', icon: ico('copy'), action: () => { const s = sel(); if (s) { try { navigator.clipboard.writeText(s); } catch (_) {} } } },
+      { label: 'Paste', icon: ico('clipboard'), action: async () => { try { const txt = await navigator.clipboard.readText(); if (txt) insert(txt); } catch (_) {} } },
+      { label: 'Select all', icon: ico('select-all'), action: () => { t.focus(); try { t.select(); } catch (_) {} } },
     ];
     ctxMenu(e.clientX, e.clientY, items);
   });
