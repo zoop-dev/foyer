@@ -44,6 +44,9 @@
       transition:border-color .2s; width:100%;
     }
     input:focus { border-color:var(--green-d); }
+    .field textarea { background:var(--panel); border:1px solid var(--border); color:var(--white); font-weight:300; font-size:.85rem; padding:.65rem .85rem; outline:none; width:100%; resize:vertical; line-height:1.6; transition:border-color .2s; }
+    .field textarea:focus { border-color:var(--green-d); }
+    .field label input[type="checkbox"] { width:auto; accent-color:var(--green); }
     .err { font-size:.65rem; letter-spacing:.1em; color:#e74c3c; margin-top:.5rem; }
 
     
