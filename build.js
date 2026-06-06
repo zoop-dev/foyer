@@ -33,6 +33,7 @@ async function stripComments() {
   await Promise.all(entries.map(async (d) => {
     if (!d.isFile()) return;
     const fp = path.join(d.parentPath || d.path, d.name);
+    if (fp.includes(`${path.sep}deps${path.sep}`)) return;   // vendored libs ship pristine (keep license headers)
     if (d.name.endsWith(".html")) {
       await writeFile(fp, await stripHtml(await readFile(fp, "utf8")));
     } else if (d.name.endsWith(".css")) {

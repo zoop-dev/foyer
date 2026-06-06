@@ -358,7 +358,6 @@ function foyerHL(root) {
   if (window.hljs) return run();
   if (window._foyerHLLoading) { const iv = setInterval(() => { if (window.hljs) { clearInterval(iv); run(); } }, 120); setTimeout(() => clearInterval(iv), 8000); return; }
   window._foyerHLLoading = true;
-  const base = 'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build';
-  const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = base + '/styles/github-dark.min.css'; document.head.appendChild(css);
-  const sc = document.createElement('script'); sc.src = base + '/highlight.min.js'; sc.onload = run; sc.onerror = () => { window._foyerHLLoading = false; }; document.head.appendChild(sc);
+  const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = '/deps/highlight.css'; document.head.appendChild(css);
+  const sc = document.createElement('script'); sc.src = '/deps/highlight.js'; sc.onload = run; sc.onerror = () => { window._foyerHLLoading = false; }; document.head.appendChild(sc);
 }

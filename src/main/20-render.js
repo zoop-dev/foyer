@@ -422,8 +422,8 @@
       if (window.AOS) return go();
       if (window._aosLoading) { const iv = setInterval(() => { if (window.AOS) { clearInterval(iv); go(); } }, 120); setTimeout(() => clearInterval(iv), 8000); return; }
       window._aosLoading = true;
-      const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css'; document.head.appendChild(css);
-      const sc = document.createElement('script'); sc.src = 'https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js'; sc.onload = go; sc.onerror = () => { window._aosLoading = false; reveal(); }; document.head.appendChild(sc);
+      const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = '/deps/aos.css'; document.head.appendChild(css);
+      const sc = document.createElement('script'); sc.src = '/deps/aos.js'; sc.onload = go; sc.onerror = () => { window._aosLoading = false; reveal(); }; document.head.appendChild(sc);
       setTimeout(() => { if (!window.AOS) reveal(); }, 5000);
     }
 
@@ -527,8 +527,8 @@
         } catch (e) {}
       };
       if (window.Lenis) return start();
-      const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.css'; document.head.appendChild(css);
-      const sc = document.createElement('script'); sc.src = 'https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js'; sc.onload = start; sc.onerror = () => {}; document.head.appendChild(sc);
+      const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = '/deps/lenis.css'; document.head.appendChild(css);
+      const sc = document.createElement('script'); sc.src = '/deps/lenis.js'; sc.onload = start; sc.onerror = () => {}; document.head.appendChild(sc);
     }
 
 
@@ -545,7 +545,7 @@
       if (window._granimLoading) { const iv = setInterval(() => { if (window.Granim) { clearInterval(iv); make(); } }, 120); setTimeout(() => clearInterval(iv), 7000); return; }
       window._granimLoading = true;
       const s = document.createElement('script');
-      s.src = 'https://cdn.jsdelivr.net/npm/granim@2.0.0/dist/granim.min.js';
+      s.src = '/deps/granim.js';
       s.onload = make; s.onerror = () => { window._granimLoading = false; };
       document.head.appendChild(s);
     }
