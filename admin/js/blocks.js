@@ -36,6 +36,7 @@ const BLOCK_CATALOG = [
   { t:'steps', l:'Steps', c:'Cards & grids', i:'🔢', k:'process how it works' },
   { t:'collection', l:'Collection', c:'Cards & grids', i:'🗂️', k:'items shop grid' },
   { t:'specs', l:'Specs', c:'Cards & grids', i:'📋', k:'key value details list' },
+  { t:'colllist', l:'Collection list', c:'Cards & grids', i:'🗂️', k:'collection blog articles entries list embed posts' },
   { t:'timeline', l:'Timeline', c:'Cards & grids', i:'🪜', k:'history events dated' },
   { t:'tabs', l:'Tabs', c:'Cards & grids', i:'🗃️', k:'tabbed panels' },
 
@@ -427,6 +428,7 @@ function bDefault(type) {
     case 'callout': return { id, type, variant:'info', title:'', body:'Heads up — something worth noting goes here.', icon:'', pad:'md' };
     case 'code':    return { id, type, code:'console.log("hello")', lang:'', pad:'md' };
     case 'specs':   return { id, type, heading:'', items:[{label:'Label',value:'Value'},{label:'Label',value:'Value'}], pad:'md' };
+    case 'colllist': return { id, type, eyebrow:'', heading:'', sub:'', collection:'', cols:'3', pad:'md' };
     case 'timeline':return { id, type, eyebrow:'', heading:'', sub:'', items:[{date:'2024',title:'Something happened',text:''},{date:'2025',title:'Then this',text:''}], pad:'md' };
     case 'tabs':    return { id, type, items:[{label:'Tab one',body:'First panel.'},{label:'Tab two',body:'Second panel.'}], pad:'md' };
     case 'buttongroup': return { id, type, items:[{label:'Primary',url:'',style:'solid'},{label:'Secondary',url:'',style:'outline'}], align:'center', pad:'md' };
@@ -845,6 +847,10 @@ function bEditorFields(s) {
     f=`<div class="bld-ef"><label>Heading <span style="opacity:.5">(optional)</span></label><input type="text" data-f="heading" value="${bA(s.heading||'')}" /></div>
        <div id="bSPEC">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button><div class="bld-ef"><label>Label</label><input type="text" data-ci="${i}" data-cf="label" value="${bA(it.label||'')}" /></div><div class="bld-ef"><label>Value</label><input type="text" data-ci="${i}" data-cf="value" value="${bA(it.value||'')}" /></div></div>`).join('')}</div>
        <button class="bld-add-li bld-add-item" data-shape='{"label":"","value":""}'>+ Add row</button>${bPadRow(s.pad)}`;
+  } else if (s.type==='colllist') {
+    f=`${ehs}<div class="bld-ef"><label>Collection slug <span style="opacity:.5">(from the Collections tab)</span></label><input type="text" data-f="collection" value="${bA(s.collection||'')}" placeholder="blog" /></div>
+       <div class="bld-ef"><label>Columns</label><select data-f="cols"><option value="2"${s.cols==='2'?' selected':''}>2</option><option value="3"${(!s.cols||s.cols==='3')?' selected':''}>3</option><option value="4"${s.cols==='4'?' selected':''}>4</option></select></div>
+       <p style="font-size:.58rem;color:var(--muted);margin:.4rem 0 0;">Entries render on the live site. Manage them in the Collections tab.</p>${bPadRow(s.pad)}`;
   } else if (s.type==='timeline') {
     const items=s.items||[];
     f=`${ehs}<div id="bTL">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button><div class="bld-ef"><label>Date</label><input type="text" data-ci="${i}" data-cf="date" value="${bA(it.date||'')}" placeholder="2024" /></div><div class="bld-ef"><label>Title</label><input type="text" data-ci="${i}" data-cf="title" value="${bA(it.title||'')}" /></div><div class="bld-ef"><label>Text</label><textarea data-ci="${i}" data-cf="text" rows="2">${bE(it.text||'')}</textarea></div></div>`).join('')}</div>

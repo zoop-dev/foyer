@@ -262,6 +262,12 @@ function bXtra(s, h) {
     case 'toggle': {
       return wrap(cont(`<details style="border:1px solid ${rgb(accent, .15)};border-radius:10px;padding:.2rem .3rem;"><summary style="cursor:pointer;padding:.8rem 1rem;font-size:.9rem;font-weight:300;color:${rgb(text, .85)};list-style:none;">${E(s.label || 'Show more')}</summary><div class="md-content" style="padding:.2rem 1rem 1rem;font-size:.88rem;font-weight:200;line-height:1.7;color:${rgb(text, .7)};">${md(s.body)}</div></details>`, '680px'));
     }
+    case 'colllist': {
+      const cs = (s.collection || '').trim();
+      const min = s.cols === '2' ? '300px' : s.cols === '4' ? '180px' : '240px';
+      const ph = `<div style="grid-column:1/-1;text-align:center;font-size:.8rem;font-weight:200;color:${rgb(text, .4)};padding:1.5rem;">${cs ? `Entries from &ldquo;${E(cs)}&rdquo; appear on the live site.` : 'Pick a collection in this block&rsquo;s settings.'}</div>`;
+      return wrap(cont(secHead() + `<div data-coll-embed="${A(cs)}" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(${min},1fr));gap:1.4rem;">${ph}</div>`));
+    }
     case 'faq': {
       const bordered = s.style === 'bordered';
       const rows = items.map(it => `<details style="border-bottom:1px solid ${rgb(accent, .12)};${bordered ? `border:1px solid ${rgb(accent, .12)};border-radius:8px;margin-bottom:.5rem;` : ''}">

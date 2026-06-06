@@ -179,7 +179,7 @@ function bldBlockMenuItems(id){
 }
 
 
-const AI_BLOCK_DENY = new Set(['video','audio','map','embed','socialpost','booking','qrcode','fileprev','filedown','tutorials','reviews','group','carousel','masonry','gallery','collection','image','compare','countdown']);
+const AI_BLOCK_DENY = new Set(['video','audio','map','embed','socialpost','booking','qrcode','fileprev','filedown','tutorials','reviews','group','carousel','masonry','gallery','collection','colllist','image','compare','countdown']);
 
 function bldAiSchema(){
   return BLOCK_CATALOG.filter(b=>!AI_BLOCK_DENY.has(b.t)).map(b=>{
