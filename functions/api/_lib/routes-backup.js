@@ -42,6 +42,26 @@ async function backupSecret(env) {
   return null;
 }
 
+
+
+const _MAGIC = [70, 79, 89, 82, 69, 78, 67, 50]; // "FOYRENC2"
+async function _gzip(u8) { const cs = new CompressionStream('gzip'); const w = cs.writable.getWriter(); w.write(u8); w.close(); return new Uint8Array(await new Response(cs.readable).arrayBuffer()); }
+async function _gunzip(u8) { const ds = new DecompressionStream('gzip'); const w = ds.writable.getWriter(); w.write(u8); w.close(); return new Uint8Array(await new Response(ds.readable).arrayBuffer()); }
+async function sealBinary(obj, secret) {
+  const key = await _aesKey(secret);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const gz = await _gzip(new TextEncoder().encode(JSON.stringify(obj)));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, gz));
+  const out = new Uint8Array(20 + ct.length);
+  out.set(_MAGIC, 0); out.set(iv, 8); out.set(ct, 20);
+  return out;
+}
+async function openBinary(u8, secret) {
+  const key = await _aesKey(secret);
+  const gz = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u8.subarray(8, 20) }, key, u8.subarray(20)));
+  return JSON.parse(new TextDecoder().decode(await _gunzip(gz)));
+}
+
 export async function handleBackup(ctx) {
   const { route, method, request, env, respond, compressJson, decompressJson, authed } = ctx;
   if (route !== 'backup' && route !== 'backup/restore') return null;
@@ -108,15 +128,29 @@ export async function handleBackup(ctx) {
       if (fileIds.size) { const ph = [...fileIds].map(() => '?').join(','); const r = await env.DB.prepare(`SELECT id, name, data, mime, size FROM files WHERE id IN (${ph})`).bind(...fileIds).all(); out.data.files = r.results || []; } else out.data.files = [];
     }
     const bkKey = await backupSecret(env);
-    return respond(bkKey ? await encryptBundle(out, bkKey) : out);
+    if (bkKey) {
+      const bytes = await sealBinary(out, bkKey);
+      return new Response(bytes, { status: 200, headers: { 'Content-Type': 'application/octet-stream', 'Access-Control-Allow-Origin': '*' } });
+    }
+    return respond(out);
   }
 
   if (route === 'backup/restore' && method === 'POST') {
-    let bundle = await request.json().catch(() => null);
-    if (bundle && bundle.foyer_enc === 1) {
+    const raw = new Uint8Array(await request.arrayBuffer());
+    let bundle = null;
+    if (raw.length > 20 && _MAGIC.every((c, i) => raw[i] === c)) {
+
       const bkKey = await backupSecret(env);
       if (!bkKey) return respond({ error: 'this backup is encrypted, but no Foyer backup key is configured' }, 400);
-      try { bundle = await decryptBundle(bundle, bkKey); } catch (e) { return respond({ error: 'could not decrypt — wrong key or corrupt file' }, 400); }
+      try { bundle = await openBinary(raw, bkKey); } catch (e) { return respond({ error: 'could not decrypt — wrong key or corrupt file' }, 400); }
+    } else {
+      let txt = ''; try { txt = new TextDecoder().decode(raw); } catch {}
+      try { bundle = JSON.parse(txt); } catch { return respond({ error: 'not a valid .foyer backup' }, 400); }
+      if (bundle && bundle.foyer_enc === 1) {   // legacy base64 envelope
+        const bkKey = await backupSecret(env);
+        if (!bkKey) return respond({ error: 'this backup is encrypted, but no Foyer backup key is configured' }, 400);
+        try { bundle = await decryptBundle(bundle, bkKey); } catch (e) { return respond({ error: 'could not decrypt — wrong key or corrupt file' }, 400); }
+      }
     }
     if (!bundle || bundle.foyer_backup !== 1 || !bundle.data) return respond({ error: 'not a valid .foyer backup' }, 400);
     await ensureAll();

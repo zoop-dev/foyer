@@ -67,22 +67,30 @@ async function bkDownload() {
   } catch (e) { ov.fail('Backup failed'); setTimeout(ov.close, 1600); toast('Backup failed', true); }
 }
 
+const _BK_MAGIC = [70, 79, 89, 82, 69, 78, 67, 50]; // "FOYRENC2"
+const _bkSealedNote = '<div style="font-size:.72rem;color:rgba(220,245,225,.55);line-height:1.8;">🔒 Encrypted Foyer backup — sealed; it’ll be decrypted on the server during restore.</div>';
 function bkFileChosen(file) {
   _bkBundle = null; bkEl('bkRestore').disabled = true; bkEl('bkSummary').innerHTML = '';
   if (!file) return;
   const reader = new FileReader();
   reader.onload = () => {
-    let b; try { b = JSON.parse(reader.result); } catch { bkEl('bkSummary').innerHTML = '<span style="color:#e0556a;">That file isn’t valid JSON.</span>'; return; }
-    if (b && b.foyer_enc === 1) { _bkBundle = b; bkEl('bkSummary').innerHTML = `<div style="font-size:.72rem;color:rgba(220,245,225,.55);line-height:1.8;">🔒 Encrypted Foyer backup — contents are sealed and will be decrypted on the server during restore.</div>`; bkEl('bkRestore').disabled = false; return; }
+    const bytes = new Uint8Array(reader.result);
+    if (bytes.length > 20 && _BK_MAGIC.every((c, i) => bytes[i] === c)) {
+      _bkBundle = { binary: true, buf: reader.result };
+      bkEl('bkSummary').innerHTML = _bkSealedNote; bkEl('bkRestore').disabled = false; return;
+    }
+    let txt = ''; try { txt = new TextDecoder().decode(bytes); } catch {}
+    let b; try { b = JSON.parse(txt); } catch { bkEl('bkSummary').innerHTML = '<span style="color:#e0556a;">That file isn’t a valid Foyer backup.</span>'; return; }
+    if (b && b.foyer_enc === 1) { _bkBundle = { binary: false, obj: b }; bkEl('bkSummary').innerHTML = _bkSealedNote; bkEl('bkRestore').disabled = false; return; }
     if (!b || b.foyer_backup !== 1 || !b.data) { bkEl('bkSummary').innerHTML = '<span style="color:#e0556a;">Not a Foyer backup file.</span>'; return; }
-    _bkBundle = b;
+    _bkBundle = { binary: false, obj: b };
     const d = b.data, n = (a) => Array.isArray(a) ? a.length : 0;
     const parts = [`${n(d.pages)} pages`, `${n(d.collections)} collections`, `${n(d.collection_items)} entries`, `${n(d.tutorials)} tutorials`, `${n(d.reviews)} reviews`, `${n(d.images)} images`, `${n(d.files)} files`];
     if (d.settings) parts.push('site settings');
     bkEl('bkSummary').innerHTML = `<div style="font-size:.72rem;color:rgba(220,245,225,.55);line-height:1.8;">Scope: <b style="color:rgba(220,245,225,.85);">${b.scope || '?'}</b> · ${b.created ? new Date(b.created).toLocaleString() : 'unknown date'}<br>${parts.join(' · ')}</div>`;
     bkEl('bkRestore').disabled = false;
   };
-  reader.readAsText(file);
+  reader.readAsArrayBuffer(file);
 }
 
 async function bkRestore() {
@@ -90,13 +98,14 @@ async function bkRestore() {
   const msg = 'Restore this backup? Pages, entries and settings with the same slug/key will be overwritten; anything not in the backup is left as-is.';
   const ok = (typeof dlg !== 'undefined' && dlg.confirm) ? await dlg.confirm(msg) : confirm(msg);
   if (!ok) return;
-  const body = JSON.stringify(_bkBundle);
+  const isBin = _bkBundle.binary;
+  const body = isBin ? _bkBundle.buf : JSON.stringify(_bkBundle.obj);
   const ov = bkProgressOverlay('Restoring backup');
   ov.status('Uploading…'); ov.set(0);
   const xhr = new XMLHttpRequest();
   xhr.open('POST', '/api/backup/restore');
   const h = authHeaders(); for (const k in h) xhr.setRequestHeader(k, h[k]);
-  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.setRequestHeader('Content-Type', isBin ? 'application/octet-stream' : 'application/json');
   xhr.upload.onprogress = (e) => { if (e.lengthComputable) ov.set((e.loaded / e.total) * 100); };
   xhr.upload.onload = () => { ov.set(100); ov.status('Applying to the database…'); ov.indeterminate(true); };
   xhr.onload = () => {
