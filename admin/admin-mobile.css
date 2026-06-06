@@ -61,8 +61,11 @@
   #sec-settings input, #sec-settings textarea, #sec-settings select { font-size: 16px; }
   #sec-settings .field-row { flex-direction: column; gap: 1.2rem; }   
   #sec-settings textarea { width: 100%; }
-  .set-savebar { flex-shrink: 0; gap: .5rem; padding: .8rem 1rem calc(.8rem + env(safe-area-inset-bottom, 0)); }
+  .set-savebar { flex-shrink: 0; flex-wrap: wrap; gap: .5rem; padding: .8rem 1rem calc(.8rem + env(safe-area-inset-bottom, 0)); }
   .set-savebar .btn { flex: 1; min-width: 130px; text-align: center; justify-content: center; }
+  
+  .set-savebar > div[style*="flex"] { display: none; }
+  #pushUiUpdateBtn { flex: 1 1 100%; }
 
   
   .stat-cards { grid-template-columns: repeat(2, 1fr); gap: .5rem; }
