@@ -181,13 +181,30 @@ function bldOpenIconPicker(cb) {
     body.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:.5rem;">${icons.map(n => `<button class="bld-icon-cell" data-icon="${n}" title="${n}" style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:rgba(77,189,106,.05);border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--green);"><span style="display:inline-block;width:22px;height:22px;background:currentColor;-webkit-mask:url('/assets/icons/${n}.svg') center/contain no-repeat;mask:url('/assets/icons/${n}.svg') center/contain no-repeat;"></span></button>`).join('')}</div>`;
     body.querySelectorAll('.bld-icon-cell').forEach(b => b.addEventListener('click', () => { cb('@' + b.dataset.icon); close(); }));
   };
+
+
+
+
+  const foyerEmojiCat = async () => {
+    if (!icons.length) return [];
+    if (!window._foyerEmojiIcons) {
+      const out = {};
+      await Promise.all(icons.map(async n => {
+        try { let t = await fetch('/assets/icons/' + n + '.svg').then(r => r.text()); t = t.replace(/#000/g, '#d9f0df'); out[n] = 'data:image/svg+xml;utf8,' + encodeURIComponent(t); } catch (_) {}
+      }));
+      window._foyerEmojiIcons = out;
+    }
+    const m = window._foyerEmojiIcons;
+    return [{ id: 'foyer', name: 'Foyer Icons', emojis: icons.filter(n => m[n]).map(n => ({ id: n, name: n, keywords: [n], skins: [{ src: m[n] }] })) }];
+  };
   const showEmoji = async () => {
     body.innerHTML = '<p style="color:var(--muted);font-size:.75rem;padding:1rem;">Loading emoji…</p>';
     try {
       if (!window.EmojiMart) await new Promise((res, rej) => { const s = document.createElement('script'); s.src = '/deps/emoji-mart.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
       if (!window._emojiData) window._emojiData = await fetch('/deps/emoji-data.json').then(r => r.json());
+      const custom = await foyerEmojiCat();
       body.innerHTML = '';
-      body.appendChild(new window.EmojiMart.Picker({ data: window._emojiData, theme: 'dark', previewPosition: 'none', skinTonePosition: 'none', onEmojiSelect: e => { cb(e.native); close(); } }));
+      body.appendChild(new window.EmojiMart.Picker({ data: window._emojiData, custom, categories: ['foyer', 'frequent', 'people', 'nature', 'foods', 'activity', 'places', 'objects', 'symbols', 'flags'], theme: 'dark', previewPosition: 'none', skinTonePosition: 'none', onEmojiSelect: e => { cb(e.native || ('@' + e.id)); close(); } }));
     } catch (e) { body.innerHTML = '<p style="color:var(--muted);font-size:.75rem;padding:1rem;">Couldn’t load the emoji picker.</p>'; }
   };
   ov.querySelectorAll('.bld-itab').forEach(t => t.addEventListener('click', () => { ov.querySelectorAll('.bld-itab').forEach(x => x.classList.toggle('on', x === t)); (t.dataset.t === 'emoji' ? showEmoji : showIcons)(); }));

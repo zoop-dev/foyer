@@ -1115,10 +1115,14 @@ function bBindEditor(panel, s, onUpdate) {
     });
   });
 
-  panel.querySelectorAll('.bld-iconpick').forEach(btn => btn.addEventListener('click', () => {
+
+
+  panel.querySelectorAll('.bld-iconpick').forEach(btn => {
     const inp = btn.closest('.bld-ef')?.querySelector('input[data-cf="icon"]');
-    if (inp && typeof bldOpenIconPicker === 'function') bldOpenIconPicker(name => { inp.value = name; inp.dispatchEvent(new Event('input', { bubbles: true })); });
-  }));
+    const open = () => { if (inp && typeof bldOpenIconPicker === 'function') bldOpenIconPicker(name => { inp.value = name; inp.dispatchEvent(new Event('input', { bubbles: true })); }); };
+    btn.addEventListener('click', open);
+    if (inp) inp.addEventListener('contextmenu', e => { e.preventDefault(); open(); });
+  });
 
   panel.querySelector('#bFilePrevPick')?.addEventListener('click', () => openFilePicker(url => { s.url=url; const inp=panel.querySelector('[data-f="url"]'); if(inp){inp.value=url;} onUpdate(s); }));
   panel.querySelector('#bFileDownPick')?.addEventListener('click', () => openFilePicker(url => { s.url=url; const inp=panel.querySelector('[data-f="url"]'); if(inp){inp.value=url;} onUpdate(s); }));

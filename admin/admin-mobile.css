@@ -38,7 +38,9 @@
   .m-menu-x { background: none; border: none; color: var(--muted); font-size: 1.4rem; cursor: pointer; line-height: 1; }
   .m-menu-list { flex: 1; overflow-y: auto; padding: .8rem; display: flex; flex-direction: column; gap: .3rem; }
   .m-menu-item { display: flex; align-items: center; gap: .9rem; width: 100%; text-align: left; background: none; border: 1px solid transparent; border-radius: 12px; padding: 1rem 1.1rem; cursor: pointer; font-family: 'Josefin Sans', sans-serif; font-weight: 300; font-size: 1.05rem; letter-spacing: .02em; color: rgba(220, 245, 225, .78); }
-  .m-menu-item .m-menu-ico { font-size: 1.25rem; width: 26px; text-align: center; }
+  .m-menu-item .m-menu-ico { font-size: 1.25rem; width: 26px; text-align: center; display: inline-flex; align-items: center; justify-content: center; }
+  .m-ico-svg { display: inline-block; width: 22px; height: 22px; background: currentColor; }
+  .m-menu-item.on .m-ico-svg { background: var(--accent); }
   .m-menu-item:active { background: rgba(var(--accent-rgb), .06); }
   .m-menu-item.on { background: rgba(var(--accent-rgb), .1); border-color: rgba(var(--accent-rgb), .25); color: var(--white); }
   .m-menu-item .m-menu-badge { margin-left: auto; background: var(--accent); color: var(--bg); font-size: .58rem; font-weight: 400; padding: .12rem .45rem; border-radius: 20px; }

@@ -3,15 +3,17 @@
 function isMobile() { return window.innerWidth <= 640; }
 
 const M_SECTIONS = [
-  { tab: 'builder',   label: 'Pages',        ico: '▦' },
-  { tab: 'images',    label: 'Images',       ico: '🖼' },
-  { tab: 'files',     label: 'Files',        ico: '📄' },
-  { tab: 'settings',  label: 'Settings',     ico: '⚙' },
-  { tab: 'tutorials', label: 'Tutorials',    ico: '🎓' },
-  { tab: 'reviews',   label: 'Reviews',      ico: '★' },
-  { tab: 'collections', label: 'Collections', ico: '🗂' },
-  { tab: 'analytics', label: 'Analytics',    ico: '📊' },
+  { tab: 'builder',   label: 'Pages',        ico: 'layers' },
+  { tab: 'images',    label: 'Images',       ico: 'image' },
+  { tab: 'files',     label: 'Files',        ico: 'file' },
+  { tab: 'settings',  label: 'Settings',     ico: 'gear' },
+  { tab: 'tutorials', label: 'Tutorials',    ico: 'cap' },
+  { tab: 'reviews',   label: 'Reviews',      ico: 'star' },
+  { tab: 'collections', label: 'Collections', ico: 'folder' },
+  { tab: 'analytics', label: 'Analytics',    ico: 'bar-chart' },
 ];
+
+const mIco = (name) => `<span class="m-ico-svg" style="-webkit-mask:url('/assets/icons/${name}.svg') center/contain no-repeat;mask:url('/assets/icons/${name}.svg') center/contain no-repeat;"></span>`;
 let mCurTab = 'builder';
 let mSheetMode = '';   // 'editor' | 'pages' | 'newpage' | 'theme'
 
@@ -41,7 +43,7 @@ function mBuildMenu() {
     const btn = document.querySelector(`.tab-btn[data-tab="${s.tab}"]`);
     return !(btn && btn.style.display === 'none');   // respect hidden-tab setting
   });
-  list.innerHTML = visible.map(s => `<button class="m-menu-item${s.tab === mCurTab ? ' on' : ''}" data-tab="${s.tab}"><span class="m-menu-ico">${s.ico}</span>${s.label}${s.tab === 'analytics' ? '<span class="m-menu-badge" id="mMenuBadge" style="display:none"></span>' : ''}</button>`).join('');
+  list.innerHTML = visible.map(s => `<button class="m-menu-item${s.tab === mCurTab ? ' on' : ''}" data-tab="${s.tab}"><span class="m-menu-ico">${mIco(s.ico)}</span>${s.label}${s.tab === 'analytics' ? '<span class="m-menu-badge" id="mMenuBadge" style="display:none"></span>' : ''}</button>`).join('');
   list.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => { mSwitch(b.dataset.tab); mCloseMenu(); }));
   mSyncMenuBadge();
 }
