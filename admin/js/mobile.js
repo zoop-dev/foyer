@@ -11,6 +11,7 @@ const M_SECTIONS = [
   { tab: 'reviews',   label: 'Reviews',      ico: 'star' },
   { tab: 'collections', label: 'Collections', ico: 'folder' },
   { tab: 'analytics', label: 'Analytics',    ico: 'bar-chart' },
+  { tab: 'backup',    label: 'Backups',      ico: 'download' },
 ];
 
 const mIco = (name) => `<span class="m-ico-svg" style="-webkit-mask:url('/assets/icons/${name}.svg') center/contain no-repeat;mask:url('/assets/icons/${name}.svg') center/contain no-repeat;"></span>`;

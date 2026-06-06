@@ -102,6 +102,7 @@
     <button class="tab-btn" data-tab="reviews">Reviews</button>
     <button class="tab-btn" data-tab="collections">Collections</button>
     <button class="tab-btn" data-tab="analytics">Analytics <span class="vis-badge" id="visBadge"></span></button>
+    <button class="tab-btn" data-tab="backup">Backups</button>
     <div class="nav-spacer"></div>
     <a href="/" class="site-link" target="_blank">View site ↗</a>
     <button class="btn btn-sm" id="logoutBtn" style="margin-left:.5rem">Log out</button>
@@ -453,6 +454,34 @@
   </div>
 
   
+  <div class="section" id="sec-backup" style="flex-direction:column;overflow-y:auto;">
+    <div style="max-width:620px;margin:0 auto;width:100%;padding:1.5rem 1.2rem 4rem;font-family:'Josefin Sans',sans-serif;">
+      <p style="font-family:'Unbounded',sans-serif;font-weight:200;font-size:1.1rem;color:rgba(220,245,225,.92);margin:0 0 .3rem;">Backups</p>
+      <p style="font-size:.78rem;font-weight:200;color:rgba(220,245,225,.5);line-height:1.7;margin:0 0 1.8rem;">Download a portable <code style="color:var(--green);">.foyer</code> snapshot, or restore one. Restores <b>merge</b> — items with the same slug are overwritten, everything else is left alone.</p>
+
+      <div style="border:1px solid var(--border);border-radius:12px;padding:1.2rem 1.3rem;margin-bottom:1.3rem;background:rgba(var(--accent-rgb),.03);">
+        <p style="font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(var(--accent-rgb),.6);margin:0 0 .9rem;">Create a backup</p>
+        <select id="bkScope" class="bld-input" style="width:100%;margin-bottom:.7rem;">
+          <option value="site">Whole site — pages, collections, settings, images &amp; files</option>
+          <option value="all-pages">All pages (+ images they use)</option>
+          <option value="page">A single page…</option>
+        </select>
+        <div id="bkPageWrap" style="display:none;margin-bottom:.7rem;">
+          <select id="bkPage" class="bld-input" style="width:100%;"></select>
+        </div>
+        <button class="btn" id="bkDownload">Download .foyer</button>
+      </div>
+
+      <div style="border:1px solid var(--border);border-radius:12px;padding:1.2rem 1.3rem;background:rgba(var(--accent-rgb),.03);">
+        <p style="font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(var(--accent-rgb),.6);margin:0 0 .9rem;">Restore from a backup</p>
+        <input type="file" id="bkFile" accept=".foyer,application/json" style="font-size:.75rem;color:rgba(220,245,225,.7);margin-bottom:.8rem;display:block;" />
+        <div id="bkSummary" style="margin-bottom:.9rem;"></div>
+        <button class="btn" id="bkRestore" disabled>Restore</button>
+      </div>
+    </div>
+  </div>
+
+  
   <div class="section bld-sec active" id="sec-builder" style="position:relative;">
     <div class="m-bldbar" id="mBldBar">
       <button class="m-bld-page" id="mBldPage"><span id="mBldPageName">Page</span> <span class="m-bld-caret">▾</span></button>
@@ -579,6 +608,7 @@
 <script src="js/tutorials.js?v={{VERSION}}" defer></script>
 <script src="js/reviews.js?v={{VERSION}}" defer></script>
 <script src="js/collections.js?v={{VERSION}}" defer></script>
+<script src="js/backup.js?v={{VERSION}}" defer></script>
 <script src="js/mobile.js?v={{VERSION}}" defer></script>
 <script src="js/main.js?v={{VERSION}}" defer></script>
 <script>try{console.log('%c ∩ foyer %c this site runs on the foyer website architecture · v{{VERSION}}','background:linear-gradient(135deg,#eef1f5,#a9b1bd);color:#11151b;font-weight:800;padding:3px 9px;border-radius:4px;letter-spacing:.05em','color:#8b94a6;font-style:italic;padding-left:6px');}catch(e){}</script>
