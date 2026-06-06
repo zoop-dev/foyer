@@ -414,7 +414,7 @@ function bDefault(type) {
     case 'tutorials': return { id, type, tut_style:'cards', heading:'', heading_align:'center', max_items:'0', view_all_show:'yes', view_all_label:'View all →', pad:'md' };
     case 'reviews': return { id, type, rev_style:'cards', heading:'', heading_align:'center', max_items:'0', view_all_show:'yes', view_all_label:'View all →', pad:'md' };
     case 'banner':  return { id, type, eyebrow:'', heading:'Your headline here', subheading:'A short supporting line that sells it.', btn_label:'Get started', btn_url:'', btn2_label:'', btn2_url:'', bg_img:'', overlay:'0.5', min_h:'md', align:'center', pad:'md' };
-    case 'features':return { id, type, eyebrow:'', heading:'What we offer', sub:'', items:[{icon:'✦',title:'Feature one',text:'Describe it in a sentence.'},{icon:'✦',title:'Feature two',text:'Describe it in a sentence.'},{icon:'✦',title:'Feature three',text:'Describe it in a sentence.'}], cols:'3', card_align:'left', pad:'md' };
+    case 'features':return { id, type, eyebrow:'', heading:'What we offer', sub:'', items:[{icon:'@bolt',title:'Feature one',text:'Describe it in a sentence.'},{icon:'@star',title:'Feature two',text:'Describe it in a sentence.'},{icon:'@check-circle',title:'Feature three',text:'Describe it in a sentence.'}], cols:'3', card_align:'left', pad:'md' };
     case 'steps':   return { id, type, eyebrow:'', heading:'How it works', sub:'', items:[{title:'Step one',text:'What happens first.'},{title:'Step two',text:'What happens next.'},{title:'Step three',text:'And finally this.'}], layout:'stack', pad:'md' };
     case 'pricing': return { id, type, eyebrow:'', heading:'Pricing', sub:'', items:[{name:'Basic',price:'$0',period:'/mo',features:'Feature A\nFeature B',btn_label:'Choose',btn_url:'',featured:'no'},{name:'Pro',price:'$29',period:'/mo',features:'Everything in Basic\nFeature C\nFeature D',btn_label:'Choose',btn_url:'',featured:'yes',badge:'Popular'}], pad:'md' };
     case 'testimonials': return { id, type, eyebrow:'', heading:'What people say', sub:'', items:[{quote:'This made all the difference for us.',name:'Jane Doe',role:'Customer',avatar:''},{quote:'Couldn’t recommend it more highly.',name:'John Smith',role:'Customer',avatar:''}], pad:'md' };
@@ -438,7 +438,7 @@ function bDefault(type) {
     case 'testimonial': return { id, type, quote:'A single, featured testimonial that carries the section on its own.', name:'', role:'', avatar:'', pad:'md' };
     case 'rating':  return { id, type, score:'4.9', max:'5', count:'', label:'', align:'center', pad:'md' };
     case 'countdown': return { id, type, heading:'', target:'', done_text:'It’s here!', align:'center', pad:'md' };
-    case 'badges':  return { id, type, items:[{icon:'🔒',label:'Secure checkout'},{icon:'↩️',label:'30-day returns'},{icon:'⭐',label:'Top rated'}], align:'center', pad:'md' };
+    case 'badges':  return { id, type, items:[{icon:'@shield',label:'Secure checkout'},{icon:'@truck',label:'30-day returns'},{icon:'@star',label:'Top rated'}], align:'center', pad:'md' };
     case 'vcard':   return { id, type, photo:'', name:'Your Name', role:'', tagline:'', items:[{label:'Email',val:'',href:''},{label:'Website',val:'',href:''}], pad:'md' };
     case 'availability': return { id, type, status:'available', text:'Available for new work', align:'center', pad:'md' };
     case 'skills':  return { id, type, heading:'', items:[{label:'JavaScript'},{label:'Design'},{label:'Cloudflare'}], align:'center', pad:'md' };
@@ -579,14 +579,17 @@ function bEditorFields(s) {
       ${(()=>{const imgs=(it.imgs&&it.imgs.length)?it.imgs:(it.img?[it.img]:['']);return `<div class="bld-ef"><label>Images</label>${imgs.map((u,j)=>`<div style="display:flex;gap:.4rem;margin-bottom:.3rem;"><input type="url" data-cii="${i}" data-ciij="${j}" value="${bA(u||'')}" style="flex:1;" placeholder="Image URL" /><button class="btn btn-sm bld-img-pick" data-target-cii="${i}" data-target-ciij="${j}">Pick</button><button class="btn btn-sm bld-cimg-rm" data-cii="${i}" data-ciij="${j}" title="Remove image">✕</button></div>`).join('')}<button class="btn btn-sm bld-cimg-add" data-cii="${i}">+ image</button></div>`;})()}
       <div class="bld-ef"><label>Name</label><input type="text" data-ci="${i}" data-cf="name" value="${bA(it.name||'')}" /></div>
       <div class="bld-ef"><label>Note <span style="opacity:.5">(optional)</span></label><textarea data-ci="${i}" data-cf="note" rows="2">${bE(it.note||'')}</textarea></div>
-      <div class="bld-ef"><label>For sale</label><select data-ci="${i}" data-cf="for_sale"><option value="no"${it.for_sale!=='yes'?' selected':''}>No</option><option value="yes"${it.for_sale==='yes'?' selected':''}>Yes</option></select></div>
-      <div class="bld-ef"><label>Price <span style="opacity:.5">(if for sale)</span></label><input type="text" data-ci="${i}" data-cf="price" value="${bA(it.price||'')}" placeholder="$200" /></div>
-      <div class="bld-ef"><label>On sale <span style="opacity:.5">(crosses out the price)</span></label><select data-ci="${i}" data-cf="sale"><option value="no"${it.sale!=='yes'?' selected':''}>No</option><option value="yes"${it.sale==='yes'?' selected':''}>Yes</option></select></div>
+      <div class="bld-ef"><label>For sale</label><select data-ci="${i}" data-cf="for_sale" data-rerender><option value="no"${it.for_sale!=='yes'?' selected':''}>No</option><option value="yes"${it.for_sale==='yes'?' selected':''}>Yes</option></select></div>
+      ${it.for_sale==='yes'?`
+      <div class="bld-ef"><label>Price</label><input type="text" data-ci="${i}" data-cf="price" value="${bA(it.price||'')}" placeholder="$200" /></div>
+      <div class="bld-ef"><label>On sale <span style="opacity:.5">(crosses out the price)</span></label><select data-ci="${i}" data-cf="sale" data-rerender><option value="no"${it.sale!=='yes'?' selected':''}>No</option><option value="yes"${it.sale==='yes'?' selected':''}>Yes</option></select></div>
+      ${it.sale==='yes'?`
       <div class="bld-ef"><label>Sale price</label><input type="text" data-ci="${i}" data-cf="sale_price" value="${bA(it.sale_price||'')}" placeholder="$150" /></div>
-      <div class="bld-ef"><label>Sale ends <span style="opacity:.5">(optional — blank = no end)</span></label><input type="text" class="bld-fp" data-ci="${i}" data-cf="sale_until" value="${bA(it.sale_until||'')}" /></div>
-      <div class="bld-ef"><label>Buy button</label><select data-ci="${i}" data-cf="buy"><option value="no"${it.buy!=='yes'?' selected':''}>Off</option><option value="yes"${it.buy==='yes'?' selected':''}>On</option></select></div>
+      <div class="bld-ef"><label>Sale ends <span style="opacity:.5">(optional — blank = no end)</span></label><input type="text" class="bld-fp" data-ci="${i}" data-cf="sale_until" value="${bA(it.sale_until||'')}" /></div>`:''}`:''}
+      <div class="bld-ef"><label>Buy button</label><select data-ci="${i}" data-cf="buy" data-rerender><option value="no"${it.buy!=='yes'?' selected':''}>Off</option><option value="yes"${it.buy==='yes'?' selected':''}>On</option></select></div>
+      ${it.buy==='yes'?`
       <div class="bld-ef"><label>Button text</label><input type="text" data-ci="${i}" data-cf="buy_label" value="${bA(it.buy_label||'')}" placeholder="Buy" /></div>
-      <div class="bld-ef"><label>Button link</label><input type="url" data-ci="${i}" data-cf="buy_url" value="${bA(it.buy_url||'')}" placeholder="https://…" /></div>
+      <div class="bld-ef"><label>Button link</label><input type="url" data-ci="${i}" data-cf="buy_url" value="${bA(it.buy_url||'')}" placeholder="https://…" /></div>`:''}
     </div>`).join('')}</div>
     <button class="bld-add-li" id="bAddColl">+ Add item</button>
     <div class="bld-ef"><label>Layout</label><select data-f="layout"><option value="grid-2"${s.layout==='grid-2'?' selected':''}>2 columns</option><option value="grid-3"${(!s.layout||s.layout==='grid-3')?' selected':''}>3 columns</option><option value="grid-4"${s.layout==='grid-4'?' selected':''}>4 columns</option></select></div>
@@ -745,7 +748,7 @@ function bEditorFields(s) {
     const items=s.items||[];
     f=`${ehs}
        <div id="bFEAT">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button>
-       <div class="bld-ef"><label>Icon / emoji</label><input type="text" data-ci="${i}" data-cf="icon" value="${bA(it.icon||'')}" placeholder="✦ or 🚀" /></div>
+       <div class="bld-ef"><label>Icon</label><div style="display:flex;gap:.4rem;"><input type="text" data-ci="${i}" data-cf="icon" value="${bA(it.icon||'')}" placeholder="emoji, or pick →" style="flex:1;" /><button class="btn btn-sm bld-iconpick" type="button">Pick</button></div></div>
        <div class="bld-ef"><label>Title</label><input type="text" data-ci="${i}" data-cf="title" value="${bA(it.title||'')}" /></div>
        <div class="bld-ef"><label>Text</label><textarea data-ci="${i}" data-cf="text" rows="2">${bE(it.text||'')}</textarea></div>
      </div>`).join('')}</div>
@@ -893,7 +896,7 @@ function bEditorFields(s) {
        <div class="bld-ef"><label>Message when done</label><input type="text" data-f="done_text" value="${bA(s.done_text||'')}" /></div>${bAlignRow(s.align)}${bPadRow(s.pad)}`;
   } else if (s.type==='badges') {
     const items=s.items||[];
-    f=`<div id="bBADGE">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button><div class="bld-ef"><label>Icon <span style="opacity:.5">(emoji)</span></label><input type="text" data-ci="${i}" data-cf="icon" value="${bA(it.icon||'')}" /></div><div class="bld-ef"><label>Label</label><input type="text" data-ci="${i}" data-cf="label" value="${bA(it.label||'')}" /></div></div>`).join('')}</div>
+    f=`<div id="bBADGE">${items.map((it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button><div class="bld-ef"><label>Icon</label><div style="display:flex;gap:.4rem;"><input type="text" data-ci="${i}" data-cf="icon" value="${bA(it.icon||'')}" placeholder="emoji" style="flex:1;" /><button class="btn btn-sm bld-iconpick" type="button">Pick</button></div></div><div class="bld-ef"><label>Label</label><input type="text" data-ci="${i}" data-cf="label" value="${bA(it.label||'')}" /></div></div>`).join('')}</div>
        <button class="bld-add-li bld-add-item" data-shape='{"icon":"✔","label":""}'>+ Add badge</button>${bAlignRow(s.align)}${bPadRow(s.pad)}`;
   } else if (s.type==='vcard') {
     const items=s.items||[];
@@ -953,10 +956,10 @@ function bEditorFields(s) {
     const FT=[['text','Text'],['email','Email'],['tel','Phone'],['number','Number'],['url','URL'],['textarea','Long text'],['select','Dropdown'],['radio','Radio choices'],['checkboxes','Checkboxes'],['checkbox','Single checkbox'],['date','Date'],['time','Time']];
     const opt=(v,cur)=>`<option value="${v}"${(cur||'text')===v?' selected':''}>`;
     const fieldUI=(it,i)=>`<div class="bld-li-item"><button class="bld-li-rm" data-crm="${i}">✕</button>
-       <div class="bld-ef"><label>Field type</label><select data-ci="${i}" data-cf="ftype">${FT.map(([v,l])=>`${opt(v,it.ftype)}${l}</option>`).join('')}</select></div>
+       <div class="bld-ef"><label>Field type</label><select data-ci="${i}" data-cf="ftype" data-rerender>${FT.map(([v,l])=>`${opt(v,it.ftype)}${l}</option>`).join('')}</select></div>
        <div class="bld-ef"><label>Label</label><input type="text" data-ci="${i}" data-cf="label" value="${bA(it.label||'')}" /></div>
        <div class="bld-ef"><label>Placeholder <span style="opacity:.5">(or dropdown prompt)</span></label><input type="text" data-ci="${i}" data-cf="placeholder" value="${bA(it.placeholder||'')}" /></div>
-       <div class="bld-ef"><label>Options <span style="opacity:.5">(one per line — dropdown/radio/checkboxes)</span></label><textarea data-ci="${i}" data-cf="options" rows="3">${bE(it.options||'')}</textarea></div>
+       ${['select','radio','checkboxes'].includes(it.ftype)?`<div class="bld-ef"><label>Options <span style="opacity:.5">(one per line)</span></label><textarea data-ci="${i}" data-cf="options" rows="3">${bE(it.options||'')}</textarea></div>`:''}
        <div class="bld-ef"><label>Required</label><select data-ci="${i}" data-cf="required"><option value="no"${it.required!=='yes'?' selected':''}>No</option><option value="yes"${it.required==='yes'?' selected':''}>Yes</option></select></div>
        <div class="bld-ef"><label>Width</label><select data-ci="${i}" data-cf="width"><option value="full"${it.width!=='half'?' selected':''}>Full</option><option value="half"${it.width==='half'?' selected':''}>Half</option></select></div>
      </div>`;
@@ -1073,7 +1076,7 @@ function bBindEditor(panel, s, onUpdate) {
 
   panel.querySelectorAll('[data-ci][data-cf]').forEach(inp => {
     const ev=inp.tagName==='SELECT'?'change':'input';
-    inp.addEventListener(ev, () => { const i=+inp.dataset.ci; if(!s.items)s.items=[]; if(!s.items[i])s.items[i]={}; s.items[i][inp.dataset.cf]=inp.value; onUpdate(s); });
+    inp.addEventListener(ev, () => { const i=+inp.dataset.ci; if(!s.items)s.items=[]; if(!s.items[i])s.items[i]={}; s.items[i][inp.dataset.cf]=inp.value; onUpdate(s, inp.hasAttribute('data-rerender')?'re-editor':undefined); });
   });
   panel.querySelectorAll('[data-crm]').forEach(btn => {
     btn.addEventListener('click', () => { s.items.splice(+btn.dataset.crm,1); onUpdate(s,'re-editor'); });
@@ -1111,6 +1114,11 @@ function bBindEditor(panel, s, onUpdate) {
       s.items.push(shape); onUpdate(s,'re-editor');
     });
   });
+
+  panel.querySelectorAll('.bld-iconpick').forEach(btn => btn.addEventListener('click', () => {
+    const inp = btn.closest('.bld-ef')?.querySelector('input[data-cf="icon"]');
+    if (inp && typeof bldOpenIconPicker === 'function') bldOpenIconPicker(name => { inp.value = name; inp.dispatchEvent(new Event('input', { bubbles: true })); });
+  }));
 
   panel.querySelector('#bFilePrevPick')?.addEventListener('click', () => openFilePicker(url => { s.url=url; const inp=panel.querySelector('[data-f="url"]'); if(inp){inp.value=url;} onUpdate(s); }));
   panel.querySelector('#bFileDownPick')?.addEventListener('click', () => openFilePicker(url => { s.url=url; const inp=panel.querySelector('[data-f="url"]'); if(inp){inp.value=url;} onUpdate(s); }));

@@ -165,6 +165,38 @@ function bldInitColoris(){
   window.Coloris({ el:'.coloris', themeMode:'dark', format:'hex', alpha:false, swatches:['#020a03','#4dbd6a','#f0f7f1','#7fa6d8','#e6b15a','#e0556a'] });
 }
 
+
+function bldOpenIconPicker(cb) {
+  if (document.getElementById('bldIconOv')) return;
+  const icons = (typeof __ICONS__ !== 'undefined' && __ICONS__) || [];
+  const ov = document.createElement('div'); ov.id = 'bldIconOv';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:99992;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:8vh 1.5rem 1.5rem;';
+  ov.innerHTML = `<div style="background:var(--panel);border:1px solid rgba(77,189,106,.2);border-radius:12px;max-width:440px;width:100%;max-height:78vh;display:flex;flex-direction:column;overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.8rem 1.1rem .2rem;"><div style="display:flex;gap:.3rem;"><button class="bld-itab on" data-t="icons">Icons</button><button class="bld-itab" data-t="emoji">Emoji</button></div><button id="bldIconX" style="background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;line-height:1;">×</button></div>
+    <div id="bldIconBody" style="flex:1;overflow-y:auto;padding:.8rem 1rem 1rem;min-height:200px;"></div>
+  </div>`;
+  const close = () => ov.remove();
+  const body = ov.querySelector('#bldIconBody');
+  const showIcons = () => {
+    body.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:.5rem;">${icons.map(n => `<button class="bld-icon-cell" data-icon="${n}" title="${n}" style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:rgba(77,189,106,.05);border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--green);"><span style="display:inline-block;width:22px;height:22px;background:currentColor;-webkit-mask:url('/assets/icons/${n}.svg') center/contain no-repeat;mask:url('/assets/icons/${n}.svg') center/contain no-repeat;"></span></button>`).join('')}</div>`;
+    body.querySelectorAll('.bld-icon-cell').forEach(b => b.addEventListener('click', () => { cb('@' + b.dataset.icon); close(); }));
+  };
+  const showEmoji = async () => {
+    body.innerHTML = '<p style="color:var(--muted);font-size:.75rem;padding:1rem;">Loading emoji…</p>';
+    try {
+      if (!window.EmojiMart) await new Promise((res, rej) => { const s = document.createElement('script'); s.src = '/deps/emoji-mart.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+      if (!window._emojiData) window._emojiData = await fetch('/deps/emoji-data.json').then(r => r.json());
+      body.innerHTML = '';
+      body.appendChild(new window.EmojiMart.Picker({ data: window._emojiData, theme: 'dark', previewPosition: 'none', skinTonePosition: 'none', onEmojiSelect: e => { cb(e.native); close(); } }));
+    } catch (e) { body.innerHTML = '<p style="color:var(--muted);font-size:.75rem;padding:1rem;">Couldn’t load the emoji picker.</p>'; }
+  };
+  ov.querySelectorAll('.bld-itab').forEach(t => t.addEventListener('click', () => { ov.querySelectorAll('.bld-itab').forEach(x => x.classList.toggle('on', x === t)); (t.dataset.t === 'emoji' ? showEmoji : showIcons)(); }));
+  ov.addEventListener('click', e => { if (e.target === ov) close(); });
+  ov.querySelector('#bldIconX').addEventListener('click', close);
+  document.body.appendChild(ov);
+  showIcons();
+}
+
 function bldBlockMenuItems(id){
   const i=bldState.sections.findIndex(s=>s.id===id);
   return [

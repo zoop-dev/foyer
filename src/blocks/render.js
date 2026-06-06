@@ -49,7 +49,7 @@ function bXtra(s, h) {
       const min = s.cols === '4' ? '200px' : s.cols === '2' ? '300px' : '240px';
       const ca = s.card_align || 'left';
       const cards = items.map(it => `<div style="text-align:${ca};">
-        ${it.icon ? `<div style="font-size:2rem;line-height:1;margin-bottom:1rem;">${E(it.icon)}</div>` : ''}
+        ${it.icon ? `<div style="font-size:2rem;line-height:1;margin-bottom:1rem;color:${accent};">${foyerIcon(it.icon, '1em', E)}</div>` : ''}
         <div style="font-size:1.05rem;font-weight:400;letter-spacing:.01em;margin-bottom:.5rem;">${E(it.title || '')}</div>
         <div style="font-size:.9rem;font-weight:200;line-height:1.7;color:${rgb(text, .6)};">${E(it.text || '')}</div>
       </div>`).join('');
@@ -143,8 +143,8 @@ function bXtra(s, h) {
     case 'callout': {
       const v = s.variant || 'info';
       const col = v === 'warn' ? '#e6b15a' : v === 'success' ? '#6cd49a' : v === 'tip' ? accent : '#7fa6d8';
-      const ic = s.icon || (v === 'warn' ? '⚠️' : v === 'success' ? '✅' : v === 'tip' ? '💡' : 'ℹ️');
-      return wrap(cont(`<div style="display:flex;gap:.9rem;border:1px solid ${rgb(text, .1)};border-left:3px solid ${col};background:${rgb(text, .03)};border-radius:10px;padding:1.1rem 1.3rem;"><div style="font-size:1.2rem;line-height:1.3;flex-shrink:0;">${E(ic)}</div><div>${s.title ? `<div style="font-weight:400;font-size:.95rem;margin-bottom:.3rem;color:${col};">${E(s.title)}</div>` : ''}<div class="md-content" style="font-size:.88rem;font-weight:200;line-height:1.7;color:${rgb(text, .72)};">${md(s.body)}</div></div></div>`, '720px'));
+      const ic = s.icon || (v === 'warn' ? '@bolt' : v === 'success' ? '@check-circle' : v === 'tip' ? '@bolt' : '@chat');
+      return wrap(cont(`<div style="display:flex;gap:.9rem;border:1px solid ${rgb(text, .1)};border-left:3px solid ${col};background:${rgb(text, .03)};border-radius:10px;padding:1.1rem 1.3rem;"><div style="font-size:1.2rem;line-height:1.3;flex-shrink:0;color:${col};">${foyerIcon(ic, '1em', E)}</div><div>${s.title ? `<div style="font-weight:400;font-size:.95rem;margin-bottom:.3rem;color:${col};">${E(s.title)}</div>` : ''}<div class="md-content" style="font-size:.88rem;font-weight:200;line-height:1.7;color:${rgb(text, .72)};">${md(s.body)}</div></div></div>`, '720px'));
     }
     case 'code': {
 
@@ -219,7 +219,7 @@ function bXtra(s, h) {
     }
     case 'badges': {
       const ai = s.align === 'left' ? 'flex-start' : s.align === 'right' ? 'flex-end' : 'center';
-      const bs = items.map(it => `<div style="display:flex;align-items:center;gap:.5rem;border:1px solid ${rgb(accent, .15)};border-radius:30px;padding:.5rem 1rem;"><span style="font-size:1rem;">${E(it.icon || '✔')}</span><span style="font-size:.78rem;font-weight:300;color:${rgb(text, .75)};">${E(it.label || '')}</span></div>`).join('');
+      const bs = items.map(it => `<div style="display:flex;align-items:center;gap:.5rem;border:1px solid ${rgb(accent, .15)};border-radius:30px;padding:.5rem 1rem;"><span style="font-size:1rem;color:${accent};">${foyerIcon(it.icon || '✔', '1em', E)}</span><span style="font-size:.78rem;font-weight:300;color:${rgb(text, .75)};">${E(it.label || '')}</span></div>`).join('');
       return wrap(cont(`<div style="display:flex;flex-wrap:wrap;gap:.7rem;justify-content:${ai};">${bs}</div>`, '760px'));
     }
     case 'vcard': {
@@ -355,6 +355,18 @@ function bXtra(s, h) {
 }
 
 
+
+
+
+function foyerIcon(val, size, esc) {
+  val = String(val == null ? '' : val); size = size || '1em'; esc = esc || ((x) => x);
+  if (val[0] === '@') {
+    const n = val.slice(1).replace(/[^a-z0-9-]/gi, '');
+    const u = `url('/assets/icons/${n}.svg') center/contain no-repeat`;
+    return `<span style="display:inline-block;width:${size};height:${size};background:currentColor;-webkit-mask:${u};mask:${u};vertical-align:-0.125em;"></span>`;
+  }
+  return esc(val);
+}
 
 function foyerHL(root) {
   if (!root || !root.querySelectorAll) return;
