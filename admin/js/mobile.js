@@ -87,7 +87,7 @@ function mRescueTheme() {
 
 function mBlockRow(s) {
   const cat = (typeof BLOCK_CATALOG !== 'undefined') ? BLOCK_CATALOG.find(b => b.t === s.type) : null;
-  const ico = (cat && cat.i) || '▫';
+  const ico = (typeof bldBlockIco === 'function') ? bldBlockIco(cat && cat.i) : ((cat && cat.i) || '▫');
   const label = (typeof BLK_LABEL !== 'undefined' && BLK_LABEL[s.type]) || s.type;
   const wl = s.width === 'half' ? '½' : s.width === 'third' ? '⅓' : 'Full';
   let preview;

@@ -78,7 +78,18 @@ function bSetupDnD(canvasEl, sections, onDone) {
 }
 
 let bldPickerCat='all', bldPickerQ='';
-function pickCard(b){ return `<button class="bld-pick" data-type="${bA(b.t)}" title="${bA(b.l)}"><span class="bld-pick-ic">${b.i||'▫'}</span><span class="bld-pick-l">${bE(b.l)}</span></button>`; }
+
+
+
+function bldBlockIco(ic, size){
+  size = size || '1em';
+  if (!ic) return '▫';
+  if (ic[0] === '@') return (typeof foyerIcon === 'function') ? foyerIcon(ic, size) : ic;
+  const n = String(ic).replace(/[^a-z0-9-]/gi, '');
+  const u = `url('/assets/block-icons/${n}.svg') center/contain no-repeat`;
+  return `<span style="display:inline-block;width:${size};height:${size};background:currentColor;-webkit-mask:${u};mask:${u};vertical-align:-0.125em;"></span>`;
+}
+function pickCard(b){ return `<button class="bld-pick" data-type="${bA(b.t)}" title="${bA(b.l)}"><span class="bld-pick-ic">${bldBlockIco(b.i)}</span><span class="bld-pick-l">${bE(b.l)}</span></button>`; }
 function bldRenderPicker(){
   const grid=document.getElementById('bldPickerGrid'); if(!grid) return;
   let list=BLOCK_CATALOG;
