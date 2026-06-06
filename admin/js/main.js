@@ -62,6 +62,7 @@ async function fetchSettings() {
   if (s.nav_style) document.getElementById('sNavStyle').value=s.nav_style;
   if (s.nav_align) document.getElementById('sNavAlign').value=s.nav_align;
   if (s.nav_position) document.getElementById('sNavPosition').value=s.nav_position;
+  document.getElementById('sSearchEnabled').checked = s.search_enabled !== '0';   // on by default
   document.getElementById('sSmoothScroll').checked = s.smooth_scroll !== '0';   // on by default
   document.getElementById('sScrambleTitle').checked = s.scramble_title === '1';
   document.getElementById('sScrambleStrings').value = s.scramble_strings || '';
@@ -100,6 +101,7 @@ document.getElementById('saveSettingsBtn').addEventListener('click', async () =>
       nav_style:document.getElementById('sNavStyle').value,
       nav_align:document.getElementById('sNavAlign').value,
       nav_position:document.getElementById('sNavPosition').value,
+      search_enabled:document.getElementById('sSearchEnabled').checked?'1':'0',
       smooth_scroll:document.getElementById('sSmoothScroll').checked?'1':'0',
       scramble_title:document.getElementById('sScrambleTitle').checked?'1':'0',
       scramble_strings:document.getElementById('sScrambleStrings').value,

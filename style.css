@@ -284,6 +284,12 @@
     }
     .nav-a:hover, .nav-a.cur { color: var(--site-accent, var(--site-accent)); }
     
+    .nav-search { display: inline-flex; align-items: center; gap: .4rem; padding: .42rem .85rem; line-height: 1;
+      border: 1px solid rgba(var(--site-accent-rgb),0.22); border-radius: 30px; background: rgba(var(--site-accent-rgb),0.05);
+      transition: color .2s, background .2s, border-color .2s; }
+    .nav-search svg { opacity: .85; flex-shrink: 0; }
+    .nav-search:hover { background: rgba(var(--site-accent-rgb),0.12); border-color: rgba(var(--site-accent-rgb),0.5); }
+    
     .nav-parent { position: relative; display: inline-flex; align-items: center; }
     .nav-caret { font-size: .8em; opacity: .55; margin-left: .1em; }
     .nav-flyout {

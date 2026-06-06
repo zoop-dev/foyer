@@ -40,7 +40,10 @@
       const extLinks = custom_links.map(l =>
         `<a href="${escAttr(l.url || '#')}" class="nav-a" target="${l.new_tab !== false ? '_blank' : '_self'}" rel="noopener">${pgE(l.label || '')}</a>`
       );
-      const searchBtn = `<button type="button" class="nav-a nav-search" aria-label="Search" title="Search (⌘K)" style="background:none;border:none;cursor:pointer;font:inherit;color:inherit;display:inline-flex;align-items:center;gap:.4rem;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Search</button>`;
+      window._foyerSearchOn = data.search_enabled !== false;   // admin toggle (default on)
+      const searchBtn = window._foyerSearchOn
+        ? `<button type="button" class="nav-a nav-search" aria-label="Search" title="Search (⌘K)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><span>Search</span></button>`
+        : '';
       const links = [...pageLinks, ...extLinks, searchBtn].join('');
       const wrapStyle = vertical
         ? `display:flex;flex-direction:column;gap:1rem;align-items:${j};width:100%;`
@@ -309,6 +312,7 @@
       return pgE(s);
     }
     function foyerOpenSearch() {
+      if (window._foyerSearchOn === false) return;   // disabled in admin
       if (document.getElementById('foyer-search')) return;
       const cs = getComputedStyle(document.documentElement);
       const accent = cs.getPropertyValue('--site-accent').trim() || '#4dbd6a';

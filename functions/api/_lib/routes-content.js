@@ -48,7 +48,7 @@ export async function handleContent(ctx) {
     const vAuth = await visitorAuthed();
     if (vAuth === 'banned') return respond({ error: 'account_banned' }, 403);
     if (!authed() && vAuth !== 'ok' && !(await sitePublic())) return respond({ error: 'unauthorized' }, 401);
-    const { results } = await env.DB.prepare('SELECT title, slug, page_json FROM pages WHERE is_published = 1').all();
+    const { results } = await env.DB.prepare("SELECT title, slug, page_json FROM pages WHERE is_published = 1 AND slug != '__404__'").all();
     const SKIP = new Set(['id', 'type', 'url', 'href', 'img', 'photo', 'src', 'bg_img', 'bg_image', 'image', 'avatar', 'cover_image', 'data', 'anchor', 'access_key', 'target', 'buy_url', 'btn_url', 'btn2_url', 'button_url']);
     const collect = (o, out, d) => {
       if (d > 7 || o == null) return;
@@ -115,11 +115,11 @@ export async function handleContent(ctx) {
       'SELECT id, title, slug, page_json, sort_order FROM pages WHERE is_published = 1 ORDER BY sort_order ASC, id ASC'
     ).all();
 
-    const settingKeys = ['nav_title', 'nav_style', 'nav_align', 'nav_custom_links', 'nav_page_order', 'nav_position'];
+    const settingKeys = ['nav_title', 'nav_style', 'nav_align', 'nav_custom_links', 'nav_page_order', 'nav_position', 'search_enabled'];
     const settingsRows = await Promise.all(
       settingKeys.map(k => env.DB.prepare("SELECT value FROM site_settings WHERE key = ?").bind(k).first().catch(() => null))
     );
-    const [nav_title, nav_style, nav_align, nav_custom_links_raw, nav_page_order_raw, nav_position] = settingsRows.map(r => r?.value || '');
+    const [nav_title, nav_style, nav_align, nav_custom_links_raw, nav_page_order_raw, nav_position, search_enabled] = settingsRows.map(r => r?.value || '');
 
     let navPageOrder = [];
     try { navPageOrder = JSON.parse(nav_page_order_raw || '[]'); } catch {}
@@ -150,6 +150,7 @@ export async function handleContent(ctx) {
       nav_style:    nav_style    || 'blurred',
       nav_align:    nav_align    || 'left',
       nav_position: nav_position || 'top',
+      search_enabled: search_enabled !== '0',
     });
   }
 
