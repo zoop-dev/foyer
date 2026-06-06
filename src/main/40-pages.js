@@ -44,10 +44,10 @@
       const searchBtn = window._foyerSearchOn
         ? `<button type="button" class="nav-a nav-search" aria-label="Search" title="Search (⌘K)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><span>Search</span></button>`
         : '';
-      const links = [...pageLinks, ...extLinks, searchBtn].join('');
+      const links = [searchBtn, ...pageLinks, ...extLinks].join('');
       const wrapStyle = vertical
         ? `display:flex;flex-direction:column;gap:1rem;align-items:${j};width:100%;`
-        : `flex:1;display:flex;gap:2rem;justify-content:${j};`;
+        : `flex:1;display:flex;align-items:center;gap:2rem;justify-content:${j};`;
       const titleSpan = nav_title
         ? `<span style="font-family:'Josefin Sans',sans-serif;font-weight:200;font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(var(--site-muted-rgb),0.75);flex-shrink:0;${vertical?'margin-bottom:.5rem;':''}">${nav_title}</span>`
         : '';
