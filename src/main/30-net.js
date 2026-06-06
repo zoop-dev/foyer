@@ -10,12 +10,16 @@
     const UI_VERSION_KEY = 'foyer_ui_version';
     let _updateShown = false;
 
-    function showUpdateOverlay(pendingUiVersion) {
+    function showUpdateOverlay(pendingUiVersion, newVer) {
       if (_updateShown) return;
       _updateShown = true;
 
 
       const cacheNewVersion = () => { if (pendingUiVersion) localStorage.setItem(UI_VERSION_KEY, pendingUiVersion); };
+
+
+      const isFoyer = !pendingUiVersion;
+      const _fIcon = (w, h, style) => `<svg viewBox="0 0 44 50" width="${w}" height="${h}" fill="none" stroke="rgba(var(--site-accent-rgb),.85)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;${style || ''}"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg>`;
 
       const island = document.createElement('div');
       island.id = '_ver_island';
@@ -29,9 +33,9 @@
         'font-family:"Josefin Sans",sans-serif;',
       ].join('');
       island.innerHTML = `
-        <img src="/icons/favicon.svg" width="18" height="18" style="flex-shrink:0;opacity:.7;border-radius:5px;" alt="" />
+        ${isFoyer ? _fIcon(16, 18, 'opacity:.8;') : '<img src="/icons/favicon.svg" width="18" height="18" style="flex-shrink:0;opacity:.7;border-radius:5px;" alt="" />'}
         <div id="_isl_text" style="overflow:hidden;max-width:0;opacity:0;transition:max-width .35s cubic-bezier(.16,1,.3,1) .1s,opacity .3s ease .15s;white-space:nowrap;">
-          <div style="font-weight:300;font-size:.68rem;letter-spacing:.06em;color:rgba(220,245,225,.9);">Site Updated</div>
+          <div style="font-weight:300;font-size:.68rem;letter-spacing:.06em;color:rgba(220,245,225,.9);">${isFoyer ? 'Foyer Updated' : 'Site Updated'}</div>
           <div style="font-weight:100;font-size:.55rem;letter-spacing:.15em;color:rgba(var(--site-accent-rgb),.65);margin-top:.1rem;">Save your progress</div>
         </div>`;
       document.body.appendChild(island);
@@ -54,11 +58,12 @@
         el.style.cssText = 'position:fixed;inset:0;z-index:9997;background:rgba(var(--site-bg-rgb),0);display:flex;align-items:center;justify-content:center;font-family:"Josefin Sans",sans-serif;transition:background .4s ease;';
         el.innerHTML = `
           <div style="text-align:center;max-width:300px;padding:2rem;opacity:0;transform:translateY(12px);transition:opacity .4s ease,transform .4s ease;">
-            <img src="/icons/favicon.svg" width="28" height="28" style="margin-bottom:1.4rem;opacity:.5;border-radius:6px;" alt="" />
+            ${isFoyer ? _fIcon(25, 28, 'margin-bottom:1.4rem;opacity:.6;') : '<img src="/icons/favicon.svg" width="28" height="28" style="margin-bottom:1.4rem;opacity:.5;border-radius:6px;" alt="" />'}
             <p style="font-weight:100;font-size:.55rem;letter-spacing:.35em;text-transform:uppercase;color:rgba(var(--site-accent-rgb),.6);margin-bottom:.5rem;">Updated</p>
-            <p style="font-weight:200;font-size:.7rem;letter-spacing:.04em;color:rgba(var(--site-muted-rgb),.4);line-height:1.9;margin-bottom:1.6rem;">New content is available.<br>Reloading shortly.</p>
+            <p style="font-weight:200;font-size:.7rem;letter-spacing:.04em;color:rgba(var(--site-muted-rgb),.4);line-height:1.9;margin-bottom:1.6rem;">${isFoyer ? 'Foyer has updated.<br>Reloading shortly.' : 'New content is available.<br>Reloading shortly.'}</p>
             <button id="_verBtn" style="font-family:'Josefin Sans',sans-serif;font-weight:200;font-size:.6rem;letter-spacing:.25em;text-transform:uppercase;padding:.55rem 1.8rem;border:1px solid rgba(var(--site-accent-rgb),.35);background:transparent;color:rgba(var(--site-accent-rgb),.8);cursor:pointer;">Reload Now</button>
             <p id="_verCount" style="margin-top:.8rem;font-size:.52rem;font-weight:100;color:rgba(var(--site-muted-rgb),.25);letter-spacing:.08em;"></p>
+            <p style="margin-top:1.3rem;font-size:.5rem;font-weight:200;color:rgba(var(--site-muted-rgb),.35);letter-spacing:.12em;font-variant-numeric:tabular-nums;">${VERSION}<span style="opacity:.45;margin:0 .5rem;">|</span>${newVer || '—'}</p>
           </div>`;
         document.body.appendChild(el);
         requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -102,7 +107,7 @@
         const sys = await sysVersion();
         if (sys && sys !== VERSION) {
           let tried = null; try { tried = sessionStorage.getItem('foyer_sys_reloaded'); } catch {}
-          if (tried !== sys) { try { sessionStorage.setItem('foyer_sys_reloaded', sys); } catch {} showUpdateOverlay(); return; }
+          if (tried !== sys) { try { sessionStorage.setItem('foyer_sys_reloaded', sys); } catch {} showUpdateOverlay(undefined, sys); return; }
         }
 
         const r = await fetch('/api/version').catch(() => null);
@@ -110,7 +115,7 @@
         const data = await (r ? r.json().catch(() => null) : null);
         if (!data) return;
         const storedUi = localStorage.getItem(UI_VERSION_KEY);
-        if (data.ui_version && storedUi && data.ui_version !== storedUi) { showUpdateOverlay(data.ui_version); return; }
+        if (data.ui_version && storedUi && data.ui_version !== storedUi) { showUpdateOverlay(data.ui_version, data.ui_version); return; }
       }, 10000);
     }
 
