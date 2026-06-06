@@ -387,7 +387,7 @@ function bRender(s, theme) {
 function bDefault(type) {
   const id = Math.random().toString(36).slice(2,9);
   switch(type) {
-    case 'hero':    return { id, type, eyebrow:'', name:'Zachary Lanson', tagline:'', align:'center', name_size:'lg', weight:'300', ls:'normal', pad:'md' };
+    case 'hero':    return { id, type, eyebrow:'', name:(typeof __SITE__!=='undefined'&&__SITE__.name)||'Your Name', tagline:'', align:'center', name_size:'lg', weight:'300', ls:'normal', pad:'md' };
     case 'bio':     return { id, type, heading:'About', body:'', align:'left', max_w:'normal', fsize:'md', lh:'normal', pad:'md' };
     case 'links':   return { id, type, items:[{t:'',u:'https://',d:'',new_tab:'yes'}], link_style:'card', pad:'md' };
     case 'contact': return { id, type, items:[{label:'Email',val:'',href:''},{label:'Phone',val:'',href:''}], align:'center', cstyle:'normal', pad:'md' };
