@@ -1122,13 +1122,14 @@ function bBindEditor(panel, s, onUpdate) {
 
 
 
+
   panel.addEventListener('contextmenu', e => {
     const t = e.target;
     if (!t || (t.tagName !== 'TEXTAREA' && !(t.tagName === 'INPUT' && /^(text|url|search|email|tel|)$/i.test(t.type || 'text')))) return;
-    if (typeof bldOpenIconPicker !== 'function') return;
+    if (typeof ctxMenu !== 'function') return;
     e.preventDefault();
     const isIcon = t.matches('[data-cf="icon"]');
-    bldOpenIconPicker(val => {
+    const insert = val => {
       if (isIcon) { t.value = val; }
       else {
         const a = t.selectionStart ?? t.value.length, b = t.selectionEnd ?? t.value.length;
@@ -1136,7 +1137,17 @@ function bBindEditor(panel, s, onUpdate) {
         const p = a + val.length; try { t.setSelectionRange(p, p); } catch (_) {}
       }
       t.dispatchEvent(new Event('input', { bubbles: true })); t.focus();
-    }, t);
+    };
+    const sel = () => t.value.slice(t.selectionStart || 0, t.selectionEnd || 0);
+    const items = [
+      { label: isIcon ? 'Pick icon' : 'Add emoji / icon', icon: '☺', action: () => bldOpenIconPicker(insert, t) },
+      '-',
+      { label: 'Cut', icon: '✂', action: () => { const s = sel(); if (!s) return; try { navigator.clipboard.writeText(s); } catch (_) {} const a = t.selectionStart, b = t.selectionEnd; t.value = t.value.slice(0, a) + t.value.slice(b); try { t.setSelectionRange(a, a); } catch (_) {} t.dispatchEvent(new Event('input', { bubbles: true })); t.focus(); } },
+      { label: 'Copy', icon: '⧉', action: () => { const s = sel(); if (s) { try { navigator.clipboard.writeText(s); } catch (_) {} } } },
+      { label: 'Paste', icon: '📋', action: async () => { try { const txt = await navigator.clipboard.readText(); if (txt) insert(txt); } catch (_) {} } },
+      { label: 'Select all', icon: '⊞', action: () => { t.focus(); try { t.select(); } catch (_) {} } },
+    ];
+    ctxMenu(e.clientX, e.clientY, items);
   });
 
   panel.querySelector('#bFilePrevPick')?.addEventListener('click', () => openFilePicker(url => { s.url=url; const inp=panel.querySelector('[data-f="url"]'); if(inp){inp.value=url;} onUpdate(s); }));
