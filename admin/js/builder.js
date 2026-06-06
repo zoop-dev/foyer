@@ -171,11 +171,11 @@ function bldInitColoris(){
 async function bldOpenIconPicker(cb, anchor) {
   if (document.getElementById('bldEmojiPop')) return;
   const icons = (typeof __ICONS__ !== 'undefined' && __ICONS__) || [];
-  const W = 352, H = 435;
+  const W = 352, H = 540;
   const pop = document.createElement('div'); pop.id = 'bldEmojiPop';
-  pop.style.cssText = 'position:fixed;z-index:99993;border-radius:10px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5);';
+  pop.style.cssText = 'position:fixed;z-index:99993;width:' + W + 'px;border-radius:10px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5);background:var(--panel);border:1px solid rgba(77,189,106,.2);';
   const place = () => {
-    let x = window.innerWidth / 2 - W / 2, y = window.innerHeight * 0.12;
+    let x = window.innerWidth / 2 - W / 2, y = window.innerHeight * 0.1;
     if (anchor && anchor.getBoundingClientRect) {
       const r = anchor.getBoundingClientRect();
       x = Math.min(Math.max(8, r.left), window.innerWidth - W - 8);
@@ -184,26 +184,30 @@ async function bldOpenIconPicker(cb, anchor) {
     pop.style.left = Math.round(x) + 'px'; pop.style.top = Math.round(y) + 'px';
   };
   place();
-  pop.innerHTML = '<div style="background:var(--panel);border:1px solid rgba(77,189,106,.2);border-radius:10px;padding:1rem 1.2rem;color:var(--muted);font-size:.75rem;">Loading…</div>';
+
+  const iconGrid = icons.length ? `<div style="padding:.6rem .7rem .2rem;">
+    <div style="font-size:.55rem;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);padding:0 .2rem .45rem;">Foyer Icons</div>
+    <div id="bldIcoGrid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:.25rem;max-height:132px;overflow-y:auto;">${icons.map(n => `<button type="button" class="bld-ico-cell" data-icon="${n}" title="${n}" style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:rgba(77,189,106,.05);border:1px solid var(--border);border-radius:7px;cursor:pointer;color:var(--green);"><span style="display:inline-block;width:18px;height:18px;background:currentColor;-webkit-mask:url('/assets/icons/${n}.svg') center/contain no-repeat;mask:url('/assets/icons/${n}.svg') center/contain no-repeat;"></span></button>`).join('')}</div>
+  </div>` : '';
+  pop.innerHTML = iconGrid + '<div id="bldEmojiHost"><div style="padding:1rem 1.2rem;color:var(--muted);font-size:.75rem;">Loading emoji…</div></div>';
   document.body.appendChild(pop);
+  pop.querySelectorAll('.bld-ico-cell').forEach(b => b.addEventListener('click', () => { cb('@' + b.dataset.icon); close(); }));
   const close = () => { pop.remove(); document.removeEventListener('mousedown', onOut, true); document.removeEventListener('keydown', onKey, true); };
   const onOut = e => { if (!pop.contains(e.target)) close(); };
   const onKey = e => { if (e.key === 'Escape') close(); };
+  const host = pop.querySelector('#bldEmojiHost');
   try {
     const _v = (typeof __VERSION__ !== 'undefined' ? __VERSION__ : '');
     if (!window.EmojiMart) await new Promise((res, rej) => { const s = document.createElement('script'); s.src = '/deps/emoji-mart.js?v=' + _v; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
     if (!window._emojiData) window._emojiData = await fetch('/deps/emoji-data.json').then(r => r.json());
-
-
-    const custom = icons.length ? [{ id: 'foyer', name: 'Foyer Icons', emojis: icons.map(n => ({ id: 'foyericon_' + n, name: n, keywords: [n, 'icon', 'foyer'], skins: [{ src: '/assets/icons/' + n + '.svg' }] })) }] : [];
     if (!pop.parentNode) return;
-    pop.innerHTML = '';
-    pop.appendChild(new window.EmojiMart.Picker({
-      data: window._emojiData, custom, theme: 'dark', previewPosition: 'none', skinTonePosition: 'none', autoFocus: true,
-      onEmojiSelect: e => { cb(e.id && e.id.indexOf('foyericon_') === 0 ? ('@' + e.id.slice(10)) : (e.native || ('@' + e.id))); close(); }
+    host.innerHTML = '';
+    host.appendChild(new window.EmojiMart.Picker({
+      data: window._emojiData, theme: 'dark', previewPosition: 'none', skinTonePosition: 'none', autoFocus: true,
+      onEmojiSelect: e => { cb(e.native || ('@' + e.id)); close(); }
     }));
     place();
-  } catch (e) { pop.innerHTML = '<div style="background:var(--panel);border:1px solid rgba(77,189,106,.2);border-radius:10px;padding:1rem 1.2rem;color:var(--muted);font-size:.75rem;">Couldn’t load the picker.</div>'; }
+  } catch (e) { host.innerHTML = '<div style="padding:1rem 1.2rem;color:var(--muted);font-size:.75rem;">Couldn’t load the emoji picker.</div>'; }
   setTimeout(() => document.addEventListener('mousedown', onOut, true), 0);
   document.addEventListener('keydown', onKey, true);
 }
