@@ -19,6 +19,9 @@
 
 
       const isFoyer = !pendingUiVersion;
+
+
+      const knownVer = isFoyer ? VERSION : (localStorage.getItem(UI_VERSION_KEY) || VERSION);
       const _fIcon = (w, h, style) => `<svg viewBox="0 0 44 50" width="${w}" height="${h}" fill="none" stroke="rgba(var(--site-accent-rgb),.85)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;${style || ''}"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg>`;
 
       const island = document.createElement('div');
@@ -63,7 +66,7 @@
             <p style="font-weight:200;font-size:.7rem;letter-spacing:.04em;color:rgba(var(--site-muted-rgb),.4);line-height:1.9;margin-bottom:1.6rem;">${isFoyer ? 'Foyer has updated.<br>Reloading shortly.' : 'New content is available.<br>Reloading shortly.'}</p>
             <button id="_verBtn" style="font-family:'Josefin Sans',sans-serif;font-weight:200;font-size:.6rem;letter-spacing:.25em;text-transform:uppercase;padding:.55rem 1.8rem;border:1px solid rgba(var(--site-accent-rgb),.35);background:transparent;color:rgba(var(--site-accent-rgb),.8);cursor:pointer;">Reload Now</button>
             <p id="_verCount" style="margin-top:.8rem;font-size:.52rem;font-weight:100;color:rgba(var(--site-muted-rgb),.25);letter-spacing:.08em;"></p>
-            <p style="margin-top:1.3rem;font-size:.5rem;font-weight:200;color:rgba(var(--site-muted-rgb),.35);letter-spacing:.12em;font-variant-numeric:tabular-nums;">${VERSION}<span style="opacity:.45;margin:0 .5rem;">|</span>${newVer || '—'}</p>
+            <p style="margin-top:1.3rem;font-size:.5rem;font-weight:200;color:rgba(var(--site-muted-rgb),.35);letter-spacing:.12em;font-variant-numeric:tabular-nums;">${knownVer}<span style="opacity:.45;margin:0 .5rem;">|</span>${newVer || '—'}</p>
           </div>`;
         document.body.appendChild(el);
         requestAnimationFrame(() => requestAnimationFrame(() => {
