@@ -38,7 +38,7 @@
     .field-row { display:flex; gap:1rem; }
     .field-row .field { flex:1; }
     label { font-weight:200; font-size:.6rem; letter-spacing:.28em; text-transform:uppercase; color:rgba(var(--muted-rgb),.6); }
-    input[type="password"],input[type="text"],input[type="email"],input[type="url"],input[type="tel"] {
+    input[type="password"],input[type="text"],input[type="email"],input[type="url"],input[type="tel"],input[type="number"] {
       background:var(--panel); border:1px solid var(--border); color:var(--white);
       font-weight:300; font-size:.88rem; padding:.72rem .95rem; outline:none;
       transition:border-color .2s; width:100%;

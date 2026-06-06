@@ -467,8 +467,9 @@
 
 
 
-    function startTitleScramble(strings) {
+    function startTitleScramble(strings, hold) {
       if (window._titleScrambling || !strings.length) return; window._titleScrambling = true;
+      hold = hold > 0 ? hold : 2600;   // ms to hold each string before scrambling to the next
       const chars = '!<>-_\\/[]{}—=+*^?#';
       let idx = 0;
       const to = (target, after) => {
@@ -479,7 +480,7 @@
           let out = '', done = 0;
           for (const x of q) { if (frame >= x.end) { done++; out += x.ch; } else if (frame >= x.start) { if (!x.r || Math.random() < 0.3) x.r = chars[Math.floor(Math.random() * chars.length)]; out += x.r; } else out += (x.ch === ' ' ? ' ' : ''); }
           document.title = out || target;
-          if (done < q.length) { frame++; setTimeout(tick, 45); } else { document.title = target; setTimeout(after, 2600); }
+          if (done < q.length) { frame++; setTimeout(tick, 45); } else { document.title = target; setTimeout(after, hold); }
         };
         tick();
       };
@@ -497,7 +498,8 @@
         if (!rm && s.scramble_title === '1') {
           let strings = String(s.scramble_strings || '').split('\n').map(x => x.trim()).filter(Boolean);
           if (!window.__FOYER_NOBRAND) strings.push('built by foyer');
-          startTitleScramble(strings);
+          const secs = parseFloat(s.scramble_interval);
+          startTitleScramble(strings, (secs > 0 ? secs : 2.6) * 1000);
         }
       };
       fetch('/api/settings').then(r => r.json()).then(apply).catch(() => apply(null));

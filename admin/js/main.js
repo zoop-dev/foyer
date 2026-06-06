@@ -65,6 +65,7 @@ async function fetchSettings() {
   document.getElementById('sSmoothScroll').checked = s.smooth_scroll !== '0';   // on by default
   document.getElementById('sScrambleTitle').checked = s.scramble_title === '1';
   document.getElementById('sScrambleStrings').value = s.scramble_strings || '';
+  document.getElementById('sScrambleInterval').value = s.scramble_interval || '';
   if (s.theme_bg)     document.getElementById('sThemeBg').value=s.theme_bg;
   if (s.theme_accent) document.getElementById('sThemeAccent').value=s.theme_accent;
   if (s.theme_text)   document.getElementById('sThemeText').value=s.theme_text;
@@ -102,6 +103,7 @@ document.getElementById('saveSettingsBtn').addEventListener('click', async () =>
       smooth_scroll:document.getElementById('sSmoothScroll').checked?'1':'0',
       scramble_title:document.getElementById('sScrambleTitle').checked?'1':'0',
       scramble_strings:document.getElementById('sScrambleStrings').value,
+      scramble_interval:document.getElementById('sScrambleInterval').value,
       theme_bg:document.getElementById('sThemeBg').value,
       theme_accent:document.getElementById('sThemeAccent').value,
       theme_text:document.getElementById('sThemeText').value,
