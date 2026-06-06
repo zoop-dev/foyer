@@ -13,10 +13,10 @@
             const imgs = (it.imgs && it.imgs.length) ? it.imgs.filter(Boolean) : (it.img ? [it.img] : []);
             const cover = imgs[0] || '';
             const coverHtml = cover
-              ? `<img class="coll-cover" src="${escAttr(cover)}" alt="${escAttr(it.name||'')}" style="width:100%;height:140px;object-fit:cover;display:block;" />`
+              ? `<img class="coll-cover" src="${escAttr(cover)}" alt="${escAttr(it.name||'')}" loading="lazy" decoding="async" style="width:100%;height:140px;object-fit:cover;display:block;" />`
               : `<div style="width:100%;height:140px;background:${pgRgb(accent,.06)};"></div>`;
             const thumbs = imgs.length>1
-              ? `<div style="display:flex;gap:.3rem;padding:.4rem .4rem 0;overflow-x:auto;">${imgs.map((u,k)=>`<img class="coll-thumb" data-cover="${escAttr(u)}" src="${escAttr(u)}" alt="" style="width:34px;height:34px;object-fit:cover;flex-shrink:0;cursor:pointer;border:1px solid ${pgRgb(accent,.2)};opacity:${k===0?'1':'.55'};" />`).join('')}</div>`
+              ? `<div style="display:flex;gap:.3rem;padding:.4rem .4rem 0;overflow-x:auto;">${imgs.map((u,k)=>`<img class="coll-thumb" data-cover="${escAttr(u)}" src="${escAttr(u)}" alt="" loading="lazy" decoding="async" style="width:34px;height:34px;object-fit:cover;flex-shrink:0;cursor:pointer;border:1px solid ${pgRgb(accent,.2)};opacity:${k===0?'1':'.55'};" />`).join('')}</div>`
               : '';
             const onSale = it.for_sale==='yes' && it.sale==='yes' && it.sale_price && (!it.sale_until || new Date(it.sale_until).getTime() > Date.now());
             const badge = it.for_sale==='yes'?`<div style="position:absolute;top:.5rem;right:.5rem;${onSale?'background:#e0556a;color:#fff;':`background:${accent};color:${bg};`}font-size:.55rem;font-weight:400;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .5rem;z-index:1;">${onSale?`Sale · <span style="text-decoration:line-through;opacity:.7;">${pgE(it.price||'')}</span> ${pgE(it.sale_price)}`:`For sale${it.price?` · ${pgE(it.price)}`:''}`}</div>`:'';
@@ -391,18 +391,24 @@
         const cs = el.getAttribute('data-coll-embed'); if (!cs) return;
         const accent = getComputedStyle(document.documentElement).getPropertyValue('--site-accent').trim() || '#4dbd6a';
         const text = getComputedStyle(document.documentElement).getPropertyValue('--site-text').trim() || '#c8e6aa';
-        const card = t => `<a href="/${cs}/${t.slug}" style="display:block;text-decoration:none;border:1px solid ${pgRgb(accent, .12)};background:${pgRgb(accent, .03)};border-radius:10px;overflow:hidden;">${t.cover_image ? `<img src="${escAttr(t.cover_image)}" alt="" style="width:100%;height:150px;object-fit:cover;display:block;" />` : `<div style="width:100%;height:150px;background:${pgRgb(accent, .06)};"></div>`}<div style="padding:.9rem 1rem;"><div style="font-weight:300;font-size:.95rem;color:${pgRgb(text, .92)};">${pgE(t.title || t.slug)}</div>${t.description ? `<div style="font-size:.72rem;font-weight:200;line-height:1.65;color:${pgRgb(text, .5)};margin-top:.35rem;">${pgE(t.description)}</div>` : ''}</div></a>`;
+        const card = t => `<a href="/${cs}/${t.slug}" style="display:block;text-decoration:none;border:1px solid ${pgRgb(accent, .12)};background:${pgRgb(accent, .03)};border-radius:10px;overflow:hidden;">${t.cover_image ? `<img src="${escAttr(t.cover_image)}" alt="" loading="lazy" decoding="async" style="width:100%;height:150px;object-fit:cover;display:block;" />` : `<div style="width:100%;height:150px;background:${pgRgb(accent, .06)};"></div>`}<div style="padding:.9rem 1rem;"><div style="font-weight:300;font-size:.95rem;color:${pgRgb(text, .92)};">${pgE(t.title || t.slug)}</div>${t.description ? `<div style="font-size:.72rem;font-weight:200;line-height:1.65;color:${pgRgb(text, .5)};margin-top:.35rem;">${pgE(t.description)}</div>` : ''}</div></a>`;
+
 
 
         const load = async (attempt) => {
+          let timer;
           try {
-            const r = await fetch('/api/collections/' + encodeURIComponent(cs) + '/items', { headers: sessionHeaders(session) });
+            const ctrl = ('AbortController' in window) ? new AbortController() : null;
+            if (ctrl) timer = setTimeout(() => ctrl.abort(), 7000);
+            const r = await fetch('/api/collections/' + encodeURIComponent(cs) + '/items', { headers: sessionHeaders(session), signal: ctrl ? ctrl.signal : undefined, cache: 'no-store' });
+            if (timer) clearTimeout(timer);
             if (!r.ok) throw new Error('http ' + r.status);
             const items = await r.json();
             if (!Array.isArray(items) || !items.length) { el.innerHTML = `<div style="grid-column:1/-1;text-align:center;font-size:.8rem;font-weight:200;color:${pgRgb(text, .4)};padding:1.2rem;">Nothing here yet.</div>`; return; }
             el.innerHTML = items.map(card).join('');
           } catch (e) {
-            if (attempt < 3) { setTimeout(() => load(attempt + 1), 500 * (attempt + 1)); return; }
+            if (timer) clearTimeout(timer);
+            if (attempt < 4) { setTimeout(() => load(attempt + 1), 500 * (attempt + 1)); return; }
             el.innerHTML = `<div style="grid-column:1/-1;text-align:center;font-size:.8rem;font-weight:200;color:${pgRgb(text, .5)};padding:1.2rem;">Couldn’t load this collection. <button type="button" data-ce-retry style="background:none;border:none;color:${accent};font:inherit;text-decoration:underline;cursor:pointer;">Retry</button></div>`;
             const b = el.querySelector('[data-ce-retry]'); if (b) b.addEventListener('click', () => { el.innerHTML = ''; load(0); });
           }
