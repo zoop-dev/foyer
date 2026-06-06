@@ -73,6 +73,7 @@ function bkFileChosen(file) {
   const reader = new FileReader();
   reader.onload = () => {
     let b; try { b = JSON.parse(reader.result); } catch { bkEl('bkSummary').innerHTML = '<span style="color:#e0556a;">That file isn’t valid JSON.</span>'; return; }
+    if (b && b.foyer_enc === 1) { _bkBundle = b; bkEl('bkSummary').innerHTML = `<div style="font-size:.72rem;color:rgba(220,245,225,.55);line-height:1.8;">🔒 Encrypted Foyer backup — contents are sealed and will be decrypted on the server during restore.</div>`; bkEl('bkRestore').disabled = false; return; }
     if (!b || b.foyer_backup !== 1 || !b.data) { bkEl('bkSummary').innerHTML = '<span style="color:#e0556a;">Not a Foyer backup file.</span>'; return; }
     _bkBundle = b;
     const d = b.data, n = (a) => Array.isArray(a) ? a.length : 0;

@@ -3,6 +3,27 @@
 
 
 
+
+
+
+const _b64 = (buf) => { const b = new Uint8Array(buf); let s = ''; for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s); };
+const _unb64 = (str) => { const bin = atob(str); const b = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i); return b; };
+async function _aesKey(secret) {
+  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(secret));
+  return crypto.subtle.importKey('raw', hash, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+}
+async function encryptBundle(obj, secret) {
+  const key = await _aesKey(secret);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(JSON.stringify(obj)));
+  return { foyer_enc: 1, alg: 'AES-GCM', iv: _b64(iv), data: _b64(ct) };
+}
+async function decryptBundle(envlp, secret) {
+  const key = await _aesKey(secret);
+  const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: _unb64(envlp.iv) }, key, _unb64(envlp.data));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+
 export async function handleBackup(ctx) {
   const { route, method, request, env, respond, compressJson, decompressJson, authed } = ctx;
   if (route !== 'backup' && route !== 'backup/restore') return null;
@@ -68,11 +89,15 @@ export async function handleBackup(ctx) {
       if (imgIds.size) { const ph = [...imgIds].map(() => '?').join(','); const r = await env.DB.prepare(`SELECT id, name, data, mime, size FROM images WHERE id IN (${ph})`).bind(...imgIds).all(); out.data.images = r.results || []; } else out.data.images = [];
       if (fileIds.size) { const ph = [...fileIds].map(() => '?').join(','); const r = await env.DB.prepare(`SELECT id, name, data, mime, size FROM files WHERE id IN (${ph})`).bind(...fileIds).all(); out.data.files = r.results || []; } else out.data.files = [];
     }
-    return respond(out);
+    return respond(env.BACKUP_KEY ? await encryptBundle(out, env.BACKUP_KEY) : out);
   }
 
   if (route === 'backup/restore' && method === 'POST') {
-    const bundle = await request.json().catch(() => null);
+    let bundle = await request.json().catch(() => null);
+    if (bundle && bundle.foyer_enc === 1) {
+      if (!env.BACKUP_KEY) return respond({ error: 'this backup is encrypted, but BACKUP_KEY is not configured on this site' }, 400);
+      try { bundle = await decryptBundle(bundle, env.BACKUP_KEY); } catch (e) { return respond({ error: 'could not decrypt — wrong key or corrupt file' }, 400); }
+    }
     if (!bundle || bundle.foyer_backup !== 1 || !bundle.data) return respond({ error: 'not a valid .foyer backup' }, 400);
     await ensureAll();
     const data = bundle.data;
