@@ -248,12 +248,10 @@ function showUpdateOverlay(pendingUiVersion) {
 (function startVersionPoll() {
 
 
-  const _SB = 'https://tvtfoghrdqwssdwvebuo.supabase.co';
-  const _K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2dGZvZ2hyZHF3c3Nkd3ZlYnVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMzk2ODksImV4cCI6MjA5NTgxNTY4OX0.n_CRdzQQKYNGDHYmoVxyKafFJCfezKKlSiZddx8MXH4';
   const sysVersion = async () => {
     try {
-      const r = await fetch(`${_SB}/rest/v1/foyer_meta?key=eq.latest_version&select=value`, { headers: { apikey: _K, authorization: 'Bearer ' + _K }, cache: 'no-store' });
-      if (r.ok) return (await r.json())[0]?.value || null;
+      const r = await fetch('/api/sb/version', { cache: 'no-store' });
+      if (r.ok) return (await r.json()).version || null;
     } catch {}
     return null;
   };
@@ -512,16 +510,14 @@ document.getElementById('logoutBtn')?.addEventListener('click', adminLogout);
 
 
 function foyerOfflineWatch() {
-  const SB = 'https://tvtfoghrdqwssdwvebuo.supabase.co';
-  const K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2dGZvZ2hyZHF3c3Nkd3ZlYnVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMzk2ODksImV4cCI6MjA5NTgxNTY4OX0.n_CRdzQQKYNGDHYmoVxyKafFJCfezKKlSiZddx8MXH4';
   async function chk() {
     try {
-      const r = await fetch(SB + '/rest/v1/foyer_sites?domain=eq.' + encodeURIComponent(location.hostname) + '&select=offline,licensed', { cache: 'no-store', headers: { apikey: K, authorization: 'Bearer ' + K } });
-      if (r.ok) { const s = (await r.json())[0]; if (s && (s.offline === true || s.licensed === false)) location.replace('/offline'); }
+      const r = await fetch('/api/sb/site', { cache: 'no-store' });
+      if (r.ok) { const s = await r.json(); if (s && (s.offline === true || s.licensed === false)) location.replace('/offline'); }
     } catch {}
   }
   chk();
-  setInterval(chk, 60000);
+  setInterval(chk, 30000);
 }
 
 async function init() {

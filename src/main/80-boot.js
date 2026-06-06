@@ -31,38 +31,26 @@
       }
     }
 
+
     function foyerControlPlane() {
-      const SB = 'https://tvtfoghrdqwssdwvebuo.supabase.co';
-      const K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2dGZvZ2hyZHF3c3Nkd3ZlYnVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMzk2ODksImV4cCI6MjA5NTgxNTY4OX0.n_CRdzQQKYNGDHYmoVxyKafFJCfezKKlSiZddx8MXH4';
-      const H = { apikey: K, authorization: 'Bearer ' + K };
-      const host = location.hostname;
 
-      fetch(`${SB}/rest/v1/foyer_heartbeats?on_conflict=domain`, {
-        method: 'POST',
-        headers: { ...H, 'content-type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
-        body: JSON.stringify({ domain: host, live_version: VERSION, last_seen: new Date().toISOString() }),
-      }).catch(() => {});
+      fetch('/api/sb/beat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ version: VERSION }) }).catch(() => {});
 
-      fetch(`${SB}/rest/v1/foyer_flags?scope=in.(global,${encodeURIComponent(host)})&select=key,value`, { headers: H, cache: 'no-store' })
-        .then(r => r.ok ? r.json() : []).then(rows => {
-          const f = {}; (rows || []).forEach(r => { f[r.key] = r.value; });
-          window.foyerFlags = f;
-        }).catch(() => {});
+      fetch('/api/sb/flags', { cache: 'no-store' }).then(r => r.ok ? r.json() : {}).then(f => { window.foyerFlags = f || {}; }).catch(() => {});
 
 
       const checkAnnouncements = () => {
-        fetch(`${SB}/rest/v1/foyer_announcements?scope=in.(global,${encodeURIComponent(host)})&active=eq.true&select=id,message,level,hide_after,starts_at,ends_at&order=created_at.desc`, { headers: H, cache: 'no-store' })
-          .then(r => r.ok ? r.json() : []).then(rows => {
-            if (document.getElementById('foyer-ann')) return;   // one banner at a time
-            const now = Date.now();
-            const a = (rows || []).find(x => {
-              if (x.starts_at && new Date(x.starts_at).getTime() > now) return false;
-              if (x.ends_at && new Date(x.ends_at).getTime() < now) return false;
-              try { if (localStorage.getItem('foyer_ann_dismissed_' + x.id) === '1') return false; } catch {}
-              return true;
-            });
-            if (a) renderAnnouncement(a);
-          }).catch(() => {});
+        fetch('/api/sb/announcements', { cache: 'no-store' }).then(r => r.ok ? r.json() : []).then(rows => {
+          if (document.getElementById('foyer-ann')) return;   // one banner at a time
+          const now = Date.now();
+          const a = (rows || []).find(x => {
+            if (x.starts_at && new Date(x.starts_at).getTime() > now) return false;
+            if (x.ends_at && new Date(x.ends_at).getTime() < now) return false;
+            try { if (localStorage.getItem('foyer_ann_dismissed_' + x.id) === '1') return false; } catch {}
+            return true;
+          });
+          if (a) renderAnnouncement(a);
+        }).catch(() => {});
       };
       checkAnnouncements();
       setInterval(checkAnnouncements, 60000);
@@ -70,10 +58,7 @@
       let errCount = 0;
       const report = (message, stack) => {
         if (errCount >= 5) return; errCount++;
-        fetch(`${SB}/rest/v1/foyer_errors`, {
-          method: 'POST', headers: { ...H, 'content-type': 'application/json', Prefer: 'return=minimal' },
-          body: JSON.stringify({ domain: host, message: String(message || '').slice(0, 500), stack: String(stack || '').slice(0, 2000), url: location.href.slice(0, 300), ua: navigator.userAgent.slice(0, 300) }),
-        }).catch(() => {});
+        fetch('/api/sb/err', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ message: String(message || '').slice(0, 500), stack: String(stack || '').slice(0, 2000), url: location.href.slice(0, 300) }) }).catch(() => {});
       };
       window.addEventListener('error', e => report(e.message, e.error && e.error.stack));
       window.addEventListener('unhandledrejection', e => report('unhandledrejection: ' + ((e.reason && e.reason.message) || e.reason), e.reason && e.reason.stack));
@@ -144,7 +129,7 @@
         const _st = document.createElement('style'); _st.textContent = '.made-by,.foyer-credit{display:none!important}'; document.head.appendChild(_st);
       }
       async function _foyerCheck() {
-        try { const _r = await fetch('/api/sb', { cache: 'no-store' }); if (_r.ok) return await _r.json(); } catch {}
+        try { const _r = await fetch('/api/sb/site', { cache: 'no-store' }); if (_r.ok) return await _r.json(); } catch {}
         return null;
       }
       function _foyerApply(s) {

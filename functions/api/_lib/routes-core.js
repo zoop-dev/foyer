@@ -25,23 +25,51 @@ export async function handleCore(ctx) {
 
 
 
-  if (route === 'sb' && method === 'GET') {
-    const host = new URL(request.url).hostname;
-    let row = null;
-    try {
-      const base = (env.SUPABASE_URL || AI_SB_URL).replace(/\/$/, '');
-      const key = env.SUPABASE_ANON_KEY || AI_SB_ANON;
-      const r = await fetch(`${base}/rest/v1/foyer_sites?domain=eq.${encodeURIComponent(host)}&select=offline,licensed,hide_branding,ai_enabled`, {
-        headers: { apikey: key, authorization: `Bearer ${key}` }, cf: { cacheTtl: 30, cacheEverything: true },
+  if (route && route.startsWith('sb/')) {
+    const sbBase = (env.SUPABASE_URL || AI_SB_URL).replace(/\/$/, '');
+    const sbKey = env.SUPABASE_ANON_KEY || AI_SB_ANON;
+    const sbH = { apikey: sbKey, authorization: `Bearer ${sbKey}` };
+    const host = new URL(request.url).hostname, enc = encodeURIComponent(host);
+    const get = (p, ttl) => fetch(`${sbBase}/rest/v1/${p}`, { headers: sbH, cf: { cacheTtl: ttl, cacheEverything: true } }).then(r => r.ok ? r.json() : null).catch(() => null);
+
+    if (route === 'sb/site' && method === 'GET') {
+      const row = ((await get(`foyer_sites?domain=eq.${enc}&select=offline,licensed,hide_branding,ai_enabled`, 30)) || [])[0] || null;
+      return respond({
+        offline:       !!(row && row.offline === true),
+        licensed:      !(row && row.licensed === false),
+        hide_branding: !!(row && row.hide_branding === true),
+        ai_enabled:    !(row && row.ai_enabled === false),
       });
-      if (r.ok) row = (await r.json())[0] || null;
-    } catch {}
-    return respond({
-      offline:       !!(row && row.offline === true),
-      licensed:      !(row && row.licensed === false),
-      hide_branding: !!(row && row.hide_branding === true),
-      ai_enabled:    !(row && row.ai_enabled === false),
-    });
+    }
+    if (route === 'sb/version' && method === 'GET') {
+      const rows = await get(`foyer_meta?key=eq.latest_version&select=value`, 60);
+      return respond({ version: (rows && rows[0] && rows[0].value) || null });
+    }
+    if (route === 'sb/flags' && method === 'GET') {
+      const rows = await get(`foyer_flags?scope=in.(global,${enc})&select=key,value`, 60);
+      const f = {}; (rows || []).forEach(r => { f[r.key] = r.value; });
+      return respond(f);
+    }
+    if (route === 'sb/announcements' && method === 'GET') {
+      const rows = await get(`foyer_announcements?scope=in.(global,${enc})&active=eq.true&select=id,message,level,hide_after,starts_at,ends_at&order=created_at.desc`, 30);
+      return respond(rows || []);
+    }
+    if (route === 'sb/beat' && method === 'POST') {
+      const b = await request.json().catch(() => ({}));
+      await fetch(`${sbBase}/rest/v1/foyer_heartbeats?on_conflict=domain`, {
+        method: 'POST', headers: { ...sbH, 'content-type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify({ domain: host, live_version: String(b.version || '').slice(0, 20), last_seen: new Date().toISOString() }),
+      }).catch(() => {});
+      return respond({ ok: true });
+    }
+    if (route === 'sb/err' && method === 'POST') {
+      const b = await request.json().catch(() => ({}));
+      await fetch(`${sbBase}/rest/v1/foyer_errors`, {
+        method: 'POST', headers: { ...sbH, 'content-type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ domain: host, message: String(b.message || '').slice(0, 500), stack: String(b.stack || '').slice(0, 2000), url: String(b.url || '').slice(0, 300), ua: (request.headers.get('user-agent') || '').slice(0, 300) }),
+      }).catch(() => {});
+      return respond({ ok: true });
+    }
   }
 
 

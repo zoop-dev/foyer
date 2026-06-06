@@ -71,53 +71,40 @@
   </div>
 
   <script>
-    // Auto-recheck status: poll Supabase every 60s (+ a live countdown), and a
-    // "Check now" button. When the site is back online/licensed, reload to enter.
+    // Auto-recheck status via /api/sb/site (no Supabase key on the page) every 60s
+    // (+ a live countdown) and a "Check now" button. Back online/licensed → reload to enter.
     (function () {
-      var SB = "https://tvtfoghrdqwssdwvebuo.supabase.co";
-      var K = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2dGZvZ2hyZHF3c3Nkd3ZlYnVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMzk2ODksImV4cCI6MjA5NTgxNTY4OX0.n_CRdzQQKYNGDHYmoVxyKafFJCfezKKlSiZddx8MXH4";
       var rc = document.getElementById('recheck'), btn = document.getElementById('checkNow');
-      var n = 60, busy = false, bypassHash = '';
-      function sha256Hex(str) {
-        return crypto.subtle.digest('SHA-256', new TextEncoder().encode(str)).then(function (b) {
-          return [].map.call(new Uint8Array(b), function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
-        });
-      }
+      var n = 60, busy = false;
       function check() {
         if (busy) return; busy = true; rc.textContent = 'Rechecking…';
-        fetch(SB + '/rest/v1/foyer_sites?domain=eq.' + encodeURIComponent(location.hostname) + '&select=offline,licensed,offline_bypass_hash,unlicensed_bypass_hash',
-          { cache: 'no-store', headers: { apikey: K, authorization: 'Bearer ' + K } })
+        fetch('/api/sb/site', { cache: 'no-store' })
           .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
-          .then(function (rows) {
-            var s = rows[0];
+          .then(function (s) {
             if (s && s.offline !== true && s.licensed !== false) {
-              // Online. If we were navigated here by the middleware the URL is the real
-              // page (reload to enter); if someone opened /offline directly while the site
-              // is up, reloading would loop — go home instead.
+              // Online. If the middleware navigated us here the URL is the real page
+              // (reload to enter); if /offline was opened directly while the site is up,
+              // reloading would loop — go home instead.
               var onOfflinePath = /^\/offline(\.html)?$/.test(location.pathname);
               rc.textContent = onOfflinePath ? 'Site is online — redirecting…' : 'Back online — reloading…';
               if (onOfflinePath) location.replace('/'); else location.reload();
               return;
             }
-            // Stash the bypass hash for the current block kind, and reveal the operator field.
-            if (s) {
-              bypassHash = (s.licensed === false ? s.unlicensed_bypass_hash : s.offline_bypass_hash) || '';
-              document.getElementById('bypassWrap').style.display = bypassHash ? 'block' : 'none';
-            }
+            document.getElementById('bypassWrap').style.display = 'block';   // operator can try a bypass code
             n = 60; busy = false;
           })
           .catch(function () { n = 60; busy = false; });
       }
       setInterval(function () { if (busy) return; n--; if (n <= 0) check(); else rc.textContent = 'Rechecking in ' + n + 's'; }, 1000);
       btn.addEventListener('click', function () { n = 60; check(); });
-      check();   // run once immediately so the bypass field appears without waiting 60s
+      check();
 
-      // Operator view-bypass: verify the code locally, then load the site with a
-      // one-shot ?__fb param. Nothing is stored — reloading returns to this screen.
+      // Operator view-bypass: load the site with a one-shot ?__fb param — the server
+      // middleware validates the code (and shows this screen again if it's wrong). Nothing
+      // is stored, and the bypass hash never leaves the server.
       var toggle = document.getElementById('bypassToggle'),
           form = document.getElementById('bypassForm'),
-          codeEl = document.getElementById('bypassCode'),
-          errEl = document.getElementById('bypassErr');
+          codeEl = document.getElementById('bypassCode');
       toggle.addEventListener('click', function () {
         var open = form.style.display === 'block';
         form.style.display = open ? 'none' : 'block';
@@ -125,16 +112,8 @@
       });
       form.addEventListener('submit', function (e) {
         e.preventDefault();
-        errEl.textContent = '';
         var code = codeEl.value;
-        if (!code) return;
-        sha256Hex(code).then(function (h) {
-          if (bypassHash && h === bypassHash) {
-            location.href = '/?__fb=' + encodeURIComponent(code);
-          } else {
-            errEl.textContent = 'Incorrect code';
-          }
-        });
+        if (code) location.href = '/?__fb=' + encodeURIComponent(code);
       });
     })();
   </script>
