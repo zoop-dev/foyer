@@ -20,3 +20,15 @@ the next deploy via Pages, but hard-refresh to verify).
 | highlight.js / .css | highlight.js (+ github-dark theme) | 11.11.1 | gh `highlightjs/cdn-release@11.11.1` |
 | flatpickr.js / .css / -dark.css | flatpickr (+ dark theme) | 4.6.13 | npm `flatpickr@4.6.13` |
 | coloris.js / .css | Coloris | 0.24.0 | gh `mdbassit/Coloris@v0.24.0` |
+
+## Local patches (re-apply after any re-download!)
+
+- **emoji-mart.js** — search for `/*FOYER-PATCH*/`. In the Emoji render path, if a
+  skin's `src` points at `/assets/icons/`, we render the icon as a themeable
+  `currentColor` CSS-mask `<span>` instead of an `<img>` (our SVGs are viewBox-only,
+  so they don't size as imgs, and the mask lets them inherit the picker's color).
+  This is what makes the "Foyer Icons" custom category actually display. Our custom
+  emojis also use `foyericon_`-prefixed ids (see `bldOpenIconPicker`) so they don't
+  collide with native emoji ids like `star`/`heart`/`fire`. **Do not** pass the
+  Picker a `categories` prop — it filters against a snapshot taken before custom
+  categories merge, which silently drops the Foyer Icons tab.

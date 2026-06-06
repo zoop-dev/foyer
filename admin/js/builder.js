@@ -190,7 +190,8 @@ async function bldOpenIconPicker(cb, anchor) {
   const onOut = e => { if (!pop.contains(e.target)) close(); };
   const onKey = e => { if (e.key === 'Escape') close(); };
   try {
-    if (!window.EmojiMart) await new Promise((res, rej) => { const s = document.createElement('script'); s.src = '/deps/emoji-mart.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+    const _v = (typeof __VERSION__ !== 'undefined' ? __VERSION__ : '');
+    if (!window.EmojiMart) await new Promise((res, rej) => { const s = document.createElement('script'); s.src = '/deps/emoji-mart.js?v=' + _v; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
     if (!window._emojiData) window._emojiData = await fetch('/deps/emoji-data.json').then(r => r.json());
 
 
