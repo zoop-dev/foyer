@@ -513,8 +513,15 @@
           const raf = (t) => { lenis.raf(t); requestAnimationFrame(raf); };
           requestAnimationFrame(raf);
           lenis.on('scroll', () => window.dispatchEvent(new Event('scroll')));   // keep AOS & friends in sync
-          new MutationObserver(() => lenis.resize()).observe(scene, { childList: true });
-          lenis.resize();
+
+
+
+          let rz; const resize = () => { cancelAnimationFrame(rz); rz = requestAnimationFrame(() => { try { lenis.resize(); } catch (e) {} }); };
+          window._lenisResize = resize;
+          new MutationObserver(resize).observe(scene, { childList: true, subtree: true });
+          scene.addEventListener('load', resize, true);   // capture: img/iframe load events don't bubble
+          window.addEventListener('resize', resize);
+          resize(); setTimeout(resize, 400); setTimeout(resize, 1200);
         } catch (e) {}
       };
       if (window.Lenis) return start();

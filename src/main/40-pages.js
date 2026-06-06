@@ -251,7 +251,7 @@
       const scene = document.getElementById('scene');
       if (window._lenis) window._lenis.scrollTo(0, { immediate: true }); else if (scene) scene.scrollTop = 0;
       await loadAndShow(_session);
-      if (window._lenis) window._lenis.resize();
+      if (window._lenisResize) { window._lenisResize(); setTimeout(window._lenisResize, 500); }
 
       if (scene) { scene.classList.remove('pg-anim-in'); void scene.offsetWidth; scene.classList.add('pg-anim-in'); }
       if (location.hash) { const el = document.getElementById(decodeURIComponent(location.hash.slice(1))); if (el) { if (window._lenis) window._lenis.scrollTo(el); else el.scrollIntoView(); } }
