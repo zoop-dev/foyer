@@ -166,52 +166,45 @@ function bldInitColoris(){
 }
 
 
-function bldOpenIconPicker(cb) {
-  if (document.getElementById('bldIconOv')) return;
+
+
+async function bldOpenIconPicker(cb, anchor) {
+  if (document.getElementById('bldEmojiPop')) return;
   const icons = (typeof __ICONS__ !== 'undefined' && __ICONS__) || [];
-  const ov = document.createElement('div'); ov.id = 'bldIconOv';
-  ov.style.cssText = 'position:fixed;inset:0;z-index:99992;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:8vh 1.5rem 1.5rem;';
-  ov.innerHTML = `<div style="background:var(--panel);border:1px solid rgba(77,189,106,.2);border-radius:12px;max-width:440px;width:100%;max-height:78vh;display:flex;flex-direction:column;overflow:hidden;">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:.8rem 1.1rem .2rem;"><div style="display:flex;gap:.3rem;"><button class="bld-itab on" data-t="icons">Icons</button><button class="bld-itab" data-t="emoji">Emoji</button></div><button id="bldIconX" style="background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;line-height:1;">×</button></div>
-    <div id="bldIconBody" style="flex:1;overflow-y:auto;padding:.8rem 1rem 1rem;min-height:200px;"></div>
-  </div>`;
-  const close = () => ov.remove();
-  const body = ov.querySelector('#bldIconBody');
-  const showIcons = () => {
-    body.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:.5rem;">${icons.map(n => `<button class="bld-icon-cell" data-icon="${n}" title="${n}" style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:rgba(77,189,106,.05);border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--green);"><span style="display:inline-block;width:22px;height:22px;background:currentColor;-webkit-mask:url('/assets/icons/${n}.svg') center/contain no-repeat;mask:url('/assets/icons/${n}.svg') center/contain no-repeat;"></span></button>`).join('')}</div>`;
-    body.querySelectorAll('.bld-icon-cell').forEach(b => b.addEventListener('click', () => { cb('@' + b.dataset.icon); close(); }));
-  };
-
-
-
-
-  const foyerEmojiCat = async () => {
-    if (!icons.length) return [];
-    if (!window._foyerEmojiIcons) {
-      const out = {};
-      await Promise.all(icons.map(async n => {
-        try { let t = await fetch('/assets/icons/' + n + '.svg').then(r => r.text()); t = t.replace(/#000/g, '#d9f0df'); out[n] = URL.createObjectURL(new Blob([t], { type: 'image/svg+xml' })); } catch (_) {}
-      }));
-      window._foyerEmojiIcons = out;
+  const W = 352, H = 435;
+  const pop = document.createElement('div'); pop.id = 'bldEmojiPop';
+  pop.style.cssText = 'position:fixed;z-index:99993;border-radius:10px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5);';
+  const place = () => {
+    let x = window.innerWidth / 2 - W / 2, y = window.innerHeight * 0.12;
+    if (anchor && anchor.getBoundingClientRect) {
+      const r = anchor.getBoundingClientRect();
+      x = Math.min(Math.max(8, r.left), window.innerWidth - W - 8);
+      y = Math.min(r.bottom + 6, window.innerHeight - H - 8); if (y < 8) y = 8;
     }
-    const m = window._foyerEmojiIcons;
-    return [{ id: 'foyer', name: 'Foyer Icons', emojis: icons.filter(n => m[n]).map(n => ({ id: n, name: n, keywords: [n], skins: [{ src: m[n] }] })) }];
+    pop.style.left = Math.round(x) + 'px'; pop.style.top = Math.round(y) + 'px';
   };
-  const showEmoji = async () => {
-    body.innerHTML = '<p style="color:var(--muted);font-size:.75rem;padding:1rem;">Loading emoji…</p>';
-    try {
-      if (!window.EmojiMart) await new Promise((res, rej) => { const s = document.createElement('script'); s.src = '/deps/emoji-mart.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
-      if (!window._emojiData) window._emojiData = await fetch('/deps/emoji-data.json').then(r => r.json());
-      const custom = await foyerEmojiCat();
-      body.innerHTML = '';
-      body.appendChild(new window.EmojiMart.Picker({ data: window._emojiData, custom, categories: ['foyer', 'frequent', 'people', 'nature', 'foods', 'activity', 'places', 'objects', 'symbols', 'flags'], theme: 'dark', previewPosition: 'none', skinTonePosition: 'none', onEmojiSelect: e => { cb(e.native || ('@' + e.id)); close(); } }));
-    } catch (e) { body.innerHTML = '<p style="color:var(--muted);font-size:.75rem;padding:1rem;">Couldn’t load the emoji picker.</p>'; }
-  };
-  ov.querySelectorAll('.bld-itab').forEach(t => t.addEventListener('click', () => { ov.querySelectorAll('.bld-itab').forEach(x => x.classList.toggle('on', x === t)); (t.dataset.t === 'emoji' ? showEmoji : showIcons)(); }));
-  ov.addEventListener('click', e => { if (e.target === ov) close(); });
-  ov.querySelector('#bldIconX').addEventListener('click', close);
-  document.body.appendChild(ov);
-  showIcons();
+  place();
+  pop.innerHTML = '<div style="background:var(--panel);border:1px solid rgba(77,189,106,.2);border-radius:10px;padding:1rem 1.2rem;color:var(--muted);font-size:.75rem;">Loading…</div>';
+  document.body.appendChild(pop);
+  const close = () => { pop.remove(); document.removeEventListener('mousedown', onOut, true); document.removeEventListener('keydown', onKey, true); };
+  const onOut = e => { if (!pop.contains(e.target)) close(); };
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  try {
+    if (!window.EmojiMart) await new Promise((res, rej) => { const s = document.createElement('script'); s.src = '/deps/emoji-mart.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+    if (!window._emojiData) window._emojiData = await fetch('/deps/emoji-data.json').then(r => r.json());
+
+
+    const custom = icons.length ? [{ id: 'foyer', name: 'Foyer Icons', emojis: icons.map(n => ({ id: 'foyericon_' + n, name: n, keywords: [n, 'icon', 'foyer'], skins: [{ src: '/assets/icons/' + n + '.svg' }] })) }] : [];
+    if (!pop.parentNode) return;
+    pop.innerHTML = '';
+    pop.appendChild(new window.EmojiMart.Picker({
+      data: window._emojiData, custom, theme: 'dark', previewPosition: 'none', skinTonePosition: 'none', autoFocus: true,
+      onEmojiSelect: e => { cb(e.id && e.id.indexOf('foyericon_') === 0 ? ('@' + e.id.slice(10)) : (e.native || ('@' + e.id))); close(); }
+    }));
+    place();
+  } catch (e) { pop.innerHTML = '<div style="background:var(--panel);border:1px solid rgba(77,189,106,.2);border-radius:10px;padding:1rem 1.2rem;color:var(--muted);font-size:.75rem;">Couldn’t load the picker.</div>'; }
+  setTimeout(() => document.addEventListener('mousedown', onOut, true), 0);
+  document.addEventListener('keydown', onKey, true);
 }
 
 function bldBlockMenuItems(id){

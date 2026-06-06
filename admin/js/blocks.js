@@ -1117,7 +1117,7 @@ function bBindEditor(panel, s, onUpdate) {
 
   panel.querySelectorAll('.bld-iconpick').forEach(btn => {
     const inp = btn.closest('.bld-ef')?.querySelector('input[data-cf="icon"]');
-    btn.addEventListener('click', () => { if (inp && typeof bldOpenIconPicker === 'function') bldOpenIconPicker(name => { inp.value = name; inp.dispatchEvent(new Event('input', { bubbles: true })); }); });
+    btn.addEventListener('click', () => { if (inp && typeof bldOpenIconPicker === 'function') bldOpenIconPicker(name => { inp.value = name; inp.dispatchEvent(new Event('input', { bubbles: true })); }, btn); });
   });
 
 
@@ -1136,7 +1136,7 @@ function bBindEditor(panel, s, onUpdate) {
         const p = a + val.length; try { t.setSelectionRange(p, p); } catch (_) {}
       }
       t.dispatchEvent(new Event('input', { bubbles: true })); t.focus();
-    });
+    }, t);
   });
 
   panel.querySelector('#bFilePrevPick')?.addEventListener('click', () => openFilePicker(url => { s.url=url; const inp=panel.querySelector('[data-f="url"]'); if(inp){inp.value=url;} onUpdate(s); }));
