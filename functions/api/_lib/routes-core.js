@@ -33,12 +33,13 @@ export async function handleCore(ctx) {
     const get = (p, ttl) => fetch(`${sbBase}/rest/v1/${p}`, { headers: sbH, cf: { cacheTtl: ttl, cacheEverything: true } }).then(r => r.ok ? r.json() : null).catch(() => null);
 
     if (route === 'sb/site' && method === 'GET') {
-      const row = ((await get(`foyer_sites?domain=eq.${enc}&select=offline,licensed,hide_branding,ai_enabled`, 30)) || [])[0] || null;
+      const row = ((await get(`foyer_sites?domain=eq.${enc}&select=offline,licensed,hide_branding,ai_enabled,plan`, 30)) || [])[0] || null;
       return respond({
         offline:       !!(row && row.offline === true),
         licensed:      !(row && row.licensed === false),
         hide_branding: !!(row && row.hide_branding === true),
         ai_enabled:    !(row && row.ai_enabled === false),
+        plan:          (row && row.plan) || 'free',
       });
     }
     if (route === 'sb/version' && method === 'GET') {

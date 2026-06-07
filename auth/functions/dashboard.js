@@ -178,11 +178,13 @@ function renderSites(){
       '<span class="dot" style="background:'+dot+'"></span>'+
       '<div><div class="dom">'+esc(s.domain)+'</div><div class="sub">'+esc(s.name||'')+' · seen '+timeAgo(hb&&hb.last_seen)+'</div></div>'+
       '<span class="spacer"></span>'+ver+
+      (s.plan==='pro'?'<span class="badge b-ok">PRO</span>':'<span class="badge b-dim">free</span>')+
       (s.licensed?'<span class="badge b-ok">licensed</span>':'<span class="badge b-off">unlicensed</span>')+
       (s.offline?'<span class="badge b-warn">offline</span>':'')+
       (s.ai_enabled===false?'<span class="badge b-dim">AI off</span>':'')+
       (s.hide_branding===true?'<span class="badge b-dim">white-label</span>':'')+
       '</div><div class="actions">'+
+      '<button class="btn '+(s.plan==='pro'?'':'go')+'" data-plan="'+esc(s.domain)+'" data-val="'+(s.plan==='pro'?'free':'pro')+'">'+(s.plan==='pro'?'Downgrade to Free':'Upgrade to Pro')+'</button>'+
       '<button class="btn" data-act="offline" data-dom="'+esc(s.domain)+'" data-val="'+(s.offline?'0':'1')+'">'+(s.offline?'Bring online':'Take offline')+'</button>'+
       '<button class="btn '+(s.licensed?'danger':'')+'" data-act="license" data-dom="'+esc(s.domain)+'" data-val="'+(s.licensed?'0':'1')+'">'+(s.licensed?'Unlicense':'License')+'</button>'+
       '<button class="btn" data-act="ai" data-dom="'+esc(s.domain)+'" data-val="'+(s.ai_enabled===false?'1':'0')+'">'+(s.ai_enabled===false?'Enable AI':'Disable AI')+'</button>'+
@@ -310,6 +312,7 @@ function wire(){
   document.querySelectorAll('[data-annremove]').forEach(function(b){ b.onclick=function(){ modalConfirm('Permanently remove all-sites announcements?', {ok:'Remove'}).then(function(ok){ if(ok) act({type:'announce_remove', scope:b.dataset.annremove}); }); }; });
   var fa=document.getElementById('flAdd'); if(fa) fa.onclick=function(){ var k=document.getElementById('flKey').value.trim(); if(!k){ toast('Key required', true); return; } act({type:'flag', scope:document.getElementById('flScope').value, key:k, value:document.getElementById('flVal').value.trim()||'on'}); };
   document.querySelectorAll('[data-flrm]').forEach(function(b){ b.onclick=function(){ var p=b.dataset.flrm.split('|'); act({type:'flag_remove', scope:p[0], key:p[1]}); }; });
+  document.querySelectorAll('[data-plan]').forEach(function(b){ b.onclick=function(){ act({type:'set_plan', domain:b.dataset.plan, value:b.dataset.val}).then(function(){ toast(b.dataset.val==='pro'?'Upgraded to Pro':'Set to Free'); }); }; });
   document.querySelectorAll('[data-modedit]').forEach(function(b){ b.onclick=function(){ openSiteModeration(b.dataset.modedit); }; });
   document.querySelectorAll('[data-bkquota]').forEach(function(b){ b.onclick=function(){ modalPrompt('Backup allotment for '+b.dataset.bkquota+' (lifetime total; blank = unlimited):', {ok:'Save'}).then(function(v){ if(v===null) return; var n=String(v).trim()===''?null:(parseInt(v,10)||0); act({type:'set_backup_quota', domain:b.dataset.bkquota, value:n}).then(function(){ toast('Backup allotment saved'); }); }); }; });
   var ms=document.getElementById('mSave'); if(ms) ms.onclick=function(){

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Foyer — Plans</title>
+  <meta name="description" content="Foyer plans — Free and Pro." />
+  <link rel="icon" href="/foyer-mark.svg" type="image/svg+xml" />
+  <style>
+    :root{--bg:#0b0e13;--panel:#11151b;--ink:#e8edf2;--muted:#8b94a6;--accent:#7fa6d8;--line:rgba(127,166,216,.14)}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:var(--bg);color:var(--ink);font-family:'Josefin Sans',system-ui,-apple-system,Segoe UI,sans-serif;font-weight:200;-webkit-font-smoothing:antialiased;line-height:1.5;min-height:100vh}
+    a{color:inherit;text-decoration:none}
+    .glow{position:fixed;inset:-20% -10% auto;height:80vh;background:radial-gradient(ellipse 45% 55% at 50% 0%,rgba(127,166,216,.10),transparent 70%);pointer-events:none;z-index:0}
+    .wrap{max-width:880px;margin:0 auto;padding:0 1.4rem}
+    nav{position:sticky;top:0;z-index:10;backdrop-filter:blur(12px);background:rgba(11,14,19,.6);border-bottom:1px solid var(--line)}
+    nav .wrap{display:flex;align-items:center;justify-content:space-between;height:62px}
+    .brand{display:flex;align-items:center;gap:.6rem;font-family:'Unbounded',system-ui,sans-serif;font-weight:300;font-size:1.05rem}
+    .brand svg{width:20px;height:23px}
+    nav a.back{font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(232,237,242,.7)}
+    header{position:relative;z-index:1;text-align:center;padding:4.5rem 0 2.6rem}
+    .sub{font-size:.6rem;letter-spacing:.4em;text-transform:uppercase;color:var(--accent);font-weight:300;margin-bottom:.8rem}
+    h1{font-family:'Unbounded',system-ui,sans-serif;font-weight:200;font-size:clamp(2rem,6vw,3rem)}
+    header p{color:rgba(232,237,242,.55);font-size:.92rem;margin-top:1rem;max-width:480px;margin-left:auto;margin-right:auto}
+    main{position:relative;z-index:1;padding-bottom:5rem}
+    .tiers{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;align-items:start}
+    .tier{border:1px solid var(--line);background:rgba(127,166,216,.03);border-radius:16px;padding:1.8rem 1.6rem}
+    .tier.pro{border-color:rgba(127,166,216,.45);background:rgba(127,166,216,.06);box-shadow:0 0 0 1px rgba(127,166,216,.12)}
+    .tier .nm{font-family:'Unbounded',system-ui,sans-serif;font-weight:300;font-size:1rem;display:flex;align-items:center;gap:.5rem}
+    .pill{font-size:.5rem;letter-spacing:.18em;text-transform:uppercase;background:var(--accent);color:#070a0e;padding:.2rem .5rem;border-radius:999px;font-weight:400}
+    .price{font-family:'Unbounded',system-ui,sans-serif;font-weight:200;font-size:2.2rem;margin:.8rem 0 .2rem}
+    .price small{font-size:.8rem;color:var(--muted);font-weight:200}
+    .tier .blurb{font-size:.78rem;color:var(--muted);margin-bottom:1.3rem;min-height:2.4em}
+    ul{list-style:none;display:flex;flex-direction:column;gap:.6rem}
+    li{font-size:.84rem;font-weight:200;color:rgba(232,237,242,.8);display:flex;gap:.6rem;align-items:flex-start}
+    li svg{width:15px;height:15px;flex-shrink:0;margin-top:.18rem;stroke:var(--accent)}
+    li.off{color:rgba(232,237,242,.35)}li.off svg{stroke:rgba(139,148,166,.4)}
+    .cta{display:block;text-align:center;margin-top:1.6rem;font-weight:300;font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;padding:.85rem;border-radius:10px;border:1px solid var(--line);color:rgba(232,237,242,.82);transition:all .15s}
+    .cta:hover{border-color:var(--accent);color:#fff}
+    .cta.primary{background:var(--accent);color:#070a0e;border-color:var(--accent)}
+    footer{position:relative;z-index:1;text-align:center;padding:1rem 0 4rem;font-size:.7rem;color:rgba(139,148,166,.6)}
+    footer a{color:var(--accent)}
+    @media (max-width:680px){ .tiers{grid-template-columns:1fr} header{padding:3rem 0 2rem} }
+  </style>
+</head>
+<body>
+  <div class="glow"></div>
+  <nav><div class="wrap">
+    <a class="brand" href="/"><svg viewBox="0 0 44 50" fill="none" stroke="var(--accent)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg>Foyer</a>
+    <a class="back" href="/">← Home</a>
+  </div></nav>
+  <header><div class="wrap"><p class="sub">Plans</p><h1>Simple, honest pricing</h1><p>One hosted site, a real builder, your own domain. Start free, upgrade when you want the good stuff.</p></div></header>
+  <main><div class="wrap">
+    <div class="tiers">
+      <div class="tier">
+        <div class="nm">Free</div>
+        <div class="price">$0</div>
+        <div class="blurb">A real site to get you online.</div>
+        <ul>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Hosted site on a foyer.zo0p.dev subdomain</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Full block page builder</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Up to 3 pages</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Contact form &amp; basic analytics</li>
+          <li class="off"><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>"Built with Foyer" footer</li>
+        </ul>
+        <a class="cta" href="https://foyer.zo0p.dev">Get started</a>
+      </div>
+      <div class="tier pro">
+        <div class="nm">Pro <span class="pill">Popular</span></div>
+        <div class="price">$10 <small>/ one-time</small></div>
+        <div class="blurb">Make it yours — no limits, no Foyer branding.</div>
+        <ul>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Everything in Free, plus:</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><b>Your own custom domain</b></li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><b>White-label</b> — no Foyer branding</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Unlimited pages &amp; collections</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>AI page-building assistant</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Members-only &amp; password-protected pages</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>"Ask this site" AI assistant</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Version history, scheduled publishing &amp; backups</li>
+        </ul>
+        <a class="cta primary" href="mailto:zoop@foyer.zo0p.dev?subject=Foyer%20Pro">Go Pro</a>
+      </div>
+    </div>
+  </div></main>
+  <footer>Questions? <a href="mailto:zoop@foyer.zo0p.dev">zoop@foyer.zo0p.dev</a></footer>
+</body>
+</html>

@@ -40,6 +40,7 @@ export async function onRequestPost({ request, env }) {
     case 'set_moderation': r = await post('foyer_meta?on_conflict=key', { key: 'moderation_config', value: JSON.stringify(a.config || {}) }, 'resolution=merge-duplicates,return=minimal'); break;
     case 'site_moderation': r = await patch(`foyer_sites?domain=eq.${enc(a.domain)}`, { moderation_config: a.config || null }); break;
     case 'set_backup_quota': r = await patch(`foyer_sites?domain=eq.${enc(a.domain)}`, { backup_quota: a.value == null ? null : (parseInt(a.value, 10) || 0) }); break;
+    case 'set_plan': r = await patch(`foyer_sites?domain=eq.${enc(a.domain)}`, { plan: a.value === 'pro' ? 'pro' : 'free' }); break;
     default: return json({ error: 'unknown action' }, 400);
   }
   return json({ ok: !!(r && r.ok) }, r && r.ok ? 200 : 500);
