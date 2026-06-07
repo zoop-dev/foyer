@@ -37,10 +37,15 @@ async function backupUsage(env, host) {
   const base = (env.SUPABASE_URL || SB_URL).replace(/\/$/, '');
   const key = env.SUPABASE_ANON_KEY || SB_ANON;
   const H = { apikey: key, Authorization: `Bearer ${key}` };
-  let quota = 0, used = 0;
+
+  let quota = 5, used = 0;
   try {
-    const r = await fetch(`${base}/rest/v1/foyer_sites?domain=eq.${encodeURIComponent(host)}&select=backup_quota`, { headers: H });
-    if (r.ok) { const rows = await r.json(); const q = rows[0] && rows[0].backup_quota; if (q != null) quota = +q || 0; }
+    const r = await fetch(`${base}/rest/v1/foyer_sites?domain=eq.${encodeURIComponent(host)}&select=backup_quota,plan`, { headers: H });
+    if (r.ok) {
+      const rows = await r.json(); const row = rows[0];
+      if (row && row.backup_quota != null) quota = +row.backup_quota || 0;   // explicit override
+      else if (row && row.plan === 'pro') quota = 0;                          // pro = unlimited
+    }
   } catch (e) {}
   try {
     const r = await fetch(`${base}/rest/v1/foyer_backups?domain=eq.${encodeURIComponent(host)}&select=id`, { headers: { ...H, Prefer: 'count=exact', Range: '0-0' } });

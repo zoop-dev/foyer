@@ -1,4 +1,6 @@
 
+import { isPro } from './plan.js';
+import { canonHost } from './site-config.js';
 export async function handleCollections(ctx) {
   const { route, method, request, env, headers, respond, compressJson, decompressJson, CREATE_SESSIONS, CREATE_BANNED_EMAILS, CREATE_PAGES, authed, visitorAuthed, _adminRole, canView } = ctx;
 
@@ -41,6 +43,7 @@ export async function handleCollections(ctx) {
   if (route === 'tutorials' && method === 'POST') {
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
     await env.DB.prepare(CREATE_TUTORIALS).run();
+    if (!(await isPro(env, canonHost(env, request)))) { const c = await env.DB.prepare('SELECT COUNT(*) AS c FROM tutorials').first(); if ((c?.c || 0) >= 5) return respond({ error: 'Free plan is limited to 5 tutorials — upgrade to Pro for unlimited.' }, 403); }
     const b = await request.json();
     if ((b.slug || '').trim().toLowerCase() === 'all') return respond({ error: '"all" is a reserved slug' }, 409);
     const r = await env.DB.prepare(
@@ -106,6 +109,7 @@ export async function handleCollections(ctx) {
   if (route === 'reviews' && method === 'POST') {
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
     await env.DB.prepare(CREATE_REVIEWS).run();
+    if (!(await isPro(env, canonHost(env, request)))) { const c = await env.DB.prepare('SELECT COUNT(*) AS c FROM reviews').first(); if ((c?.c || 0) >= 5) return respond({ error: 'Free plan is limited to 5 reviews — upgrade to Pro for unlimited.' }, 403); }
     const b = await request.json();
     if (!b.slug?.trim()) return respond({ error: 'slug required' }, 400);
     if (b.slug.trim().toLowerCase() === 'all') return respond({ error: '"all" is a reserved slug' }, 409);
@@ -158,6 +162,7 @@ export async function handleCollections(ctx) {
   if (route === 'collections' && method === 'POST') {
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
     await ensureColl();
+    if (!(await isPro(env, canonHost(env, request)))) { const c = await env.DB.prepare('SELECT COUNT(*) AS c FROM collections').first(); if ((c?.c || 0) >= 2) return respond({ error: 'Free plan is limited to 2 collections — upgrade to Pro for unlimited.' }, 403); }
     const b = await request.json().catch(() => ({})); const slug = cleanSlug(b.slug);
     if (!b.name || !slug) return respond({ error: 'name and slug required' }, 400);
     if (RESERVED.has(slug.toLowerCase())) return respond({ error: 'reserved slug' }, 409);

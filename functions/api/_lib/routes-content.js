@@ -1,6 +1,7 @@
 
 import { moderatePage, logModeration, getModConfig } from './moderation.js';
 import { canonHost } from './site-config.js';
+import { isPro } from './plan.js';
 
 export async function handleContent(ctx) {
   const { route, method, request, env, headers, respond, compressJson, decompressJson, CREATE_SESSIONS, CREATE_BANNED_EMAILS, CREATE_PAGES, authed, visitorAuthed, _adminRole, sitePublic, canView } = ctx;
@@ -75,6 +76,10 @@ export async function handleContent(ctx) {
   if (route === 'pages' && method === 'POST') {
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
     await env.DB.prepare(CREATE_PAGES).run();
+    if (!(await isPro(env, canonHost(env, request)))) {
+      const c = await env.DB.prepare("SELECT COUNT(*) AS c FROM pages WHERE slug != '__404__'").first();
+      if ((c?.c || 0) >= 10) return respond({ error: 'Free plan is limited to 10 pages — upgrade to Pro for unlimited.' }, 403);
+    }
     const { title = 'Untitled', slug, page_json = '' } = await request.json().catch(() => ({}));
     if (!slug?.trim()) return respond({ error: 'slug required' }, 400);
     try {
