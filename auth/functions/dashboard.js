@@ -169,6 +169,7 @@ function renderSites(){
       '<button class="btn" data-act="ai" data-dom="'+esc(s.domain)+'" data-val="'+(s.ai_enabled===false?'1':'0')+'">'+(s.ai_enabled===false?'Enable AI':'Disable AI')+'</button>'+
       '<button class="btn" data-act="branding" data-dom="'+esc(s.domain)+'" data-val="'+(s.hide_branding===true?'0':'1')+'">'+(s.hide_branding===true?'Show branding':'Hide branding')+'</button>'+
       '<button class="btn" data-modedit="'+esc(s.domain)+'">Moderation'+(s.moderation_config?' <span class="badge b-warn">custom</span>':'')+'</button>'+
+      '<button class="btn" data-bkquota="'+esc(s.domain)+'" data-q="'+(s.backup_quota!=null?esc(s.backup_quota):'')+'">Backups: '+((D.backup_counts&&D.backup_counts[s.domain])||0)+'/'+(s.backup_quota?esc(s.backup_quota):'∞')+'</button>'+
       '</div><div class="site-mod" data-modfor="'+esc(s.domain)+'"></div></div>';
   }).join('');
 }
@@ -291,6 +292,7 @@ function wire(){
   var fa=document.getElementById('flAdd'); if(fa) fa.onclick=function(){ var k=document.getElementById('flKey').value.trim(); if(!k){ toast('Key required', true); return; } act({type:'flag', scope:document.getElementById('flScope').value, key:k, value:document.getElementById('flVal').value.trim()||'on'}); };
   document.querySelectorAll('[data-flrm]').forEach(function(b){ b.onclick=function(){ var p=b.dataset.flrm.split('|'); act({type:'flag_remove', scope:p[0], key:p[1]}); }; });
   document.querySelectorAll('[data-modedit]').forEach(function(b){ b.onclick=function(){ openSiteModeration(b.dataset.modedit); }; });
+  document.querySelectorAll('[data-bkquota]').forEach(function(b){ b.onclick=function(){ modalPrompt('Backup allotment for '+b.dataset.bkquota+' (lifetime total; blank = unlimited):', {ok:'Save'}).then(function(v){ if(v===null) return; var n=String(v).trim()===''?null:(parseInt(v,10)||0); act({type:'set_backup_quota', domain:b.dataset.bkquota, value:n}).then(function(){ toast('Backup allotment saved'); }); }); }; });
   var ms=document.getElementById('mSave'); if(ms) ms.onclick=function(){
     var lines=function(id){ return document.getElementById(id).value.split('\\n').map(function(s){return s.trim().toLowerCase();}).filter(Boolean); };
     var cfg={ enabled:document.getElementById('mEnabled').checked, dead:document.getElementById('mDead').checked, http:document.getElementById('mHttp').checked, inappropriate:document.getElementById('mInappr').checked, blocklist:lines('mBlock'), keywords:lines('mKw') };

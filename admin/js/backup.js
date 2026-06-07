@@ -50,7 +50,7 @@ async function bkDownload() {
   ov.status('Preparing on the server…'); ov.indeterminate(true);
   try {
     const r = await fetch('/api/backup' + q, { headers: authHeaders() });
-    if (!r.ok) { ov.fail('Backup failed'); setTimeout(ov.close, 1600); toast('Backup failed', true); return; }
+    if (!r.ok) { let m = 'Backup failed'; try { const d = await r.json(); if (d && d.error) m = d.error; } catch (e) {} ov.fail(m); setTimeout(ov.close, 2600); toast(m, true); return; }
     const name = (typeof __SITE__ !== 'undefined' && (__SITE__.shortName || __SITE__.name)) || 'foyer';
     const filename = `${String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${scope}-${new Date().toISOString().slice(0, 10)}.foyer`;
     const len = +(r.headers.get('Content-Length') || 0);
