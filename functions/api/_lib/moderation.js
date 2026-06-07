@@ -47,7 +47,12 @@ export async function getModConfig(env, host) {
   if (host) {
     try {
       const r = await fetch(`${base}/rest/v1/foyer_sites?domain=eq.${encodeURIComponent(host)}&select=moderation_config`, { headers: H, cf: { cacheTtl: 60, cacheEverything: true } });
-      if (r.ok) { const rows = await r.json(); const ov = rows[0] && rows[0].moderation_config; if (ov && typeof ov === 'object') cfg = { ...cfg, ...ov }; }
+      if (r.ok) {
+        const rows = await r.json();
+        let ov = rows[0] && rows[0].moderation_config;
+        if (typeof ov === 'string') { try { ov = JSON.parse(ov); } catch (e) { ov = null; } }
+        if (ov && typeof ov === 'object') cfg = { ...cfg, ...ov };   // per-site overrides global
+      }
     } catch (e) {}
   }
   _cfgCache.set(k, { cfg, at: Date.now() });
