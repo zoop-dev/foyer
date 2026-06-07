@@ -260,10 +260,23 @@
         !img.classList.contains('no-zoom') && !img.classList.contains('coll-thumb') &&
         (img.naturalWidth || 100) >= 90;
     }
-    document.addEventListener('click', (e) => {
+
+    let _fbLoad;
+    function _loadFancybox() {
+      if (window.Fancybox) return Promise.resolve();
+      if (_fbLoad) return _fbLoad;
+      _fbLoad = new Promise((res, rej) => {
+        const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = '/deps/fancybox.css'; document.head.appendChild(css);
+        const s = document.createElement('script'); s.src = '/deps/fancybox.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s);
+      });
+      return _fbLoad;
+    }
+    document.addEventListener('click', async (e) => {
       const img = e.target.closest('img');
-      if (!_zoomable(img) || !window.Fancybox) return;
+      if (!_zoomable(img)) return;
       e.preventDefault();
+      try { await _loadFancybox(); } catch { return; }
+      if (!window.Fancybox) return;
 
 
       const card = img.closest('.coll-card');
