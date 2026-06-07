@@ -405,7 +405,17 @@
             if (!r.ok) throw new Error('http ' + r.status);
             const items = await r.json();
             if (!Array.isArray(items) || !items.length) { el.innerHTML = `<div style="grid-column:1/-1;text-align:center;font-size:.8rem;font-weight:200;color:${pgRgb(text, .4)};padding:1.2rem;">Nothing here yet.</div>`; return; }
-            el.innerHTML = items.map(card).join('');
+
+
+
+            el.innerHTML = ''; let _i = 0;
+            const draw = () => {
+              const frag = document.createDocumentFragment();
+              for (let n = 0; n < 4 && _i < items.length; n++, _i++) { const d = document.createElement('div'); d.innerHTML = card(items[_i]); if (d.firstElementChild) frag.appendChild(d.firstElementChild); }
+              el.appendChild(frag);
+              if (_i < items.length) requestAnimationFrame(draw);
+            };
+            draw();
           } catch (e) {
             if (timer) clearTimeout(timer);
             if (attempt < 4) { setTimeout(() => load(attempt + 1), 500 * (attempt + 1)); return; }
