@@ -284,15 +284,15 @@
       if (card) {
         const thumbs = card.querySelectorAll('.coll-thumb');
         if (thumbs.length) srcs = Array.from(thumbs).map((t) => t.dataset.cover || t.currentSrc || t.src);
-        else { const cov = card.querySelector('.coll-cover') || img; srcs = [cov.currentSrc || cov.src]; }
+        else { const cov = card.querySelector('.coll-cover') || img; srcs = [cov.currentSrc || cov.src || cov.dataset.src]; }
       } else {
         srcs = Array.from(document.querySelectorAll('#scene img'))
           .filter((im) => _zoomable(im) && !im.closest('.coll-card'))
-          .map((im) => im.currentSrc || im.src);
+          .map((im) => im.currentSrc || im.src || im.dataset.src);
       }
       const seen = new Set(), slides = [];
       srcs.forEach((s) => { if (s && !seen.has(s)) { seen.add(s); slides.push({ src: s, type: 'image' }); } });
-      const target = img.currentSrc || img.src;
+      const target = img.currentSrc || img.src || img.dataset.src;
       const idx = Math.max(0, slides.findIndex((s) => s.src === target));
       window.Fancybox.show(slides, { startIndex: idx });
     });
