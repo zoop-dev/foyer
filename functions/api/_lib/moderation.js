@@ -6,6 +6,7 @@
 
 
 
+
 const BLOCK_DOMAINS = [
   'grabify.link', 'iplogger.org', 'iplogger.com', 'iplogger.ru', '2no.co', 'blasze.tk',
   'yip.su', 'ps3cfw.com', 'ipgrabber.ru', 'iplis.ru', 'whatstheirip.com',
@@ -27,6 +28,7 @@ async function checkDead(url) {
       const r = await fetch(url, { method: 'GET', redirect: 'follow', signal: AbortSignal.timeout(5000), headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FoyerLinkCheck/1.0)' } });
       if (r.status === 404 || r.status === 410) return 'dead link';
       if (r.status === 403) return 'forbidden (403)';
+      if (r.status === 401) return 'unauthorized (401)';
       return 'ok';
     } catch (e) {
       if (e && (e.name === 'TimeoutError' || e.name === 'AbortError')) return 'unverified';
