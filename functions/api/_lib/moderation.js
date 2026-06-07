@@ -25,7 +25,9 @@ async function checkDead(url) {
   const attempt = async () => {
     try {
       const r = await fetch(url, { method: 'GET', redirect: 'follow', signal: AbortSignal.timeout(5000), headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FoyerLinkCheck/1.0)' } });
-      return r.status === 404 || r.status === 410 ? 'dead' : 'ok';
+      if (r.status === 404 || r.status === 410) return 'dead link';
+      if (r.status === 403) return 'forbidden (403)';
+      return 'ok';
     } catch (e) {
       if (e && (e.name === 'TimeoutError' || e.name === 'AbortError')) return 'unverified';
       return 'error'; // DNS/connection failure
@@ -33,7 +35,8 @@ async function checkDead(url) {
   };
   let r = await attempt();
   if (r === 'error') { await new Promise(s => setTimeout(s, 400)); r = await attempt(); }
-  return r === 'dead' || r === 'error';
+  if (r === 'ok' || r === 'unverified') return null;
+  return r === 'error' ? 'dead link' : r;   // 'dead link' or 'forbidden (403)'
 }
 
 const URL_RE = /https?:\/\/[^\s"'<>)\]}]+/gi;
@@ -57,7 +60,7 @@ export async function moderatePage(jsonStr) {
 
   const toCheck = all.filter((u) => !verdict[u]).slice(0, 40);
   const res = await Promise.allSettled(toCheck.map((u) => checkDead(u)));
-  res.forEach((r, i) => { if (r.status === 'fulfilled' && r.value) verdict[toCheck[i]] = 'dead link'; });
+  res.forEach((r, i) => { if (r.status === 'fulfilled' && r.value) verdict[toCheck[i]] = r.value; });
 
   const log = [];
   state.sections = state.sections.map((sec, idx) => {
