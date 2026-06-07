@@ -27,22 +27,40 @@ const BLOCK_HOST_KEYWORDS = [
   'nsfw-', 'sex-cam', 'free-robux', 'robux-gen', 'free-vbucks', 'steam-gift-card-free', 'discord-nitro-free',
 ];
 
-function inappropriate(u) {
+const DEFAULT_CFG = { enabled: true, dead: true, http: true, inappropriate: true, blocklist: [], keywords: [] };
+let _cfgCache = null, _cfgAt = 0;
+export async function getModConfig(env) {
+  if (_cfgCache && Date.now() - _cfgAt < 60000) return _cfgCache;
+  let cfg = { ...DEFAULT_CFG };
+  try {
+    const base = (env.SUPABASE_URL || SB_URL).replace(/\/$/, '');
+    const key = env.SUPABASE_ANON_KEY || SB_ANON;
+    const r = await fetch(`${base}/rest/v1/foyer_meta?key=eq.moderation_config&select=value`, { headers: { apikey: key, Authorization: `Bearer ${key}` }, cf: { cacheTtl: 60, cacheEverything: true } });
+    if (r.ok) { const rows = await r.json(); if (Array.isArray(rows) && rows[0] && rows[0].value) cfg = { ...DEFAULT_CFG, ...JSON.parse(rows[0].value) }; }
+  } catch (e) {}
+  _cfgCache = cfg; _cfgAt = Date.now();
+  return cfg;
+}
+
+function inappropriate(u, cfg) {
+  if (cfg.inappropriate === false) return null;
   let host = '';
   try { host = new URL(u).hostname.toLowerCase().replace(/^www\./, ''); } catch { return null; }
-  for (const d of BLOCK_DOMAINS) if (host === d || host.endsWith('.' + d)) return 'blocked domain';
-  for (const k of BLOCK_HOST_KEYWORDS) if (host.includes(k)) return 'blocked content';
+  const domains = (cfg.blocklist && cfg.blocklist.length) ? BLOCK_DOMAINS.concat(cfg.blocklist) : BLOCK_DOMAINS;
+  for (const d of domains) if (d && (host === d || host.endsWith('.' + d))) return 'blocked domain';
+  const kws = (cfg.keywords && cfg.keywords.length) ? BLOCK_HOST_KEYWORDS.concat(cfg.keywords) : BLOCK_HOST_KEYWORDS;
+  for (const k of kws) if (k && host.includes(k)) return 'blocked content';
   return null;
 }
 
 
-async function checkDead(url) {
+async function checkDead(url, cfg) {
   const attempt = async () => {
     try {
       const r = await fetch(url, { method: 'GET', redirect: 'follow', signal: AbortSignal.timeout(5000), headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FoyerLinkCheck/1.0)' } });
-      if (r.status === 404 || r.status === 410) return 'dead link';
-      if (r.status === 403) return 'forbidden (403)';
-      if (r.status === 401) return 'unauthorized (401)';
+      if (cfg.dead !== false && (r.status === 404 || r.status === 410)) return 'dead link';
+      if (cfg.http !== false && r.status === 403) return 'forbidden (403)';
+      if (cfg.http !== false && r.status === 401) return 'unauthorized (401)';
       return 'ok';
     } catch (e) {
       if (e && (e.name === 'TimeoutError' || e.name === 'AbortError')) return 'unverified';
@@ -52,13 +70,14 @@ async function checkDead(url) {
   let r = await attempt();
   if (r === 'error') { await new Promise(s => setTimeout(s, 400)); r = await attempt(); }
   if (r === 'ok' || r === 'unverified') return null;
-  return r === 'error' ? 'dead link' : r;   // 'dead link' or 'forbidden (403)'
+  return r === 'error' ? (cfg.dead !== false ? 'dead link' : null) : r;
 }
 
 const URL_RE = /https?:\/\/[^\s"'<>)\]}]+/gi;
 const cleanUrl = (u) => u.replace(/[.,;:!?)\]}'"]+$/, '');
 
-export async function moderatePage(jsonStr) {
+export async function moderatePage(jsonStr, cfg) {
+  cfg = cfg || DEFAULT_CFG;
   let state;
   try { state = JSON.parse(jsonStr); } catch { return { json: jsonStr, log: [] }; }
   if (!state || !Array.isArray(state.sections)) return { json: jsonStr, log: [] };
@@ -72,11 +91,13 @@ export async function moderatePage(jsonStr) {
   if (!all.length) return { json: jsonStr, log: [] };
 
   const verdict = {};
-  for (const u of all) { const r = inappropriate(u); if (r) verdict[u] = r; }
+  for (const u of all) { const r = inappropriate(u, cfg); if (r) verdict[u] = r; }
 
-  const toCheck = all.filter((u) => !verdict[u]).slice(0, 40);
-  const res = await Promise.allSettled(toCheck.map((u) => checkDead(u)));
-  res.forEach((r, i) => { if (r.status === 'fulfilled' && r.value) verdict[toCheck[i]] = r.value; });
+  if (cfg.dead !== false || cfg.http !== false) {
+    const toCheck = all.filter((u) => !verdict[u]).slice(0, 40);
+    const res = await Promise.allSettled(toCheck.map((u) => checkDead(u, cfg)));
+    res.forEach((r, i) => { if (r.status === 'fulfilled' && r.value) verdict[toCheck[i]] = r.value; });
+  }
 
   const log = [];
   state.sections = state.sections.map((sec, idx) => {

@@ -133,7 +133,7 @@ function load(){
   });
 }
 function renderTabs(){
-  var tabs=[['sites','Sites'],['announcements','Announcements'],['flags','Flags'],['errors','Errors']];
+  var tabs=[['sites','Sites'],['announcements','Announcements'],['flags','Flags'],['errors','Errors'],['moderation','Moderation']];
   document.getElementById('tabs').innerHTML = tabs.map(function(t){ return '<button class="'+(TAB===t[0]?'on':'')+'" data-t="'+t[0]+'">'+t[1]+'</button>'; }).join('');
   document.querySelectorAll('#tabs button').forEach(function(b){ b.onclick=function(){ TAB=b.dataset.t; renderTabs(); render(); }; });
 }
@@ -145,6 +145,7 @@ function render(){
   else if(TAB==='announcements') v.innerHTML = renderAnn();
   else if(TAB==='flags') v.innerHTML = renderFlags();
   else if(TAB==='errors') v.innerHTML = renderErrors();
+  else if(TAB==='moderation') v.innerHTML = renderModeration();
   wire();
 }
 
@@ -206,6 +207,29 @@ function renderErrors(){
     return '<div class="err-item"><span class="t">'+timeAgo(e.created_at)+'</span><div><div>'+esc(e.message||'')+'</div><div class="sub">'+esc(e.domain||'')+' · '+esc(e.url||'')+'</div></div></div>';
   }).join('')+'</div>';
 }
+function renderModeration(){
+  var c = D.moderation_config || {};
+  var on = function(k){ return c[k] !== false; };   // default on
+  var cb = function(id,k,label){ return '<label style="display:block;margin:.35rem 0;font-size:.82rem;font-weight:200;cursor:pointer"><input type="checkbox" id="'+id+'" '+(on(k)?'checked':'')+' style="margin-right:.5rem;vertical-align:middle"/>'+label+'</label>'; };
+  var cfg = '<div class="card"><h2 style="margin-top:0">Settings</h2>'+
+    cb('mEnabled','enabled','<b>Moderation enabled</b>')+
+    cb('mDead','dead','Remove dead links (404 / 410 / DNS-fail)')+
+    cb('mHttp','http','Remove forbidden / unauthorized (401 / 403)')+
+    cb('mInappr','inappropriate','Remove inappropriate links (blocklist)')+
+    '<div class="sub" style="margin:.7rem 0 .25rem">Extra blocked domains (one per line)</div>'+
+    '<textarea id="mBlock" rows="4" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:.5rem;font-family:inherit;font-size:.8rem">'+esc((c.blocklist||[]).join('\n'))+'</textarea>'+
+    '<div class="sub" style="margin:.7rem 0 .25rem">Extra blocked host keywords (one per line)</div>'+
+    '<textarea id="mKw" rows="3" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:.5rem;font-family:inherit;font-size:.8rem">'+esc((c.keywords||[]).join('\n'))+'</textarea>'+
+    '<div class="row" style="margin-top:.8rem"><button class="btn go" id="mSave">Save settings</button></div>'+
+    '<div class="sub" style="margin-top:.5rem">Built-in blocklist (grabbers, adult, scams) always applies on top of these unless the category is off. Changes take effect within ~1 min.</div></div>';
+  var log = '<h2>Recent removals</h2>'+((D.moderation||[]).length
+    ? '<div class="card">'+(D.moderation||[]).map(function(m){
+        var meta=[esc(m.domain||''), m.slug?esc(m.slug):'', m.block_type?(esc(m.block_type)+' block'):''].filter(Boolean).join(' · ');
+        return '<div class="err-item"><span class="t">'+timeAgo(m.created_at)+'</span><div><div><span class="badge b-warn">'+esc(m.reason||'')+'</span> <span class="sub">'+esc(m.url||'')+'</span></div><div class="sub">'+meta+'</div></div></div>';
+      }).join('')+'</div>'
+    : '<p class="empty">No moderation actions yet.</p>');
+  return cfg + log;
+}
 
 function annById(id){ return (D.announcements||[]).find(function(a){return String(a.id)===String(id);}); }
 function openAnnEdit(id){
@@ -249,6 +273,11 @@ function wire(){
   document.querySelectorAll('[data-annremove]').forEach(function(b){ b.onclick=function(){ modalConfirm('Permanently remove all-sites announcements?', {ok:'Remove'}).then(function(ok){ if(ok) act({type:'announce_remove', scope:b.dataset.annremove}); }); }; });
   var fa=document.getElementById('flAdd'); if(fa) fa.onclick=function(){ var k=document.getElementById('flKey').value.trim(); if(!k){ toast('Key required', true); return; } act({type:'flag', scope:document.getElementById('flScope').value, key:k, value:document.getElementById('flVal').value.trim()||'on'}); };
   document.querySelectorAll('[data-flrm]').forEach(function(b){ b.onclick=function(){ var p=b.dataset.flrm.split('|'); act({type:'flag_remove', scope:p[0], key:p[1]}); }; });
+  var ms=document.getElementById('mSave'); if(ms) ms.onclick=function(){
+    var lines=function(id){ return document.getElementById(id).value.split('\n').map(function(s){return s.trim().toLowerCase();}).filter(Boolean); };
+    var cfg={ enabled:document.getElementById('mEnabled').checked, dead:document.getElementById('mDead').checked, http:document.getElementById('mHttp').checked, inappropriate:document.getElementById('mInappr').checked, blocklist:lines('mBlock'), keywords:lines('mKw') };
+    act({type:'set_moderation', config:cfg}).then(function(){ toast('Moderation settings saved'); });
+  };
 }
 
 document.getElementById('loginBtn').onclick=function(){

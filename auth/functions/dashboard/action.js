@@ -37,6 +37,7 @@ export async function onRequestPost({ request, env }) {
       r = await post('foyer_flags?on_conflict=scope,key', { scope: a.scope, key: a.key, value: a.value || 'on' }, 'resolution=merge-duplicates,return=minimal'); break;
     case 'flag_remove': r = await del(`foyer_flags?scope=eq.${enc(a.scope)}&key=eq.${enc(a.key)}`); break;
     case 'set_version': r = await post('foyer_meta?on_conflict=key', { key: 'latest_version', value: String(a.value) }, 'resolution=merge-duplicates,return=minimal'); break;
+    case 'set_moderation': r = await post('foyer_meta?on_conflict=key', { key: 'moderation_config', value: JSON.stringify(a.config || {}) }, 'resolution=merge-duplicates,return=minimal'); break;
     default: return json({ error: 'unknown action' }, 400);
   }
   return json({ ok: !!(r && r.ok) }, r && r.ok ? 200 : 500);
