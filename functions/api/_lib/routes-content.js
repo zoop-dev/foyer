@@ -1,5 +1,6 @@
 
 import { moderatePage, logModeration, getModConfig } from './moderation.js';
+import { canonHost } from './site-config.js';
 
 export async function handleContent(ctx) {
   const { route, method, request, env, headers, respond, compressJson, decompressJson, CREATE_SESSIONS, CREATE_BANNED_EMAILS, CREATE_PAGES, authed, visitorAuthed, _adminRole, sitePublic, canView } = ctx;
@@ -74,7 +75,7 @@ export async function handleContent(ctx) {
     if (!slug?.trim()) return respond({ error: 'slug required' }, 400);
     try {
       let pj = page_json;
-      if (pj) { const host = new URL(request.url).hostname; const cfg = await getModConfig(env, host); if (cfg.enabled !== false) { const mod = await moderatePage(pj, cfg); pj = mod.json; if (mod.log.length) await logModeration(env, host, slug.trim(), mod.log); } }
+      if (pj) { const host = canonHost(request); const cfg = await getModConfig(env, host); if (cfg.enabled !== false) { const mod = await moderatePage(pj, cfg); pj = mod.json; if (mod.log.length) await logModeration(env, host, slug.trim(), mod.log); } }
       const compressed = pj ? await compressJson(pj) : '';
       const r = await env.DB.prepare(
         'INSERT INTO pages (title, slug, page_json) VALUES (?,?,?)'
@@ -103,7 +104,7 @@ export async function handleContent(ctx) {
     let newPageJson = current.page_json, modLog = [];
     if (body.page_json != null) {
       let pjStr = body.page_json;
-      const cfg = await getModConfig(env, new URL(request.url).hostname);
+      const cfg = await getModConfig(env, canonHost(request));
       if (cfg.enabled !== false) { const mod = await moderatePage(body.page_json, cfg); pjStr = mod.json; modLog = mod.log; }
       newPageJson = await compressJson(pjStr);
     }
@@ -118,7 +119,7 @@ export async function handleContent(ctx) {
         id
       ).run();
     } catch (e) { return respond({ error: 'slug already exists' }, 409); }
-    if (modLog.length) await logModeration(env, new URL(request.url).hostname, newSlug, modLog);
+    if (modLog.length) await logModeration(env, canonHost(request), newSlug, modLog);
     return respond({ ok: true, moderated: modLog.length || undefined });
   }
 
