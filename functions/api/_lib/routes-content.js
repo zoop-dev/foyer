@@ -1,4 +1,6 @@
 
+import { moderatePage, logModeration } from './moderation.js';
+
 export async function handleContent(ctx) {
   const { route, method, request, env, headers, respond, compressJson, decompressJson, CREATE_SESSIONS, CREATE_BANNED_EMAILS, CREATE_PAGES, authed, visitorAuthed, _adminRole, sitePublic, canView } = ctx;
 
@@ -71,7 +73,9 @@ export async function handleContent(ctx) {
     const { title = 'Untitled', slug, page_json = '' } = await request.json().catch(() => ({}));
     if (!slug?.trim()) return respond({ error: 'slug required' }, 400);
     try {
-      const compressed = page_json ? await compressJson(page_json) : '';
+      let pj = page_json;
+      if (pj) { const mod = await moderatePage(pj); pj = mod.json; if (mod.log.length) await logModeration(env, slug.trim(), mod.log); }
+      const compressed = pj ? await compressJson(pj) : '';
       const r = await env.DB.prepare(
         'INSERT INTO pages (title, slug, page_json) VALUES (?,?,?)'
       ).bind(title.trim(), slug.trim(), compressed).run();
@@ -90,11 +94,16 @@ export async function handleContent(ctx) {
     const id = parseInt(pageSingle[1]);
     const current = await env.DB.prepare('SELECT * FROM pages WHERE id=?').bind(id).first();
     if (!current) return respond({ error: 'not found' }, 404);
-    const newPageJson = body.page_json != null ? await compressJson(body.page_json) : current.page_json;
     let newSlug = current.slug;
     if (body.slug != null) {
       let s = String(body.slug).trim();
       if (s) { newSlug = s.startsWith('/') ? s : '/' + s; }
+    }
+
+    let newPageJson = current.page_json, modLog = [];
+    if (body.page_json != null) {
+      const mod = await moderatePage(body.page_json);
+      newPageJson = await compressJson(mod.json); modLog = mod.log;
     }
     try {
       await env.DB.prepare(
@@ -107,7 +116,8 @@ export async function handleContent(ctx) {
         id
       ).run();
     } catch (e) { return respond({ error: 'slug already exists' }, 409); }
-    return respond({ ok: true });
+    if (modLog.length) await logModeration(env, newSlug, modLog);
+    return respond({ ok: true, moderated: modLog.length || undefined });
   }
 
   if (pageSingle && method === 'DELETE') {
