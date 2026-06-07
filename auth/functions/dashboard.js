@@ -168,7 +168,8 @@ function renderSites(){
       '<button class="btn '+(s.licensed?'danger':'')+'" data-act="license" data-dom="'+esc(s.domain)+'" data-val="'+(s.licensed?'0':'1')+'">'+(s.licensed?'Unlicense':'License')+'</button>'+
       '<button class="btn" data-act="ai" data-dom="'+esc(s.domain)+'" data-val="'+(s.ai_enabled===false?'1':'0')+'">'+(s.ai_enabled===false?'Enable AI':'Disable AI')+'</button>'+
       '<button class="btn" data-act="branding" data-dom="'+esc(s.domain)+'" data-val="'+(s.hide_branding===true?'0':'1')+'">'+(s.hide_branding===true?'Show branding':'Hide branding')+'</button>'+
-      '</div></div>';
+      '<button class="btn" data-modedit="'+esc(s.domain)+'">Moderation'+(s.moderation_config?' <span class="badge b-warn">custom</span>':'')+'</button>'+
+      '</div><div class="site-mod" data-modfor="'+esc(s.domain)+'"></div></div>';
   }).join('');
 }
 function renderAnn(){
@@ -217,9 +218,9 @@ function renderModeration(){
     cb('mHttp','http','Remove forbidden / unauthorized (401 / 403)')+
     cb('mInappr','inappropriate','Remove inappropriate links (blocklist)')+
     '<div class="sub" style="margin:.7rem 0 .25rem">Extra blocked domains (one per line)</div>'+
-    '<textarea id="mBlock" rows="4" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:.5rem;font-family:inherit;font-size:.8rem">'+esc((c.blocklist||[]).join('\n'))+'</textarea>'+
+    '<textarea id="mBlock" rows="4" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:.5rem;font-family:inherit;font-size:.8rem">'+esc((c.blocklist||[]).join('\\n'))+'</textarea>'+
     '<div class="sub" style="margin:.7rem 0 .25rem">Extra blocked host keywords (one per line)</div>'+
-    '<textarea id="mKw" rows="3" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:.5rem;font-family:inherit;font-size:.8rem">'+esc((c.keywords||[]).join('\n'))+'</textarea>'+
+    '<textarea id="mKw" rows="3" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:.5rem;font-family:inherit;font-size:.8rem">'+esc((c.keywords||[]).join('\\n'))+'</textarea>'+
     '<div class="row" style="margin-top:.8rem"><button class="btn go" id="mSave">Save settings</button></div>'+
     '<div class="sub" style="margin-top:.5rem">Built-in blocklist (grabbers, adult, scams) always applies on top of these unless the category is off. Changes take effect within ~1 min.</div></div>';
   var log = '<h2>Recent removals</h2>'+((D.moderation||[]).length
@@ -256,6 +257,22 @@ function openAnnEdit(id){
   box.querySelector('.ae-cancel').onclick=function(){ box.remove(); card.querySelector('.ann-body').style.display=''; };
 }
 
+function siteByDom(d){ return (D.sites||[]).find(function(s){return s.domain===d;}); }
+function openSiteModeration(dom){
+  var s=siteByDom(dom); if(!s) return;
+  var box=document.querySelector('.site-mod[data-modfor="'+dom+'"]'); if(!box) return;
+  if(box.innerHTML){ box.innerHTML=''; return; }
+  var g=D.moderation_config||{}, ov=s.moderation_config||{};
+  var eff=function(k){ var v=(k in ov)?ov[k]:g[k]; return v!==false; };
+  var cb=function(id,k,label){ return '<label style="display:inline-block;margin:.3rem .9rem .3rem 0;font-size:.8rem;font-weight:200;cursor:pointer"><input type="checkbox" data-mk="'+id+'" '+(eff(k)?'checked':'')+' style="margin-right:.4rem;vertical-align:middle"/>'+label+'</label>'; };
+  box.innerHTML='<div style="margin-top:.7rem;padding-top:.7rem;border-top:1px solid var(--line)">'+
+    '<div class="sub" style="margin-bottom:.4rem">'+(s.moderation_config?'Overriding global':'Inherits global — saving pins these for this site')+'</div>'+
+    cb('enabled','enabled','<b>Enabled</b>')+cb('dead','dead','Dead links')+cb('http','http','401 / 403')+cb('inappr','inappropriate','Inappropriate')+
+    '<div class="row" style="margin-top:.5rem"><button class="btn go" data-modsave="'+esc(dom)+'">Save</button>'+
+    (s.moderation_config?'<button class="btn" data-modclear="'+esc(dom)+'">Use global</button>':'')+'</div></div>';
+  box.querySelector('[data-modsave]').onclick=function(){ act({type:'site_moderation', domain:dom, config:{ enabled:box.querySelector('[data-mk="enabled"]').checked, dead:box.querySelector('[data-mk="dead"]').checked, http:box.querySelector('[data-mk="http"]').checked, inappropriate:box.querySelector('[data-mk="inappr"]').checked }}).then(function(){ toast('Site moderation saved'); }); };
+  var clr=box.querySelector('[data-modclear]'); if(clr) clr.onclick=function(){ act({type:'site_moderation', domain:dom, config:null}).then(function(){ toast('Reverted to global'); }); };
+}
 function wire(){
   document.querySelectorAll('[data-act]').forEach(function(b){ b.onclick=function(){
     var t=b.dataset.act, dom=b.dataset.dom, val=b.dataset.val==='1';
@@ -273,8 +290,9 @@ function wire(){
   document.querySelectorAll('[data-annremove]').forEach(function(b){ b.onclick=function(){ modalConfirm('Permanently remove all-sites announcements?', {ok:'Remove'}).then(function(ok){ if(ok) act({type:'announce_remove', scope:b.dataset.annremove}); }); }; });
   var fa=document.getElementById('flAdd'); if(fa) fa.onclick=function(){ var k=document.getElementById('flKey').value.trim(); if(!k){ toast('Key required', true); return; } act({type:'flag', scope:document.getElementById('flScope').value, key:k, value:document.getElementById('flVal').value.trim()||'on'}); };
   document.querySelectorAll('[data-flrm]').forEach(function(b){ b.onclick=function(){ var p=b.dataset.flrm.split('|'); act({type:'flag_remove', scope:p[0], key:p[1]}); }; });
+  document.querySelectorAll('[data-modedit]').forEach(function(b){ b.onclick=function(){ openSiteModeration(b.dataset.modedit); }; });
   var ms=document.getElementById('mSave'); if(ms) ms.onclick=function(){
-    var lines=function(id){ return document.getElementById(id).value.split('\n').map(function(s){return s.trim().toLowerCase();}).filter(Boolean); };
+    var lines=function(id){ return document.getElementById(id).value.split('\\n').map(function(s){return s.trim().toLowerCase();}).filter(Boolean); };
     var cfg={ enabled:document.getElementById('mEnabled').checked, dead:document.getElementById('mDead').checked, http:document.getElementById('mHttp').checked, inappropriate:document.getElementById('mInappr').checked, blocklist:lines('mBlock'), keywords:lines('mKw') };
     act({type:'set_moderation', config:cfg}).then(function(){ toast('Moderation settings saved'); });
   };

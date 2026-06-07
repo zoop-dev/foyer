@@ -27,18 +27,30 @@ const BLOCK_HOST_KEYWORDS = [
   'nsfw-', 'sex-cam', 'free-robux', 'robux-gen', 'free-vbucks', 'steam-gift-card-free', 'discord-nitro-free',
 ];
 
+
+
+
 const DEFAULT_CFG = { enabled: true, dead: true, http: true, inappropriate: true, blocklist: [], keywords: [] };
-let _cfgCache = null, _cfgAt = 0;
-export async function getModConfig(env) {
-  if (_cfgCache && Date.now() - _cfgAt < 60000) return _cfgCache;
+const _cfgCache = new Map();   // host -> { cfg, at }
+export async function getModConfig(env, host) {
+  const k = host || '';
+  const hit = _cfgCache.get(k);
+  if (hit && Date.now() - hit.at < 60000) return hit.cfg;
+  const base = (env.SUPABASE_URL || SB_URL).replace(/\/$/, '');
+  const key = env.SUPABASE_ANON_KEY || SB_ANON;
+  const H = { apikey: key, Authorization: `Bearer ${key}` };
   let cfg = { ...DEFAULT_CFG };
   try {
-    const base = (env.SUPABASE_URL || SB_URL).replace(/\/$/, '');
-    const key = env.SUPABASE_ANON_KEY || SB_ANON;
-    const r = await fetch(`${base}/rest/v1/foyer_meta?key=eq.moderation_config&select=value`, { headers: { apikey: key, Authorization: `Bearer ${key}` }, cf: { cacheTtl: 60, cacheEverything: true } });
+    const r = await fetch(`${base}/rest/v1/foyer_meta?key=eq.moderation_config&select=value`, { headers: H, cf: { cacheTtl: 60, cacheEverything: true } });
     if (r.ok) { const rows = await r.json(); if (Array.isArray(rows) && rows[0] && rows[0].value) cfg = { ...DEFAULT_CFG, ...JSON.parse(rows[0].value) }; }
   } catch (e) {}
-  _cfgCache = cfg; _cfgAt = Date.now();
+  if (host) {
+    try {
+      const r = await fetch(`${base}/rest/v1/foyer_sites?domain=eq.${encodeURIComponent(host)}&select=moderation_config`, { headers: H, cf: { cacheTtl: 60, cacheEverything: true } });
+      if (r.ok) { const rows = await r.json(); const ov = rows[0] && rows[0].moderation_config; if (ov && typeof ov === 'object') cfg = { ...cfg, ...ov }; }
+    } catch (e) {}
+  }
+  _cfgCache.set(k, { cfg, at: Date.now() });
   return cfg;
 }
 
