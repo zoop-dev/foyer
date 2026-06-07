@@ -8,10 +8,24 @@
 
 
 const BLOCK_DOMAINS = [
-  'grabify.link', 'iplogger.org', 'iplogger.com', 'iplogger.ru', '2no.co', 'blasze.tk',
-  'yip.su', 'ps3cfw.com', 'ipgrabber.ru', 'iplis.ru', 'whatstheirip.com',
+
+  'grabify.link', 'grabify.icu', 'grabify.org', 'iplogger.org', 'iplogger.com', 'iplogger.ru',
+  'iplogger.co', 'iplogger.info', 'iplogger.shop', 'iplogger.cn', 'ip-logger.org', '2no.co',
+  'blasze.tk', 'blasze.com', 'yip.su', 'ps3cfw.com', 'ipgrabber.ru', 'ipgraber.ru', 'iplis.ru',
+  'whatstheirip.com', '02ip.ru', 'ezstat.ru', 'lovebird.guru', 'stopify.co', 'leancoding.co',
+  'freegiftcards.co', 'joinmy.site', 'curiouscat.club', 'catsnthings.fun', 'fortnitechat.site',
+  'minecraftservervote.fun', 'headshot.monster', 'gaming-at-my.best', 'progaming.monster',
+  'yt-creator.com', 'truloo.shop', 'sololearn.fun', 'quickmessage.us', 'ssh.tf',
+
+  'xhamster.com', 'redtube.com', 'spankbang.com', 'brazzers.com', 'chaturbate.com',
+  'stripchat.com', 'motherless.com', 'eporner.com', 'fapello.com', 'thothub.to',
+
+  'free-robux.com', 'robux-generator.com', 'free-vbucks.com', 'nitro-gift.com', 'discordnitro.gift',
 ];
-const BLOCK_HOST_KEYWORDS = ['porn', 'xvideos', 'xnxx', 'xxx', 'camgirl', 'rule34', 'escort', 'onlyfans-leak', 'free-robux', 'robux-gen', 'steam-gift-card-free'];
+const BLOCK_HOST_KEYWORDS = [
+  'porn', 'xvideos', 'xnxx', 'xxx', 'camgirl', 'rule34', 'escort', 'onlyfans-leak', 'hentai',
+  'nsfw-', 'sex-cam', 'free-robux', 'robux-gen', 'free-vbucks', 'steam-gift-card-free', 'discord-nitro-free',
+];
 
 function inappropriate(u) {
   let host = '';
