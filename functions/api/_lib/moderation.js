@@ -69,7 +69,7 @@ export async function moderatePage(jsonStr) {
     const bad = perSection[idx].filter((u) => verdict[u]);
     if (!bad.length) return sec;
     bad.forEach((u) => log.push({ url: u, reason: verdict[u], block: sec.type || '' }));
-    return { id: sec.id || Math.random().toString(36).slice(2, 9), type: 'callout', variant: 'warn', title: '', body: 'this content was removed automatically.', icon: '', pad: sec.pad || 'md' };
+    return { id: sec.id || Math.random().toString(36).slice(2, 9), type: 'callout', variant: 'warn', title: '', body: 'this content was removed automatically.', icon: '@ban', pad: sec.pad || 'md' };
   });
   if (!log.length) return { json: jsonStr, log: [] };
   return { json: JSON.stringify(state), log };
