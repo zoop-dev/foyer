@@ -53,10 +53,10 @@ pages_build_output_dir = "dist"
 # Workers AI — powers the builder's "Generate page" assistant (env.AI).
 [ai]
 binding = "AI"
-${cfg.publicAccess === true ? `
+
 [vars]
-FOYER_PUBLIC = "1"
-` : ""}
+FOYER_DOMAIN = "${cfg.domain}"
+${cfg.publicAccess === true ? `FOYER_PUBLIC = "1"\n` : ""}
 [[d1_databases]]
 binding = "DB"
 database_name = "${cfg.cloudflare.d1Name}"

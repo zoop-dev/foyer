@@ -112,7 +112,7 @@ export async function handleBackup(ctx) {
     await ensureAll();
     const url = new URL(request.url);
     const scope = url.searchParams.get('scope') || 'site';
-    const host = canonHost(request);
+    const host = canonHost(env, request);
     const usage = await backupUsage(env, host);
     if (usage.quota > 0 && usage.used >= usage.quota) return respond({ error: `Backup limit reached (${usage.used}/${usage.quota}). Ask the operator to raise your allotment.`, limit: usage.quota, used: usage.used }, 403);
     const out = { foyer_backup: 1, created: new Date().toISOString(), scope, site: { domain: host }, data: {} };
