@@ -1,14 +1,13 @@
 
 
 
-const TERMS_VERSION = '2026-06-07';
-const TERMS_KEY = 'foyer_terms_accepted';
 
 function foyerTermsGate() {
-  return new Promise((resolve) => {
-    let ok = false;
-    try { ok = localStorage.getItem(TERMS_KEY) === TERMS_VERSION; } catch (e) {}
-    if (ok) { resolve(); return; }
+  return new Promise(async (resolve) => {
+    let status = null;
+    try { status = await fetch('/api/terms/status', { headers: authHeaders() }).then((r) => r.ok ? r.json() : null); } catch (e) {}
+    if (status && status.accepted) { resolve(); return; }   // already accepted on the server
+
     const ov = document.createElement('div');
     ov.id = 'foyerTermsGate';
     ov.style.cssText = 'position:fixed;inset:0;z-index:100002;background:rgba(8,11,9,.86);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:1.5rem;font-family:"Josefin Sans",system-ui,sans-serif;';
@@ -21,8 +20,17 @@ function foyerTermsGate() {
         <button id="foyerTermsDecline" style="width:100%;background:none;border:none;color:rgba(220,245,225,.4);font:inherit;font-size:.7rem;cursor:pointer;padding:.4rem;">Decline &amp; leave</button>
       </div>`;
     document.body.appendChild(ov);
-    ov.querySelector('#foyerTermsAgree').addEventListener('click', () => {
-      try { localStorage.setItem(TERMS_KEY, TERMS_VERSION); } catch (e) {}
+    const agree = ov.querySelector('#foyerTermsAgree');
+    agree.addEventListener('click', async () => {
+      agree.disabled = true; const old = agree.textContent; agree.textContent = 'Saving…';
+      try {
+        const r = await fetch('/api/terms/accept', { method: 'POST', headers: { ...authHeaders(), 'Content-Type': 'application/json' } });
+        if (!r.ok) throw new Error('accept failed');
+      } catch (e) {
+        agree.disabled = false; agree.textContent = old;
+        if (typeof toast === 'function') toast('Could not save — please try again', true);
+        return;
+      }
       ov.remove(); resolve();
     });
     ov.querySelector('#foyerTermsDecline').addEventListener('click', () => { location.href = '/'; });
