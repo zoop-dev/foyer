@@ -92,8 +92,18 @@ export async function moderatePage(jsonStr) {
 const LOG_DDL = `CREATE TABLE IF NOT EXISTS moderation_log (
   id INTEGER PRIMARY KEY AUTOINCREMENT, slug TEXT, url TEXT, reason TEXT, block_type TEXT,
   removed_at TEXT NOT NULL DEFAULT (datetime('now')))`;
-export async function logModeration(env, slug, log) {
+
+
+const SB_URL = 'https://tvtfoghrdqwssdwvebuo.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2dGZvZ2hyZHF3c3Nkd3ZlYnVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMzk2ODksImV4cCI6MjA5NTgxNTY4OX0.n_CRdzQQKYNGDHYmoVxyKafFJCfezKKlSiZddx8MXH4';
+export async function logModeration(env, host, slug, log) {
   if (!log || !log.length) return;
   await env.DB.prepare(LOG_DDL).run();
   await env.DB.batch(log.map((e) => env.DB.prepare('INSERT INTO moderation_log (slug, url, reason, block_type) VALUES (?,?,?,?)').bind(slug || '', e.url, e.reason, e.block)));
+  try {
+    const base = (env.SUPABASE_URL || SB_URL).replace(/\/$/, '');
+    const key = env.SUPABASE_ANON_KEY || SB_ANON;
+    const rows = log.map((e) => ({ domain: host || '', slug: slug || '', url: e.url, reason: e.reason, block_type: e.block }));
+    await fetch(`${base}/rest/v1/foyer_moderation`, { method: 'POST', headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(rows), signal: AbortSignal.timeout(4000) });
+  } catch (e) {}
 }

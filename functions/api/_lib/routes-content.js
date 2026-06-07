@@ -74,7 +74,7 @@ export async function handleContent(ctx) {
     if (!slug?.trim()) return respond({ error: 'slug required' }, 400);
     try {
       let pj = page_json;
-      if (pj) { const mod = await moderatePage(pj); pj = mod.json; if (mod.log.length) await logModeration(env, slug.trim(), mod.log); }
+      if (pj) { const mod = await moderatePage(pj); pj = mod.json; if (mod.log.length) await logModeration(env, new URL(request.url).hostname, slug.trim(), mod.log); }
       const compressed = pj ? await compressJson(pj) : '';
       const r = await env.DB.prepare(
         'INSERT INTO pages (title, slug, page_json) VALUES (?,?,?)'
@@ -116,7 +116,7 @@ export async function handleContent(ctx) {
         id
       ).run();
     } catch (e) { return respond({ error: 'slug already exists' }, 409); }
-    if (modLog.length) await logModeration(env, newSlug, modLog);
+    if (modLog.length) await logModeration(env, new URL(request.url).hostname, newSlug, modLog);
     return respond({ ok: true, moderated: modLog.length || undefined });
   }
 
