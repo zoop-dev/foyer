@@ -428,6 +428,7 @@ async function boot() {
   if (loginScreen) { loginScreen.classList.add('out'); setTimeout(()=>loginScreen.remove(),450); }
   app.classList.add('visible');
   _adminActive = true;
+  if (typeof foyerTermsGate === 'function') await foyerTermsGate();   // must accept Terms + Privacy first
   await fetchSettings();
   await fetchImages();
   renderImgTabGallery();
