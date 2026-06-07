@@ -1,9 +1,13 @@
 
 import { moderatePage, logModeration, getModConfig } from './moderation.js';
-import { canonHost } from './site-config.js';
+import { canonHost, SITE_DOMAIN } from './site-config.js';
 
 export async function handleContent(ctx) {
   const { route, method, request, env, headers, respond, compressJson, decompressJson, CREATE_SESSIONS, CREATE_BANNED_EMAILS, CREATE_PAGES, authed, visitorAuthed, _adminRole, sitePublic, canView } = ctx;
+
+  if (route === 'whoami' && method === 'GET') {
+    return respond({ raw_host: new URL(request.url).hostname, canon_host: canonHost(request), site_domain: SITE_DOMAIN });
+  }
 
   if (route === 'settings' && method === 'GET') {
     const { results } = await env.DB.prepare('SELECT key, value FROM site_settings').all();

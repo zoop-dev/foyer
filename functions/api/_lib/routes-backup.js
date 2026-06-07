@@ -1,3 +1,4 @@
+import { canonHost } from './site-config.js';
 
 
 
@@ -29,6 +30,32 @@ async function decryptBundle(envlp, secret) {
 
 const SB_URL = 'https://tvtfoghrdqwssdwvebuo.supabase.co';
 const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2dGZvZ2hyZHF3c3Nkd3ZlYnVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMzk2ODksImV4cCI6MjA5NTgxNTY4OX0.n_CRdzQQKYNGDHYmoVxyKafFJCfezKKlSiZddx8MXH4';
+
+
+
+async function backupUsage(env, host) {
+  const base = (env.SUPABASE_URL || SB_URL).replace(/\/$/, '');
+  const key = env.SUPABASE_ANON_KEY || SB_ANON;
+  const H = { apikey: key, Authorization: `Bearer ${key}` };
+  let quota = 0, used = 0;
+  try {
+    const r = await fetch(`${base}/rest/v1/foyer_sites?domain=eq.${encodeURIComponent(host)}&select=backup_quota`, { headers: H });
+    if (r.ok) { const rows = await r.json(); const q = rows[0] && rows[0].backup_quota; if (q != null) quota = +q || 0; }
+  } catch (e) {}
+  try {
+    const r = await fetch(`${base}/rest/v1/foyer_backups?domain=eq.${encodeURIComponent(host)}&select=id`, { headers: { ...H, Prefer: 'count=exact', Range: '0-0' } });
+    const cr = r.headers.get('content-range'); if (cr) { const m = cr.match(/\/(\d+)$/); if (m) used = +m[1]; }
+  } catch (e) {}
+  return { quota, used };
+}
+async function recordBackup(env, host, scope, size) {
+  try {
+    const base = (env.SUPABASE_URL || SB_URL).replace(/\/$/, '');
+    const key = env.SUPABASE_ANON_KEY || SB_ANON;
+    await fetch(`${base}/rest/v1/foyer_backups`, { method: 'POST', headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ domain: host || '', scope: scope || '', size: size || 0 }), signal: AbortSignal.timeout(4000) });
+  } catch (e) {}
+}
+
 let _bkKeyCache = null, _bkKeyAt = 0;
 async function backupSecret(env) {
   if (env.BACKUP_KEY) return env.BACKUP_KEY;
@@ -85,7 +112,10 @@ export async function handleBackup(ctx) {
     await ensureAll();
     const url = new URL(request.url);
     const scope = url.searchParams.get('scope') || 'site';
-    const out = { foyer_backup: 1, created: new Date().toISOString(), scope, site: { domain: url.hostname }, data: {} };
+    const host = canonHost(request);
+    const usage = await backupUsage(env, host);
+    if (usage.quota > 0 && usage.used >= usage.quota) return respond({ error: `Backup limit reached (${usage.used}/${usage.quota}). Ask the operator to raise your allotment.`, limit: usage.quota, used: usage.used }, 403);
+    const out = { foyer_backup: 1, created: new Date().toISOString(), scope, site: { domain: host }, data: {} };
     const imgIds = new Set(), fileIds = new Set();
     const addRefs = (s) => { for (const id of refIds(s, 'images')) imgIds.add(id); for (const id of refIds(s, 'files')) fileIds.add(id); };
 
@@ -130,8 +160,10 @@ export async function handleBackup(ctx) {
     const bkKey = await backupSecret(env);
     if (bkKey) {
       const bytes = await sealBinary(out, bkKey);
+      await recordBackup(env, host, scope, bytes.length);
       return new Response(bytes, { status: 200, headers: { 'Content-Type': 'application/octet-stream', 'Access-Control-Allow-Origin': '*' } });
     }
+    await recordBackup(env, host, scope, JSON.stringify(out).length);
     return respond(out);
   }
 
