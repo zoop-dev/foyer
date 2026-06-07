@@ -17,17 +17,19 @@ const PAGE = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:'Josefin Sans',system-ui,sans-serif;font-weight:200;-webkit-font-smoothing:antialiased;min-height:100vh}
 a{color:var(--accent);text-decoration:none}
-.wrap{max-width:920px;margin:0 auto;padding:0 1.4rem}
+.wrap{max-width:980px;margin:0 auto;padding:0 1.4rem}
 header{position:sticky;top:0;z-index:5;background:rgba(11,14,19,.82);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
 header .wrap{display:flex;align-items:center;gap:.9rem;height:60px}
 .brand{display:flex;align-items:center;gap:.55rem;font-family:'Unbounded',sans-serif;font-weight:300;font-size:1rem}
 .brand svg{width:18px;height:21px}.brand .tag{font-size:.5rem;letter-spacing:.3em;text-transform:uppercase;color:var(--accent);margin-left:.2rem}
 header .gv{margin-left:auto;font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 header .lo{font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);cursor:pointer}
-nav.tabs{display:flex;gap:.4rem;border-bottom:1px solid var(--line);margin:1.4rem 0 1.6rem}
-nav.tabs button{background:none;border:none;color:var(--muted);font-family:inherit;font-weight:300;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;padding:.6rem .9rem;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
-nav.tabs button.on{color:var(--ink);border-bottom-color:var(--accent)}
-.card{border:1px solid var(--line);background:rgba(127,166,216,.03);border-radius:12px;padding:1rem 1.1rem;margin-bottom:.7rem}
+nav.tabs{display:flex;flex-wrap:wrap;gap:.45rem;margin:1.3rem 0 1.6rem}
+nav.tabs button{background:rgba(127,166,216,.05);border:1px solid var(--line);color:var(--muted);font-family:inherit;font-weight:300;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;padding:.5rem .95rem;cursor:pointer;border-radius:999px;transition:all .12s}
+nav.tabs button:hover{color:var(--ink);border-color:var(--accent)}
+nav.tabs button.on{color:#070a0e;background:var(--accent);border-color:var(--accent)}
+.card{border:1px solid var(--line);background:rgba(127,166,216,.03);border-radius:12px;padding:1.1rem 1.2rem;margin-bottom:.85rem}
+.actions{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.95rem;padding-top:.85rem;border-top:1px solid var(--line)}
 .row{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap}
 .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .dom{font-weight:300;font-size:.95rem}
@@ -35,7 +37,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--accent)}
 .spacer{margin-left:auto}
 .badge{font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;padding:.18rem .45rem;border-radius:4px;font-weight:400}
 .b-ok{background:rgba(120,210,150,.16);color:#8fdca8}.b-warn{background:rgba(230,177,90,.16);color:#e6c08a}.b-off{background:rgba(224,96,138,.16);color:#e0608a}.b-dim{background:rgba(139,148,166,.14);color:var(--muted)}
-button.btn{font-family:inherit;font-weight:300;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;padding:.5rem .85rem;border-radius:7px;cursor:pointer;border:1px solid var(--line);background:transparent;color:rgba(232,237,242,.82)}
+button.btn{font-family:inherit;font-weight:300;font-size:.62rem;letter-spacing:.13em;text-transform:uppercase;padding:.55rem .9rem;border-radius:8px;cursor:pointer;border:1px solid var(--line);background:transparent;color:rgba(232,237,242,.82);transition:border-color .12s,background .12s}
 button.btn:hover{border-color:var(--accent)}
 button.btn.danger{color:#e0608a;border-color:rgba(224,96,138,.3)}
 button.btn.go{background:var(--accent);color:#070a0e;border:none}
@@ -70,6 +72,23 @@ h2{font-family:'Unbounded',sans-serif;font-weight:200;font-size:1rem;margin:1.6r
 .ann-edit{display:flex;flex-direction:column;gap:.55rem;margin-top:.6rem}
 .ann-edit .row{gap:.5rem}
 .ann-edit input{flex:1;min-width:140px}
+
+@media (max-width:640px){
+  .wrap{padding:0 1rem}
+  header .wrap{height:54px;gap:.6rem}
+  .brand{font-size:.92rem}.brand .tag{display:none}
+  header .gv{font-size:.56rem}
+  nav.tabs{margin:1rem 0 1.2rem;gap:.4rem}
+  nav.tabs button{padding:.45rem .8rem;font-size:.64rem}
+  .card{padding:.95rem 1rem}
+  h2{font-size:.95rem;margin:1.3rem 0 .7rem}
+  .actions{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+  .actions button.btn{width:100%;padding:.7rem .5rem;text-align:center}
+  .form{flex-direction:column;align-items:stretch}
+  .form>input,.form>select,.form>textarea,.form>button{width:100%!important;min-width:0!important;flex:none!important}
+  .err-item{flex-direction:column;gap:.25rem}
+  .err-item .t{min-width:0}
+}
 </style></head>
 <body>
 <div id="login"><div class="box">
@@ -163,7 +182,7 @@ function renderSites(){
       (s.offline?'<span class="badge b-warn">offline</span>':'')+
       (s.ai_enabled===false?'<span class="badge b-dim">AI off</span>':'')+
       (s.hide_branding===true?'<span class="badge b-dim">white-label</span>':'')+
-      '</div><div class="row" style="margin-top:.8rem">'+
+      '</div><div class="actions">'+
       '<button class="btn" data-act="offline" data-dom="'+esc(s.domain)+'" data-val="'+(s.offline?'0':'1')+'">'+(s.offline?'Bring online':'Take offline')+'</button>'+
       '<button class="btn '+(s.licensed?'danger':'')+'" data-act="license" data-dom="'+esc(s.domain)+'" data-val="'+(s.licensed?'0':'1')+'">'+(s.licensed?'Unlicense':'License')+'</button>'+
       '<button class="btn" data-act="ai" data-dom="'+esc(s.domain)+'" data-val="'+(s.ai_enabled===false?'1':'0')+'">'+(s.ai_enabled===false?'Enable AI':'Disable AI')+'</button>'+

@@ -296,3 +296,25 @@
       const idx = Math.max(0, slides.findIndex((s) => s.src === target));
       window.Fancybox.show(slides, { startIndex: idx });
     });
+
+
+
+
+    const VAPID_PUBLIC = 'BI8G_3usvr_Zb8287rEZxGOuJdJBe7H9JFqVdCMggsERe-DALTtJasGdPjhAjF9zrdJwC2fE7prGgt9lObsv0M4';
+    const _vapidBytes = (b64) => { const pad = '='.repeat((4 - (b64.length % 4)) % 4); const s = (b64 + pad).replace(/-/g, '+').replace(/_/g, '/'); const raw = atob(s); const out = new Uint8Array(raw.length); for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i); return out; };
+    const _pushPerm = async () => { if (!('Notification' in window)) return false; if (Notification.permission === 'granted') return true; return (await Notification.requestPermission()) === 'granted'; };
+    window.foyerPushTest = async () => {
+      if (!(await _pushPerm())) { console.warn('[foyer push] permission denied'); return; }
+      const reg = await navigator.serviceWorker.ready;
+      await reg.showNotification('Foyer', { body: 'Test notification ✓', icon: '/icons/favicon.svg', data: { url: '/' } });
+      console.log('[foyer push] test notification shown');
+    };
+    window.foyerPushSubscribe = async () => {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) { console.warn('[foyer push] not supported here'); return null; }
+      if (!(await _pushPerm())) { console.warn('[foyer push] permission denied'); return null; }
+      const reg = await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: _vapidBytes(VAPID_PUBLIC) });
+      console.log('[foyer push] subscription:', JSON.stringify(sub));
+      return sub;
+    };
