@@ -3,6 +3,12 @@ import { moderatePage, logModeration, getModConfig } from './moderation.js';
 import { canonHost } from './site-config.js';
 import { isPro } from './plan.js';
 
+let _pwColReady = false;
+async function _ensurePwCol(env) { if (_pwColReady) return; await env.DB.prepare('ALTER TABLE pages ADD COLUMN pw_hash TEXT').run().catch(() => {}); _pwColReady = true; }
+async function _sha(s) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, '0')).join(''); }
+async function _hashPagePw(pw) { const salt = crypto.randomUUID().slice(0, 8); return salt + '$' + (await _sha(salt + ':' + pw)); }
+async function _verifyPagePw(pw, stored) { if (!pw || !stored || stored.indexOf('$') < 0) return false; const i = stored.indexOf('$'); return (await _sha(stored.slice(0, i) + ':' + pw)) === stored.slice(i + 1); }
+
 export async function handleContent(ctx) {
   const { route, method, request, env, headers, respond, compressJson, decompressJson, CREATE_SESSIONS, CREATE_BANNED_EMAILS, CREATE_PAGES, authed, visitorAuthed, _adminRole, sitePublic, canView } = ctx;
 
@@ -30,6 +36,7 @@ export async function handleContent(ctx) {
 
   if (route === 'pages' && method === 'GET') {
     await env.DB.prepare(CREATE_PAGES).run();
+    await _ensurePwCol(env);
     const url = new URL(request.url);
     const slug = url.searchParams.get('slug');
     if (slug !== null) {
@@ -39,24 +46,33 @@ export async function handleContent(ctx) {
       const page = await env.DB.prepare(
         'SELECT * FROM pages WHERE slug = ? AND is_published = 1'
       ).bind(slug).first();
-      if (page) page.page_json = await decompressJson(page.page_json);
+
+      if (page && page.pw_hash && !authed()) {
+        const pw = request.headers.get('X-Page-Password') || url.searchParams.get('pw') || '';
+        if (!(await _verifyPagePw(pw, page.pw_hash))) {
+          return respond({ id: page.id, title: page.title, slug: page.slug, locked: true, bad: pw ? true : undefined });
+        }
+      }
+      if (page) { page.page_json = await decompressJson(page.page_json); delete page.pw_hash; }
       return respond(page || null);
     }
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
     const { results } = await env.DB.prepare(
-      'SELECT id, title, slug, is_published, sort_order, created_at, page_json FROM pages ORDER BY sort_order ASC, id ASC'
+      'SELECT id, title, slug, is_published, sort_order, created_at, page_json, pw_hash FROM pages ORDER BY sort_order ASC, id ASC'
     ).all();
-    const pages = await Promise.all((results || []).map(async p => ({ ...p, page_json: await decompressJson(p.page_json) })));
+    const pages = await Promise.all((results || []).map(async p => { const { pw_hash, ...rest } = p; return { ...rest, has_password: !!pw_hash, page_json: await decompressJson(p.page_json) }; }));
     return respond(pages);
   }
 
 
   if (route === 'search' && method === 'GET') {
     await env.DB.prepare(CREATE_PAGES).run();
+    await _ensurePwCol(env);
     const vAuth = await visitorAuthed();
     if (vAuth === 'banned') return respond({ error: 'account_banned' }, 403);
     if (!authed() && vAuth !== 'ok' && !(await sitePublic())) return respond({ error: 'unauthorized' }, 401);
-    const { results } = await env.DB.prepare("SELECT title, slug, page_json FROM pages WHERE is_published = 1 AND slug != '__404__'").all();
+
+    const { results } = await env.DB.prepare("SELECT title, slug, page_json FROM pages WHERE is_published = 1 AND slug != '__404__' AND (pw_hash IS NULL OR pw_hash = '')").all();
     const SKIP = new Set(['id', 'type', 'url', 'href', 'img', 'photo', 'src', 'bg_img', 'bg_image', 'image', 'avatar', 'cover_image', 'data', 'anchor', 'access_key', 'target', 'buy_url', 'btn_url', 'btn2_url', 'button_url']);
     const collect = (o, out, d) => {
       if (d > 7 || o == null) return;
@@ -100,6 +116,7 @@ export async function handleContent(ctx) {
   if (pageSingle && method === 'PUT') {
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
     await env.DB.prepare(CREATE_PAGES).run();
+    await _ensurePwCol(env);
     const body = await request.json().catch(() => ({}));
     const id = parseInt(pageSingle[1]);
     const current = await env.DB.prepare('SELECT * FROM pages WHERE id=?').bind(id).first();
@@ -108,6 +125,15 @@ export async function handleContent(ctx) {
     if (body.slug != null) {
       let s = String(body.slug).trim();
       if (s) { newSlug = s.startsWith('/') ? s : '/' + s; }
+    }
+
+    let newPwHash = current.pw_hash;
+    if (body.password !== undefined) {
+      const pw = String(body.password || '');
+      if (pw) {
+        if (!(await isPro(env, canonHost(env, request)))) return respond({ error: 'Password-protected pages are a Pro feature.' }, 403);
+        newPwHash = await _hashPagePw(pw);
+      } else newPwHash = null;
     }
 
     let newPageJson = current.page_json, modLog = [];
@@ -119,12 +145,13 @@ export async function handleContent(ctx) {
     }
     try {
       await env.DB.prepare(
-        'UPDATE pages SET title=?, slug=?, page_json=?, is_published=? WHERE id=?'
+        'UPDATE pages SET title=?, slug=?, page_json=?, is_published=?, pw_hash=? WHERE id=?'
       ).bind(
         body.title ?? current.title,
         newSlug,
         newPageJson,
         body.is_published != null ? (body.is_published ? 1 : 0) : current.is_published,
+        newPwHash,
         id
       ).run();
     } catch (e) { return respond({ error: 'slug already exists' }, 409); }

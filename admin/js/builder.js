@@ -757,12 +757,20 @@ async function bldSavePageMeta(id, name, slug) {
 async function bldApplyPageMeta() {
   await bldSavePageMeta(bldPageId, document.getElementById('pgName')?.value, document.getElementById('pgSlug')?.value);
 }
+async function bldSavePagePassword(id, password) {
+  const curP = bldPages.find(p => p.id === id); if (!curP) return;
+  const r = await fetch(`/api/pages/${id}`, { method: 'PUT', headers: { ...authHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
+  if (!r.ok) { const d = await r.json().catch(() => ({})); toast(d.error || 'Could not update password.', true); return; }
+  curP.has_password = !!password;
+  toast(password ? 'Password set ✓' : 'Password removed ✓');
+  bldDrawEditor();
+}
 function bldDrawEditor() {
   const panel=document.getElementById('bldEditor'); if (!panel) return;
   if (!bldSel) {
     if (bldPageId) {
       const curP=bldPages.find(p=>p.id===bldPageId)||{};
-      panel.innerHTML=`<div class="bld-ep"><div class="bld-ep-head">Page <span class="bld-ep-type">Settings</span></div><div class="bld-ef"><label>Page name</label><input type="text" id="pgName" value="${bA(curP.title||'')}" /></div><div class="bld-ef"><label>URL slug <span style="opacity:.5">(e.g. /about)</span></label><input type="text" id="pgSlug" value="${bA(curP.slug||'')}" placeholder="/slug" /></div><div class="bld-ef"><label>Browser Tab Title</label><input type="text" id="pgTitle" value="${bA(bldState.page_title||'')}" placeholder="Defaults to page name" /></div><div class="bld-ef"><label>Meta Description</label><input type="text" id="pgSub" value="${bA(bldState.page_subtitle||'')}" /></div><div class="bld-ef"><label>Social share image <span style="opacity:.5">(link preview, 1200×630)</span></label><div style="display:flex;gap:.4rem;"><input type="text" id="pgImage" value="${bA(bldState.page_image||'')}" placeholder="Defaults to site image" style="flex:1;" /><button class="btn btn-sm" id="pgImagePick" type="button">Pick</button></div></div><div class="bld-ef"><label>Show in nav bar</label><select id="pgNav"><option value="yes"${bldState.show_in_nav!==false?' selected':''}>Yes — show in nav</option><option value="no"${bldState.show_in_nav===false?' selected':''}>No — hide from nav</option></select></div><div class="bld-sep" style="margin:.6rem 0;"></div><p style="font-weight:100;font-size:.62rem;letter-spacing:.06em;color:var(--muted);line-height:1.8;">Hover a section and click <strong style="color:rgba(77,189,106,.6);font-weight:300;">Edit</strong> to change its content.</p></div>`;
+      panel.innerHTML=`<div class="bld-ep"><div class="bld-ep-head">Page <span class="bld-ep-type">Settings</span></div><div class="bld-ef"><label>Page name</label><input type="text" id="pgName" value="${bA(curP.title||'')}" /></div><div class="bld-ef"><label>URL slug <span style="opacity:.5">(e.g. /about)</span></label><input type="text" id="pgSlug" value="${bA(curP.slug||'')}" placeholder="/slug" /></div><div class="bld-ef"><label>Browser Tab Title</label><input type="text" id="pgTitle" value="${bA(bldState.page_title||'')}" placeholder="Defaults to page name" /></div><div class="bld-ef"><label>Meta Description</label><input type="text" id="pgSub" value="${bA(bldState.page_subtitle||'')}" /></div><div class="bld-ef"><label>Social share image <span style="opacity:.5">(link preview, 1200×630)</span></label><div style="display:flex;gap:.4rem;"><input type="text" id="pgImage" value="${bA(bldState.page_image||'')}" placeholder="Defaults to site image" style="flex:1;" /><button class="btn btn-sm" id="pgImagePick" type="button">Pick</button></div></div><div class="bld-ef"><label>Show in nav bar</label><select id="pgNav"><option value="yes"${bldState.show_in_nav!==false?' selected':''}>Yes — show in nav</option><option value="no"${bldState.show_in_nav===false?' selected':''}>No — hide from nav</option></select></div><div class="bld-ef"><label>Password protection <span style="opacity:.5">(Pro)</span></label><div style="display:flex;gap:.4rem;"><input type="password" id="pgPw" autocomplete="new-password" placeholder="${curP.has_password?'•••••• (set — type to change)':'No password'}" style="flex:1;" /><button class="btn btn-sm" id="pgPwSave" type="button">Set</button></div>${curP.has_password?'<button class="btn btn-xs" id="pgPwClear" type="button" style="margin-top:.4rem;width:100%;">Remove password</button>':''}</div><div class="bld-sep" style="margin:.6rem 0;"></div><p style="font-weight:100;font-size:.62rem;letter-spacing:.06em;color:var(--muted);line-height:1.8;">Hover a section and click <strong style="color:rgba(77,189,106,.6);font-weight:300;">Edit</strong> to change its content.</p></div>`;
       panel.querySelector('#pgName').addEventListener('change',bldApplyPageMeta);
       panel.querySelector('#pgSlug').addEventListener('change',bldApplyPageMeta);
       panel.querySelector('#pgTitle').addEventListener('input',e=>{bldState.page_title=e.target.value;bldSaveDraft();});
@@ -774,6 +782,12 @@ function bldDrawEditor() {
         e.target.value = bldState.show_in_nav ? 'yes' : 'no';   // lock the visible value
         bldSaveDraft();
       });
+      panel.querySelector('#pgPwSave').addEventListener('click',()=>{
+        const v=panel.querySelector('#pgPw')?.value||'';
+        if(!v){toast('Type a password first.',true);return;}
+        bldSavePagePassword(bldPageId,v);
+      });
+      panel.querySelector('#pgPwClear')?.addEventListener('click',()=>bldSavePagePassword(bldPageId,''));
     } else {
       panel.innerHTML='<p class="bld-editor-hint">Select or create a page to get started.</p>';
     }

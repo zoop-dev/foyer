@@ -453,6 +453,50 @@
       res.addEventListener('click', (e) => { if (e.target.closest('a[data-fs]')) close(); });   // the router handles the navigation
     }
 
+    function renderLockedPage(slug, page, session, bad) {
+      dismissLoading();
+      const _pgbg = document.getElementById('pg-bg'); if (_pgbg) _pgbg.style.display = 'none';
+      const bg = getComputedStyle(document.documentElement).getPropertyValue('--site-bg').trim() || '#020a03';
+      const accent = getComputedStyle(document.documentElement).getPropertyValue('--site-accent').trim() || '#4dbd6a';
+      const text = getComputedStyle(document.documentElement).getPropertyValue('--site-text').trim() || '#c8e6aa';
+      const scene = document.getElementById('scene');
+      scene.style.cssText = 'position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;padding:1.5rem;';
+      scene.style.background = bg;
+      loadNav(session);
+      scene.innerHTML = `<div style="width:100%;max-width:360px;text-align:center;font-family:'Josefin Sans',sans-serif;color:${text};">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="${accent}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:1.2rem;opacity:.8;"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <h1 style="font-weight:300;font-size:1.5rem;letter-spacing:.01em;margin:0 0 .4rem;">${pgE(page.title || 'Protected page')}</h1>
+        <p style="font-weight:200;font-size:.82rem;color:${pgRgb(text, .5)};margin:0 0 1.6rem;">This page is password protected.</p>
+        <form id="pwform" style="display:flex;flex-direction:column;gap:.7rem;">
+          <input id="pwin" type="password" placeholder="Password" autocomplete="current-password" style="box-sizing:border-box;padding:.85rem 1rem;background:${pgRgb(accent, .04)};border:1px solid ${pgRgb(accent, bad ? .55 : .2)};border-radius:10px;color:${text};font-family:inherit;font-weight:300;font-size:.95rem;outline:none;text-align:center;letter-spacing:.04em;" />
+          ${bad ? `<div style="font-size:.72rem;font-weight:200;color:#e88;">Incorrect password — try again.</div>` : ''}
+          <button type="submit" style="padding:.8rem;background:${accent};color:${bg};border:none;border-radius:10px;font-family:inherit;font-weight:400;font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;">Unlock</button>
+        </form>
+      </div>`;
+      scene.querySelectorAll('a, button, input').forEach(hookHover);
+      _foyerUserBadge(session);
+      const inp = scene.querySelector('#pwin'); setTimeout(() => inp && inp.focus(), 40);
+      scene.querySelector('#pwform').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const pw = inp.value;
+        if (!pw) return;
+        const headers = { ...sessionHeaders(session), 'X-Page-Password': pw };
+        let data = null;
+        try { const r = await fetch(`/api/pages?slug=${encodeURIComponent(slug)}`, { headers }); data = await r.json(); } catch (err) {}
+        if (!data || data.locked) { renderLockedPage(slug, page, session, true); return; }
+
+        _pageCache.set(slug, { t: Date.now(), p: Promise.resolve(data) });
+        if (data.page_json) {
+          try {
+            const state = JSON.parse(data.page_json);
+            if (state.kind === 'text') { setMeta(state.page_title || data.title || __SITE__.name, state.desc || '', slug, state.cover); renderTextPage(state, session, data.title); return; }
+            setMeta(state.page_title || data.title || __SITE__.name, state.page_subtitle || '', slug, state.page_image); renderCustomPage(state, session); return;
+          } catch (err) {}
+        }
+        showFallback(session);
+      });
+    }
+
     async function loadAndShow(session) {
       _session = session; wireRouter(); initLiveSettings();
       if (!versionPollStarted) { versionPollStarted = true; }
@@ -509,6 +553,12 @@
       }
 
       const page = await fetchPage(slug, session);
+
+      if (page?.locked) {
+        setMeta(page.title || 'Protected', '', slug);
+        renderLockedPage(slug, page, session);
+        return;
+      }
 
       if (page?.page_json) {
         try {
