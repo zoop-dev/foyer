@@ -916,33 +916,50 @@ async function hxLoadVersions(pageId) {
   if (r.status === 403) { list.innerHTML = '<p style="font-size:.74rem;color:var(--muted);font-weight:200;line-height:1.7;">Version history is a <b style="color:#7fa6d8;">Pro</b> feature. Upgrade to access and restore past versions.</p>'; return; }
   const vers = r.ok ? await r.json() : [];
   if (!Array.isArray(vers) || !vers.length) { list.innerHTML = '<p style="font-size:.74rem;color:var(--muted);font-weight:200;">No saved versions yet — they appear here after you edit and save this page.</p>'; return; }
-  list.innerHTML = vers.map(v => `
-    <div class="hx-row" style="display:flex;align-items:center;gap:.8rem;padding:.7rem .9rem;border:1px solid var(--border);border-radius:9px;margin-bottom:.5rem;background:rgba(var(--accent-rgb),.02);">
-      <div style="flex:1;min-width:0;">
-        <div style="font-weight:300;font-size:.8rem;color:rgba(220,245,225,.9);">${escHtml(v.title || '(untitled)')}</div>
-        <div style="font-size:.62rem;font-weight:200;color:var(--muted);margin-top:.15rem;">${escHtml(timeAgo(v.created_at))} · ${(v.size||0)} bytes</div>
+  list.innerHTML = vers.map((v, i) => `
+    <div class="hx-row" data-hxrow="${v.id}">
+      <div class="hx-row-main">
+        <div class="hx-row-title">${escHtml(v.title || '(untitled)')}</div>
+        <div class="hx-row-meta">${i === 0 ? '<b style="color:rgba(var(--accent-rgb),.8);font-weight:400;">latest</b><span class="hx-dot"></span>' : ''}${escHtml(timeAgo(v.created_at))}<span class="hx-dot"></span>${hxSize(v.size)}</div>
       </div>
       <button class="btn btn-xs" data-hxprev="${v.id}" data-pg="${pageId}">Preview</button>
       <button class="btn btn-xs" data-hxrestore="${v.id}" data-pg="${pageId}">Restore</button>
     </div>
-    <div id="hxprev-${v.id}" style="display:none;border:1px solid var(--border);border-top:none;border-radius:0 0 9px 9px;margin:-.5rem 0 .6rem;padding:.7rem .9rem;background:var(--bg);"></div>`).join('');
+    <div class="hx-prev" id="hxprev-${v.id}" style="display:none;"></div>`).join('');
   list.querySelectorAll('[data-hxrestore]').forEach(b => b.addEventListener('click', () => hxRestore(+b.dataset.pg, +b.dataset.hxrestore)));
   list.querySelectorAll('[data-hxprev]').forEach(b => b.addEventListener('click', () => hxPreview(+b.dataset.pg, +b.dataset.hxprev)));
 }
+function hxSize(n) { n = +n || 0; return n < 1024 ? n + ' B' : (n / 1024).toFixed(1) + ' KB'; }
+const _hxVerCache = {};
 async function hxPreview(pageId, vid) {
   const box = document.getElementById('hxprev-' + vid);
   if (!box) return;
-  if (box.style.display !== 'none') { box.style.display = 'none'; return; }
-  box.style.display = 'block';
-  box.innerHTML = '<span style="font-size:.7rem;color:var(--muted);">Loading…</span>';
-  const r = await fetch(`/api/pages/${pageId}/versions/${vid}`, { headers: authHeaders() });
-  if (!r.ok) { box.innerHTML = '<span style="font-size:.7rem;color:var(--muted);">Could not load this version.</span>'; return; }
-  const v = await r.json();
-  let secs = [];
-  try { const st = JSON.parse(v.page_json || '{}'); secs = st.sections || []; } catch {}
-  box.innerHTML = secs.length
-    ? '<p style="font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(var(--accent-rgb),.6);margin:0 0 .5rem;">'+secs.length+' section'+(secs.length===1?'':'s')+'</p>' + secs.map(s => `<div style="font-size:.7rem;font-weight:200;color:rgba(220,245,225,.75);padding:.15rem 0;">• <b style="font-weight:400;">${escHtml(s.type||'block')}</b>${s.heading?' — '+escHtml(String(s.heading).slice(0,60)):s.name?' — '+escHtml(String(s.name).slice(0,60)):''}</div>`).join('')
-    : '<span style="font-size:.7rem;color:var(--muted);">Empty page.</span>';
+  const row = document.querySelector(`.hx-row[data-hxrow="${vid}"]`);
+  if (box.style.display !== 'none') { box.style.display = 'none'; row && row.classList.remove('open'); return; }
+  box.style.display = 'block'; row && row.classList.add('open');
+  box.innerHTML = '<span class="hx-dim">Loading…</span>';
+  let v = _hxVerCache[vid];
+  if (!v) {
+    const r = await fetch(`/api/pages/${pageId}/versions/${vid}`, { headers: authHeaders() });
+    if (!r.ok) { box.innerHTML = '<span class="hx-dim">Could not load this version.</span>'; return; }
+    v = await r.json(); _hxVerCache[vid] = v;
+  }
+  let st = {};
+  try { st = JSON.parse(v.page_json || '{}'); } catch {}
+  const secs = st.sections || [];
+  if (!secs.length) { box.innerHTML = '<span class="hx-dim">Empty page.</span>'; return; }
+  const theme = { accent: st.accent || __SITE__.accent, text: st.text || __SITE__.text, bg: st.bg || __SITE__.bg, font: st.font || 'Josefin Sans' };
+  box.innerHTML = `<p class="hx-prev-label">${secs.length} section${secs.length === 1 ? '' : 's'} — click one to preview it</p>
+    <div class="hx-seclist">${secs.map((s, i) => `<button type="button" class="hx-sec" data-si="${i}"><span class="hx-sec-type">${escHtml(s.type || 'block')}</span>${s.heading ? `<span class="hx-sec-h">${escHtml(String(s.heading).slice(0, 60))}</span>` : s.name ? `<span class="hx-sec-h">${escHtml(String(s.name).slice(0, 60))}</span>` : ''}</button>`).join('')}</div>
+    <div class="hx-secprev" id="hxsec-${vid}" style="background:${theme.bg};"></div>`;
+  const prevArea = box.querySelector('#hxsec-' + vid);
+  box.querySelectorAll('.hx-sec').forEach(b => b.addEventListener('click', () => {
+    box.querySelectorAll('.hx-sec').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    const s = secs[+b.dataset.si];
+    try { prevArea.innerHTML = (typeof bRender === 'function') ? bRender(s, theme) : ''; }
+    catch (e) { prevArea.innerHTML = '<div style="padding:1rem;"><span class="hx-dim">Can’t preview this block type.</span></div>'; }
+  }));
 }
 async function hxRestore(pageId, vid) {
   if (!confirm('Restore this version? Your current page content will be saved to history first, then replaced.')) return;
