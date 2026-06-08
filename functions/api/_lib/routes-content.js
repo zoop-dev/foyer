@@ -9,6 +9,17 @@ async function _sha(s) { const b = await crypto.subtle.digest('SHA-256', new Tex
 async function _hashPagePw(pw) { const salt = crypto.randomUUID().slice(0, 8); return salt + '$' + (await _sha(salt + ':' + pw)); }
 async function _verifyPagePw(pw, stored) { if (!pw || !stored || stored.indexOf('$') < 0) return false; const i = stored.indexOf('$'); return (await _sha(stored.slice(0, i) + ':' + pw)) === stored.slice(i + 1); }
 
+
+const CREATE_PAGE_VERSIONS = "CREATE TABLE IF NOT EXISTS page_versions (id INTEGER PRIMARY KEY AUTOINCREMENT, page_id INTEGER NOT NULL, title TEXT, slug TEXT, page_json TEXT, created_at TEXT DEFAULT (datetime('now')))";
+let _pvReady = false;
+async function _ensurePV(env) { if (_pvReady) return; await env.DB.prepare(CREATE_PAGE_VERSIONS).run().catch(() => {}); _pvReady = true; }
+async function _snapshotPage(env, page) {
+  if (!page || !page.page_json) return;
+  await _ensurePV(env);
+  await env.DB.prepare('INSERT INTO page_versions (page_id, title, slug, page_json) VALUES (?,?,?,?)').bind(page.id, page.title || '', page.slug || '', page.page_json).run().catch(() => {});
+  await env.DB.prepare('DELETE FROM page_versions WHERE page_id=? AND id NOT IN (SELECT id FROM page_versions WHERE page_id=? ORDER BY id DESC LIMIT 30)').bind(page.id, page.id).run().catch(() => {});
+}
+
 export async function handleContent(ctx) {
   const { route, method, request, env, headers, respond, compressJson, decompressJson, CREATE_SESSIONS, CREATE_BANNED_EMAILS, CREATE_PAGES, authed, visitorAuthed, _adminRole, sitePublic, canView } = ctx;
 
@@ -142,6 +153,8 @@ export async function handleContent(ctx) {
       const cfg = await getModConfig(env, canonHost(env, request));
       if (cfg.enabled !== false) { const mod = await moderatePage(body.page_json, cfg); pjStr = mod.json; modLog = mod.log; }
       newPageJson = await compressJson(pjStr);
+
+      if (newPageJson !== current.page_json) await _snapshotPage(env, current);
     }
     try {
       await env.DB.prepare(
@@ -162,6 +175,47 @@ export async function handleContent(ctx) {
   if (pageSingle && method === 'DELETE') {
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
     await env.DB.prepare('DELETE FROM pages WHERE id=?').bind(parseInt(pageSingle[1])).run();
+    await env.DB.prepare('DELETE FROM page_versions WHERE page_id=?').bind(parseInt(pageSingle[1])).run().catch(() => {});
+    return respond({ ok: true });
+  }
+
+
+
+
+  const verList = route.match(/^pages\/(\d+)\/versions$/);
+  const verOne = route.match(/^pages\/(\d+)\/versions\/(\d+)$/);
+  const verRestore = route.match(/^pages\/(\d+)\/versions\/(\d+)\/restore$/);
+
+  if (verList && method === 'GET') {
+    if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    if (!(await isPro(env, canonHost(env, request)))) return respond({ error: 'Version history is a Pro feature.', pro: true }, 403);
+    await _ensurePV(env);
+    const { results } = await env.DB.prepare('SELECT id, title, slug, created_at, length(page_json) AS size FROM page_versions WHERE page_id=? ORDER BY id DESC').bind(parseInt(verList[1])).all().catch(() => ({ results: [] }));
+    return respond(results || []);
+  }
+
+  if (verOne && method === 'GET') {
+    if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    if (!(await isPro(env, canonHost(env, request)))) return respond({ error: 'Version history is a Pro feature.', pro: true }, 403);
+    await _ensurePV(env);
+    const v = await env.DB.prepare('SELECT * FROM page_versions WHERE id=? AND page_id=?').bind(parseInt(verOne[2]), parseInt(verOne[1])).first();
+    if (!v) return respond({ error: 'not found' }, 404);
+    v.page_json = await decompressJson(v.page_json);
+    return respond(v);
+  }
+
+  if (verRestore && method === 'POST') {
+    if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    if (!(await isPro(env, canonHost(env, request)))) return respond({ error: 'Version history is a Pro feature.', pro: true }, 403);
+    await _ensurePV(env);
+    const pid = parseInt(verRestore[1]);
+    const v = await env.DB.prepare('SELECT * FROM page_versions WHERE id=? AND page_id=?').bind(parseInt(verRestore[2]), pid).first();
+    if (!v) return respond({ error: 'not found' }, 404);
+    const current = await env.DB.prepare('SELECT * FROM pages WHERE id=?').bind(pid).first();
+    if (!current) return respond({ error: 'not found' }, 404);
+
+    if (current.page_json !== v.page_json) await _snapshotPage(env, current);
+    await env.DB.prepare('UPDATE pages SET title=?, page_json=? WHERE id=?').bind(v.title || current.title, v.page_json, pid).run();
     return respond({ ok: true });
   }
 

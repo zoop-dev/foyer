@@ -465,15 +465,18 @@
       const bg = cs.getPropertyValue('--site-bg').trim() || '#020a03';
       const text = cs.getPropertyValue('--site-text').trim() || '#c8e6aa';
       const siteName = (settings.name || (window.__SITE__ && __SITE__.name) || 'this site');
-      const vert = corner[0] === 't' ? 'top:20px;' : 'bottom:20px;';
+
+      const circle = (settings.ask_color && /^#?[0-9a-fA-F]{3,8}$/.test(settings.ask_color.replace(/^#/, '')) ? (settings.ask_color[0] === '#' ? settings.ask_color : '#' + settings.ask_color) : accent);
+
+      const vert = corner[0] === 't' ? 'top:20px;' : 'bottom:60px;';
       const horz = corner[1] === 'l' ? 'left:20px;' : 'right:20px;';
-      const panelVert = corner[0] === 't' ? 'top:80px;' : 'bottom:80px;';
+      const panelVert = corner[0] === 't' ? 'top:88px;' : 'bottom:128px;';
 
       const root = document.createElement('div');
       root.id = 'foyer-ask';
       root.style.cssText = `position:fixed;${vert}${horz}z-index:9990;font-family:'Josefin Sans',sans-serif;`;
       root.innerHTML = `
-        <button id="askBubble" aria-label="Ask this site" style="width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;background:${accent};box-shadow:0 8px 24px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;padding:0;transition:transform .18s;">
+        <button id="askBubble" aria-label="Ask this site" style="width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;background:${circle};box-shadow:0 8px 24px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;padding:0;transition:transform .18s;">
           <img src="/icons/favicon.svg" alt="" style="width:30px;height:30px;border-radius:6px;pointer-events:none;" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" />
           <svg style="display:none;width:26px;height:26px;" viewBox="0 0 24 24" fill="none" stroke="${bg}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7A8.38 8.38 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z"/></svg>
         </button>

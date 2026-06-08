@@ -12,6 +12,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'reviews') fetchReviews();
     if (btn.dataset.tab === 'collections' && typeof fetchColls === 'function') fetchColls();
     if (btn.dataset.tab === 'backup' && typeof renderBackupTab === 'function') renderBackupTab();
+    if (btn.dataset.tab === 'history' && typeof renderHistoryTab === 'function') renderHistoryTab();
     if (btn.dataset.tab === 'settings') { fetchBlocklist(); fetchAllowlist(); loadNavEditor(); }
   });
 });
@@ -72,6 +73,8 @@ async function fetchSettings() {
   document.getElementById('sAskEnabled').checked = s.ask_enabled === '1';
   if (s.ask_corner) document.getElementById('sAskCorner').value = s.ask_corner;
   document.getElementById('sAskPrompt').value = s.ask_prompt || '';
+  if (s.ask_color) document.getElementById('sAskColor').value = s.ask_color;
+  else if (s.theme_accent) document.getElementById('sAskColor').value = s.theme_accent;
   if (s.theme_bg)     document.getElementById('sThemeBg').value=s.theme_bg;
   if (s.theme_accent) document.getElementById('sThemeAccent').value=s.theme_accent;
   if (s.theme_text)   document.getElementById('sThemeText').value=s.theme_text;
@@ -113,6 +116,7 @@ document.getElementById('saveSettingsBtn').addEventListener('click', async () =>
       scramble_interval:document.getElementById('sScrambleInterval').value,
       ask_enabled:document.getElementById('sAskEnabled').checked?'1':'0',
       ask_corner:document.getElementById('sAskCorner').value,
+      ask_color:document.getElementById('sAskColor').value,
       ask_prompt:document.getElementById('sAskPrompt').value.trim(),
       theme_bg:document.getElementById('sThemeBg').value,
       theme_accent:document.getElementById('sThemeAccent').value,
@@ -887,5 +891,66 @@ document.querySelectorAll('.set-cat').forEach(b => b.addEventListener('click', (
   document.querySelectorAll('.set-cat').forEach(x => x.classList.toggle('active', x === b));
   document.querySelectorAll('.set-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === cat));
 }));
+
+let _hxPages = null;
+async function renderHistoryTab() {
+  const sel = document.getElementById('hxPage'), list = document.getElementById('hxList');
+  if (!sel || !list) return;
+  if (!_hxPages) {
+    const r = await fetch('/api/pages', { headers: authHeaders() });
+    _hxPages = r.ok ? await r.json() : [];
+    if (!Array.isArray(_hxPages)) _hxPages = [];
+    sel.innerHTML = _hxPages.length
+      ? _hxPages.map(p => `<option value="${p.id}">${escHtml(p.title || p.slug)} (${escHtml(p.slug)})</option>`).join('')
+      : '<option value="">No pages yet</option>';
+    sel.addEventListener('change', () => hxLoadVersions(+sel.value));
+  }
+  if (_hxPages.length) hxLoadVersions(+sel.value);
+  else list.innerHTML = '<p style="font-size:.72rem;color:var(--muted);font-weight:100;">Create a page first.</p>';
+}
+async function hxLoadVersions(pageId) {
+  const list = document.getElementById('hxList');
+  if (!list || !pageId) return;
+  list.innerHTML = '<p style="font-size:.72rem;color:var(--muted);font-weight:100;">Loading…</p>';
+  const r = await fetch(`/api/pages/${pageId}/versions`, { headers: authHeaders() });
+  if (r.status === 403) { list.innerHTML = '<p style="font-size:.74rem;color:var(--muted);font-weight:200;line-height:1.7;">Version history is a <b style="color:#7fa6d8;">Pro</b> feature. Upgrade to access and restore past versions.</p>'; return; }
+  const vers = r.ok ? await r.json() : [];
+  if (!Array.isArray(vers) || !vers.length) { list.innerHTML = '<p style="font-size:.74rem;color:var(--muted);font-weight:200;">No saved versions yet — they appear here after you edit and save this page.</p>'; return; }
+  list.innerHTML = vers.map(v => `
+    <div class="hx-row" style="display:flex;align-items:center;gap:.8rem;padding:.7rem .9rem;border:1px solid var(--border);border-radius:9px;margin-bottom:.5rem;background:rgba(var(--accent-rgb),.02);">
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:300;font-size:.8rem;color:rgba(220,245,225,.9);">${escHtml(v.title || '(untitled)')}</div>
+        <div style="font-size:.62rem;font-weight:200;color:var(--muted);margin-top:.15rem;">${escHtml(timeAgo(v.created_at))} · ${(v.size||0)} bytes</div>
+      </div>
+      <button class="btn btn-xs" data-hxprev="${v.id}" data-pg="${pageId}">Preview</button>
+      <button class="btn btn-xs" data-hxrestore="${v.id}" data-pg="${pageId}">Restore</button>
+    </div>
+    <div id="hxprev-${v.id}" style="display:none;border:1px solid var(--border);border-top:none;border-radius:0 0 9px 9px;margin:-.5rem 0 .6rem;padding:.7rem .9rem;background:var(--bg);"></div>`).join('');
+  list.querySelectorAll('[data-hxrestore]').forEach(b => b.addEventListener('click', () => hxRestore(+b.dataset.pg, +b.dataset.hxrestore)));
+  list.querySelectorAll('[data-hxprev]').forEach(b => b.addEventListener('click', () => hxPreview(+b.dataset.pg, +b.dataset.hxprev)));
+}
+async function hxPreview(pageId, vid) {
+  const box = document.getElementById('hxprev-' + vid);
+  if (!box) return;
+  if (box.style.display !== 'none') { box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  box.innerHTML = '<span style="font-size:.7rem;color:var(--muted);">Loading…</span>';
+  const r = await fetch(`/api/pages/${pageId}/versions/${vid}`, { headers: authHeaders() });
+  if (!r.ok) { box.innerHTML = '<span style="font-size:.7rem;color:var(--muted);">Could not load this version.</span>'; return; }
+  const v = await r.json();
+  let secs = [];
+  try { const st = JSON.parse(v.page_json || '{}'); secs = st.sections || []; } catch {}
+  box.innerHTML = secs.length
+    ? '<p style="font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(var(--accent-rgb),.6);margin:0 0 .5rem;">'+secs.length+' section'+(secs.length===1?'':'s')+'</p>' + secs.map(s => `<div style="font-size:.7rem;font-weight:200;color:rgba(220,245,225,.75);padding:.15rem 0;">• <b style="font-weight:400;">${escHtml(s.type||'block')}</b>${s.heading?' — '+escHtml(String(s.heading).slice(0,60)):s.name?' — '+escHtml(String(s.name).slice(0,60)):''}</div>`).join('')
+    : '<span style="font-size:.7rem;color:var(--muted);">Empty page.</span>';
+}
+async function hxRestore(pageId, vid) {
+  if (!confirm('Restore this version? Your current page content will be saved to history first, then replaced.')) return;
+  const r = await fetch(`/api/pages/${pageId}/versions/${vid}/restore`, { method: 'POST', headers: authHeaders() });
+  if (!r.ok) { const d = await r.json().catch(() => ({})); toast(d.error || 'Restore failed.', true); return; }
+  toast('Version restored ✓');
+  if (typeof bldLoadPages === 'function') { try { bldLoadPages(); } catch {} }
+  hxLoadVersions(pageId);
+}
 
 init(); // called here so all scripts are loaded first

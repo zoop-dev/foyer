@@ -101,6 +101,7 @@
     <button class="tab-btn" data-tab="collections">Collections</button>
     <button class="tab-btn" data-tab="analytics">Analytics <span class="vis-badge" id="visBadge"></span></button>
     <button class="tab-btn" data-tab="backup">Backups</button>
+    <button class="tab-btn" data-tab="history">History</button>
     <div class="nav-spacer"></div>
     <a href="/" class="site-link" target="_blank">View site ↗</a>
     <button class="btn btn-sm" id="logoutBtn" style="margin-left:.5rem">Log out</button>
@@ -290,6 +291,12 @@
             <option value="tr">Top right</option>
             <option value="tl">Top left</option>
           </select>
+        </div>
+        <div class="field"><label>Bubble color</label>
+          <div style="display:flex;gap:.5rem;align-items:center;">
+            <input type="color" id="sAskColor" value="#4dbd6a" style="width:48px;height:36px;padding:2px;background:var(--panel);border:1px solid var(--border);border-radius:6px;cursor:pointer;" />
+            <span style="font-size:.62rem;font-weight:100;color:var(--muted);">The background circle behind your site mark. Defaults to your accent color.</span>
+          </div>
         </div>
         <div class="field"><label>Instructions for the assistant <span style="opacity:.5">(optional)</span></label><textarea id="sAskPrompt" rows="4" placeholder="e.g. You are the assistant for Acme Studio. Be warm and concise. If asked about pricing, point visitors to the Pricing page. Encourage booking a call." style="background:var(--panel);border:1px solid var(--border);color:var(--white);font-weight:300;font-size:.78rem;padding:.6rem .85rem;outline:none;font-family:inherit;width:100%;resize:vertical;"></textarea><p style="font-size:.62rem;font-weight:100;color:var(--muted);line-height:1.6;margin:.4rem 0 0;">Sets the assistant's tone and rules. Your page content is always supplied as context automatically.</p></div>
       </div>
@@ -494,6 +501,18 @@
         <div id="bkSummary" style="margin-bottom:.9rem;"></div>
         <button class="btn" id="bkRestore" disabled>Restore</button>
       </div>
+    </div>
+  </div>
+
+  
+  <div class="section" id="sec-history" style="flex-direction:column;overflow-y:auto;">
+    <div style="max-width:640px;margin:0 auto;width:100%;padding:1.5rem 1.2rem 4rem;font-family:'Josefin Sans',sans-serif;">
+      <p style="font-family:'Unbounded',sans-serif;font-weight:200;font-size:1.1rem;color:rgba(220,245,225,.92);margin:0 0 .3rem;">Version history <span style="background:#7fa6d8;color:#070a0e;font-size:.5rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.1rem .35rem;border-radius:3px;vertical-align:middle;">Pro</span></p>
+      <p style="font-size:.78rem;font-weight:200;color:rgba(220,245,225,.5);line-height:1.7;margin:0 0 1.6rem;">Every time a page's content changes, the previous version is saved automatically (last 30 kept). Pick a page to see its history and restore an earlier version.</p>
+      <div class="field" style="margin-bottom:1.2rem;"><label>Page</label>
+        <select id="hxPage" class="bld-input" style="width:100%;"></select>
+      </div>
+      <div id="hxList"></div>
     </div>
   </div>
 
