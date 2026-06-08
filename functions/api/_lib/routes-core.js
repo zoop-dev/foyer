@@ -1,4 +1,6 @@
 
+import { canonHost } from './site-config.js';
+import { isPro } from './plan.js';
 
 
 const AI_SB_URL = 'https://tvtfoghrdqwssdwvebuo.supabase.co';
@@ -71,6 +73,59 @@ export async function handleCore(ctx) {
       }).catch(() => {});
       return respond({ ok: true });
     }
+  }
+
+
+
+
+  if (route === 'ai/ask' && method === 'POST') {
+    if (!env.AI) return respond({ error: 'This assistant isn’t available right now.' }, 503);
+    const host = canonHost(env, request);
+    if (!(await isPro(env, host))) return respond({ error: '“Ask this site” is a Pro feature.' }, 403);
+    const enRow = await env.DB.prepare("SELECT value FROM site_settings WHERE key='ask_enabled'").first().catch(() => null);
+    if (!(enRow && enRow.value === '1')) return respond({ error: 'The site assistant is turned off.' }, 403);
+
+    const body = await request.json().catch(() => ({}));
+    let history = Array.isArray(body.messages) ? body.messages : (body.prompt ? [{ role: 'user', content: String(body.prompt) }] : []);
+    history = history.filter(m => m && (m.role === 'user' || m.role === 'assistant') && m.content)
+      .slice(-8).map(m => ({ role: m.role, content: String(m.content).slice(0, 1500) }));
+    if (!history.length) return respond({ error: 'Ask a question.' }, 400);
+
+    const setRow = async (k) => (await env.DB.prepare('SELECT value FROM site_settings WHERE key=?').bind(k).first().catch(() => null))?.value || '';
+    const ownerPrompt = (await setRow('ask_prompt')).slice(0, 2000);
+    const siteName = (await setRow('name')) || host;
+
+    await env.DB.prepare(CREATE_PAGES).run();
+    await env.DB.prepare('ALTER TABLE pages ADD COLUMN pw_hash TEXT').run().catch(() => {});   // ensure col for the filter
+    const { results } = await env.DB.prepare("SELECT title, slug, page_json FROM pages WHERE is_published = 1 AND slug != '__404__' AND (pw_hash IS NULL OR pw_hash = '')").all().catch(() => ({ results: [] }));
+    const SKIP = new Set(['id', 'type', 'url', 'href', 'img', 'photo', 'src', 'bg_img', 'bg_image', 'image', 'avatar', 'cover_image', 'data', 'anchor', 'access_key', 'target', 'buy_url', 'btn_url', 'btn2_url', 'button_url']);
+    const collect = (o, out, d) => {
+      if (d > 7 || o == null) return;
+      if (typeof o === 'string') { if (o.length > 1 && !/^(https?:|\/|#|data:|mailto:|tel:)/i.test(o) && !/^#?[0-9a-f]{3,8}$/i.test(o)) out.push(o); return; }
+      if (Array.isArray(o)) { for (const v of o) collect(v, out, d + 1); return; }
+      if (typeof o === 'object') { for (const k in o) if (!SKIP.has(k)) collect(o[k], out, d + 1); }
+    };
+    const chunks = [];
+    for (const p of (results || [])) {
+      let x = '';
+      try { const st = JSON.parse((await decompressJson(p.page_json)) || '{}'); const out = []; collect(st.sections || [], out, 0); x = out.join(' '); } catch {}
+      if (x.trim()) chunks.push(`# ${p.title || p.slug}\n${x.slice(0, 2500)}`);
+    }
+    const corpus = chunks.join('\n\n').slice(0, 9000) || '(This site has no readable page content yet.)';
+
+    const system = `You are the website assistant for "${siteName}". Answer visitors' questions using ONLY the SITE CONTENT below. If the answer isn't in the content, say you're not sure and suggest the visitor use the site's contact form — never invent facts, prices, dates, or links. Keep answers short, friendly, and plain-text.
+${ownerPrompt ? `\nThe site owner's instructions for you: ${ownerPrompt}\n` : ''}
+--- SITE CONTENT ---
+${corpus}`;
+
+    let out;
+    try {
+      out = await env.AI.run('@cf/meta/llama-3.2-3b-instruct', {
+        messages: [{ role: 'system', content: system }, ...history],
+        max_tokens: 700, temperature: 0.3,
+      });
+    } catch { return respond({ error: 'The assistant is busy — please try again.' }, 502); }
+    return respond({ reply: ((out && out.response) || '').trim() || 'Sorry — I’m not sure about that one.' });
   }
 
 

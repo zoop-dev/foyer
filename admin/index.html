@@ -279,6 +279,20 @@
         <div class="field"><label>Tab-title strings <span style="opacity:.5">(one per line)</span></label><textarea id="sScrambleStrings" rows="3" placeholder="Your Name&#10;Designer · Builder&#10;Say hello"></textarea></div>
         <div class="field"><label>Cycle interval <span style="opacity:.5">(seconds each string is shown)</span></label><input type="number" id="sScrambleInterval" min="0.5" step="0.5" placeholder="2.6" /></div>
       </div>
+      <div class="settings-group">
+        <p class="settings-group-title">Ask this site <span style="background:#7fa6d8;color:#070a0e;font-size:.5rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.1rem .35rem;border-radius:3px;vertical-align:middle;">Pro</span></p>
+        <p style="font-weight:100;font-size:.66rem;color:var(--muted);line-height:1.8;margin-bottom:1.1rem;">A small AI chatbot for your visitors — a floating bubble that answers questions using your published page content. It only knows what's on your site.</p>
+        <div class="field"><label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;"><input type="checkbox" id="sAskEnabled" style="width:auto;" /> Enable the site assistant</label></div>
+        <div class="field"><label>Bubble corner</label>
+          <select id="sAskCorner" style="background:var(--panel);border:1px solid var(--border);color:var(--white);font-size:.82rem;padding:.6rem .75rem;outline:none;width:100%;">
+            <option value="br">Bottom right</option>
+            <option value="bl">Bottom left</option>
+            <option value="tr">Top right</option>
+            <option value="tl">Top left</option>
+          </select>
+        </div>
+        <div class="field"><label>Instructions for the assistant <span style="opacity:.5">(optional)</span></label><textarea id="sAskPrompt" rows="4" placeholder="e.g. You are the assistant for Acme Studio. Be warm and concise. If asked about pricing, point visitors to the Pricing page. Encourage booking a call." style="background:var(--panel);border:1px solid var(--border);color:var(--white);font-weight:300;font-size:.78rem;padding:.6rem .85rem;outline:none;font-family:inherit;width:100%;resize:vertical;"></textarea><p style="font-size:.62rem;font-weight:100;color:var(--muted);line-height:1.6;margin:.4rem 0 0;">Sets the assistant's tone and rules. Your page content is always supplied as context automatically.</p></div>
+      </div>
       </div>
 
       <div class="set-panel" data-panel="access">

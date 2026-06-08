@@ -190,7 +190,7 @@ function renderSites(){
       '<button class="btn" data-act="ai" data-dom="'+esc(s.domain)+'" data-val="'+(s.ai_enabled===false?'1':'0')+'">'+(s.ai_enabled===false?'Enable AI':'Disable AI')+'</button>'+
       '<button class="btn" data-act="branding" data-dom="'+esc(s.domain)+'" data-val="'+(s.hide_branding===true?'0':'1')+'">'+(s.hide_branding===true?'Show branding':'Hide branding')+'</button>'+
       '<button class="btn" data-modedit="'+esc(s.domain)+'">Moderation'+(s.moderation_config?' <span class="badge b-warn">custom</span>':'')+'</button>'+
-      '<button class="btn" data-bkquota="'+esc(s.domain)+'" data-q="'+(s.backup_quota!=null?esc(s.backup_quota):'')+'">Backups: '+((D.backup_counts&&D.backup_counts[s.domain])||0)+'/'+(s.backup_quota!=null?esc(s.backup_quota):(s.plan===pro?∞:5))+'</button>'+
+      '<button class="btn" data-bkquota="'+esc(s.domain)+'" data-q="'+(s.backup_quota!=null?esc(s.backup_quota):'')+'">Backups: '+((D.backup_counts&&D.backup_counts[s.domain])||0)+'/'+(s.backup_quota!=null?esc(s.backup_quota):(s.plan==='pro'?'∞':5))+'</button>'+
       '</div><div class="site-mod" data-modfor="'+esc(s.domain)+'"></div></div>';
   }).join('');
 }

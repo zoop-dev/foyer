@@ -241,6 +241,7 @@
       if (publicMode || (!clientId && !githubId && !discordId && !magicOn && !foyerOn) || session) {
         dismissGate();
         loadAndShow(session);
+        try { mountAskWidget(settings, session); } catch {}
       } else {
         startGate(clientId, settings);
         if (foyerOn)   startFoyerBtn();

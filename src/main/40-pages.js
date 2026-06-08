@@ -453,6 +453,86 @@
       res.addEventListener('click', (e) => { if (e.target.closest('a[data-fs]')) close(); });   // the router handles the navigation
     }
 
+
+
+    function mountAskWidget(settings, session) {
+      if (window.__askMounted) return;
+      if (!settings || settings.ask_enabled !== '1') return;
+      window.__askMounted = true;
+      const corner = ['br', 'bl', 'tr', 'tl'].includes(settings.ask_corner) ? settings.ask_corner : 'br';
+      const cs = getComputedStyle(document.documentElement);
+      const accent = cs.getPropertyValue('--site-accent').trim() || '#4dbd6a';
+      const bg = cs.getPropertyValue('--site-bg').trim() || '#020a03';
+      const text = cs.getPropertyValue('--site-text').trim() || '#c8e6aa';
+      const siteName = (settings.name || (window.__SITE__ && __SITE__.name) || 'this site');
+      const vert = corner[0] === 't' ? 'top:20px;' : 'bottom:20px;';
+      const horz = corner[1] === 'l' ? 'left:20px;' : 'right:20px;';
+      const panelVert = corner[0] === 't' ? 'top:80px;' : 'bottom:80px;';
+
+      const root = document.createElement('div');
+      root.id = 'foyer-ask';
+      root.style.cssText = `position:fixed;${vert}${horz}z-index:9990;font-family:'Josefin Sans',sans-serif;`;
+      root.innerHTML = `
+        <button id="askBubble" aria-label="Ask this site" style="width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;background:${accent};box-shadow:0 8px 24px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;padding:0;transition:transform .18s;">
+          <img src="/icons/favicon.svg" alt="" style="width:30px;height:30px;border-radius:6px;pointer-events:none;" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" />
+          <svg style="display:none;width:26px;height:26px;" viewBox="0 0 24 24" fill="none" stroke="${bg}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7A8.38 8.38 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z"/></svg>
+        </button>
+        <div id="askPanel" style="display:none;position:absolute;${panelVert}${corner[1] === 'l' ? 'left:0;' : 'right:0;'}width:min(360px,calc(100vw - 40px));height:min(520px,70vh);background:${bg};border:1px solid ${pgRgb(accent, .25)};border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.5);overflow:hidden;flex-direction:column;">
+          <div style="padding:.9rem 1.1rem;border-bottom:1px solid ${pgRgb(accent, .14)};display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-weight:300;font-size:.92rem;letter-spacing:.02em;color:${text};">Ask ${pgE(siteName)}</div>
+            <button id="askClose" aria-label="Close" style="background:none;border:none;color:${pgRgb(text, .55)};font-size:1.2rem;cursor:pointer;line-height:1;padding:0;">×</button>
+          </div>
+          <div id="askMsgs" style="flex:1;overflow-y:auto;padding:1rem 1.1rem;display:flex;flex-direction:column;gap:.7rem;"></div>
+          <form id="askForm" style="display:flex;gap:.5rem;padding:.8rem;border-top:1px solid ${pgRgb(accent, .14)};">
+            <input id="askInput" type="text" placeholder="Ask a question…" autocomplete="off" style="flex:1;box-sizing:border-box;padding:.7rem .9rem;background:${pgRgb(accent, .05)};border:1px solid ${pgRgb(accent, .18)};border-radius:10px;color:${text};font-family:inherit;font-weight:300;font-size:.88rem;outline:none;" />
+            <button type="submit" aria-label="Send" style="flex-shrink:0;width:42px;border:none;border-radius:10px;background:${accent};color:${bg};font-size:1.1rem;cursor:pointer;">↑</button>
+          </form>
+        </div>`;
+      document.body.appendChild(root);
+
+      const bubble = root.querySelector('#askBubble');
+      const panel = root.querySelector('#askPanel');
+      const msgs = root.querySelector('#askMsgs');
+      const input = root.querySelector('#askInput');
+      const history = [];
+      let busy = false, greeted = false;
+
+      const addMsg = (role, content) => {
+        const me = role === 'user';
+        const b = document.createElement('div');
+        b.style.cssText = `max-width:85%;align-self:${me ? 'flex-end' : 'flex-start'};padding:.6rem .85rem;border-radius:14px;font-weight:300;font-size:.85rem;line-height:1.55;${me ? `background:${accent};color:${bg};border-bottom-right-radius:4px;` : `background:${pgRgb(accent, .07)};color:${pgRgb(text, .92)};border-bottom-left-radius:4px;`}`;
+        b.textContent = content;
+        msgs.appendChild(b); msgs.scrollTop = msgs.scrollHeight;
+        return b;
+      };
+      const toggle = (open) => {
+        panel.style.display = open ? 'flex' : 'none';
+        bubble.style.transform = open ? 'scale(.9)' : '';
+        if (open) {
+          if (!greeted) { greeted = true; addMsg('assistant', `Hi! Ask me anything about ${siteName}.`); }
+          setTimeout(() => input.focus(), 50);
+        }
+      };
+      bubble.addEventListener('click', () => toggle(panel.style.display === 'none'));
+      root.querySelector('#askClose').addEventListener('click', () => toggle(false));
+      root.querySelector('#askForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const q = input.value.trim();
+        if (!q || busy) return;
+        input.value = ''; busy = true;
+        addMsg('user', q); history.push({ role: 'user', content: q });
+        const typing = addMsg('assistant', '…');
+        try {
+          const r = await fetch('/api/ai/ask', { method: 'POST', headers: { ...sessionHeaders(session), 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: history.slice(-8) }) });
+          const d = await r.json().catch(() => ({}));
+          const reply = r.ok ? (d.reply || 'Sorry — I’m not sure about that.') : (d.error || 'Something went wrong — try again.');
+          typing.textContent = reply;
+          if (r.ok && d.reply) history.push({ role: 'assistant', content: d.reply });
+        } catch { typing.textContent = 'Network error — please try again.'; }
+        busy = false; msgs.scrollTop = msgs.scrollHeight;
+      });
+    }
+
     function renderLockedPage(slug, page, session, bad) {
       dismissLoading();
       const _pgbg = document.getElementById('pg-bg'); if (_pgbg) _pgbg.style.display = 'none';

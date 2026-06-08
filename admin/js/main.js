@@ -69,6 +69,9 @@ async function fetchSettings() {
   document.getElementById('sScrambleTitle').checked = s.scramble_title === '1';
   document.getElementById('sScrambleStrings').value = s.scramble_strings || '';
   document.getElementById('sScrambleInterval').value = s.scramble_interval || '';
+  document.getElementById('sAskEnabled').checked = s.ask_enabled === '1';
+  if (s.ask_corner) document.getElementById('sAskCorner').value = s.ask_corner;
+  document.getElementById('sAskPrompt').value = s.ask_prompt || '';
   if (s.theme_bg)     document.getElementById('sThemeBg').value=s.theme_bg;
   if (s.theme_accent) document.getElementById('sThemeAccent').value=s.theme_accent;
   if (s.theme_text)   document.getElementById('sThemeText').value=s.theme_text;
@@ -108,6 +111,9 @@ document.getElementById('saveSettingsBtn').addEventListener('click', async () =>
       scramble_title:document.getElementById('sScrambleTitle').checked?'1':'0',
       scramble_strings:document.getElementById('sScrambleStrings').value,
       scramble_interval:document.getElementById('sScrambleInterval').value,
+      ask_enabled:document.getElementById('sAskEnabled').checked?'1':'0',
+      ask_corner:document.getElementById('sAskCorner').value,
+      ask_prompt:document.getElementById('sAskPrompt').value.trim(),
       theme_bg:document.getElementById('sThemeBg').value,
       theme_accent:document.getElementById('sThemeAccent').value,
       theme_text:document.getElementById('sThemeText').value,
