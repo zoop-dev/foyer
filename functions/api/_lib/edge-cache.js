@@ -27,7 +27,9 @@ function isAnon(request) {
 
 function keyFor(host, request, epoch) {
   const u = new URL(request.url);
-  const k = new URL('https://foyer-cache.internal/' + host + u.pathname);
+
+
+  const k = new URL('https://' + host + u.pathname);
   k.search = u.search;
   k.searchParams.set('__e', epoch);
   return new Request(k.toString());
@@ -45,7 +47,10 @@ export async function cacheLookup(ctx) {
   if (method !== 'GET' || !env.FOYER_KV || !CACHEABLE.test(ctx.route) || !isAnon(request)) return null;
   const host = canonHost(env, request);
   let epoch;
-  try { epoch = (await env.FOYER_KV.get('epoch:' + host)) || '0'; } catch { return null; }
+
+
+
+  try { epoch = (await env.FOYER_KV.get('epoch:' + host, { cacheTtl: 60 })) || '0'; } catch { return null; }
   ctx._cacheKey = keyFor(host, request, epoch);
   try {
     const hit = await caches.default.match(ctx._cacheKey);
