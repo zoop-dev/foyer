@@ -1,6 +1,7 @@
 
 import { canonHost } from './site-config.js';
 import { isPro } from './plan.js';
+import { ragEnabled, ragSearch, ragUpsertPage, ragStats, extractPageText } from './rag.js';
 
 
 const AI_SB_URL = 'https://tvtfoghrdqwssdwvebuo.supabase.co';
@@ -95,23 +96,26 @@ export async function handleCore(ctx) {
     const ownerPrompt = (await setRow('ask_prompt')).slice(0, 2000);
     const siteName = (await setRow('name')) || host;
 
-    await env.DB.prepare(CREATE_PAGES).run();
-    await env.DB.prepare('ALTER TABLE pages ADD COLUMN pw_hash TEXT').run().catch(() => {});   // ensure col for the filter
-    const { results } = await env.DB.prepare("SELECT title, slug, page_json FROM pages WHERE is_published = 1 AND slug != '__404__' AND (pw_hash IS NULL OR pw_hash = '')").all().catch(() => ({ results: [] }));
-    const SKIP = new Set(['id', 'type', 'url', 'href', 'img', 'photo', 'src', 'bg_img', 'bg_image', 'image', 'avatar', 'cover_image', 'data', 'anchor', 'access_key', 'target', 'buy_url', 'btn_url', 'btn2_url', 'button_url']);
-    const collect = (o, out, d) => {
-      if (d > 7 || o == null) return;
-      if (typeof o === 'string') { if (o.length > 1 && !/^(https?:|\/|#|data:|mailto:|tel:)/i.test(o) && !/^#?[0-9a-f]{3,8}$/i.test(o)) out.push(o); return; }
-      if (Array.isArray(o)) { for (const v of o) collect(v, out, d + 1); return; }
-      if (typeof o === 'object') { for (const k in o) if (!SKIP.has(k)) collect(o[k], out, d + 1); }
-    };
-    const chunks = [];
-    for (const p of (results || [])) {
-      let x = '';
-      try { const st = JSON.parse((await decompressJson(p.page_json)) || '{}'); const out = []; collect(st.sections || [], out, 0); x = out.join(' '); } catch {}
-      if (x.trim()) chunks.push(`# ${p.title || p.slug}\n${x.slice(0, 2500)}`);
+    let corpus = '';
+
+    if (ragEnabled(env)) {
+      const q = [...history].reverse().find(m => m.role === 'user')?.content || '';
+      try { const hits = await ragSearch(env, q, 6); if (hits.length) corpus = hits.map(h => h.text).join('\n\n').slice(0, 9000); } catch {}
     }
-    const corpus = chunks.join('\n\n').slice(0, 9000) || '(This site has no readable page content yet.)';
+
+    if (!corpus) {
+      await env.DB.prepare(CREATE_PAGES).run();
+      await env.DB.prepare('ALTER TABLE pages ADD COLUMN pw_hash TEXT').run().catch(() => {});
+      const { results } = await env.DB.prepare("SELECT title, slug, page_json FROM pages WHERE is_published = 1 AND slug != '__404__' AND (pw_hash IS NULL OR pw_hash = '')").all().catch(() => ({ results: [] }));
+      const parts = [];
+      for (const p of (results || [])) {
+        let x = '';
+        try { x = extractPageText(await decompressJson(p.page_json)); } catch {}
+        if (x.trim()) parts.push(`# ${p.title || p.slug}\n${x.slice(0, 2500)}`);
+      }
+      corpus = parts.join('\n\n').slice(0, 9000);
+    }
+    corpus = corpus || '(This site has no readable page content yet.)';
 
     const system = `You are the website assistant for "${siteName}". Answer visitors' questions using ONLY the SITE CONTENT below. If the answer isn't in the content, say you're not sure and suggest the visitor use the site's contact form — never invent facts, prices, dates, or links. Keep answers short, friendly, and plain-text.
 ${ownerPrompt ? `\nThe site owner's instructions for you: ${ownerPrompt}\n` : ''}
@@ -126,6 +130,29 @@ ${corpus}`;
       });
     } catch { return respond({ error: 'The assistant is busy — please try again.' }, 502); }
     return respond({ reply: ((out && out.response) || '').trim() || 'Sorry — I’m not sure about that one.' });
+  }
+
+  if (route === 'ai/reindex' && method === 'GET') {
+    if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    if (!ragEnabled(env)) return respond({ enabled: false });
+    return respond({ enabled: true, index: await ragStats(env) });
+  }
+
+
+  if (route === 'ai/reindex' && method === 'POST') {
+    if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    if (!ragEnabled(env)) return respond({ error: 'Site search isn’t configured (needs the Pi RAG store).' }, 503);
+    await env.DB.prepare(CREATE_PAGES).run();
+    await env.DB.prepare('ALTER TABLE pages ADD COLUMN pw_hash TEXT').run().catch(() => {});
+    const { results } = await env.DB.prepare("SELECT title, slug, page_json FROM pages WHERE is_published = 1 AND slug != '__404__' AND (pw_hash IS NULL OR pw_hash = '')").all().catch(() => ({ results: [] }));
+    let pages = 0, chunks = 0;
+    for (const p of (results || [])) {
+      let text = '';
+      try { text = extractPageText(await decompressJson(p.page_json)); } catch {}
+      if (!text.trim()) continue;
+      try { chunks += await ragUpsertPage(env, p.slug, `${p.title || ''}. ${text}`); pages++; } catch {}
+    }
+    return respond({ ok: true, pages, chunks, index: await ragStats(env) });
   }
 
 

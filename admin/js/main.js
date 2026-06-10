@@ -73,6 +73,7 @@ async function fetchSettings() {
   document.getElementById('sAskEnabled').checked = s.ask_enabled === '1';
   if (s.ask_corner) document.getElementById('sAskCorner').value = s.ask_corner;
   document.getElementById('sAskPrompt').value = s.ask_prompt || '';
+  loadAskIndexStatus();
   if (s.ask_color) document.getElementById('sAskColor').value = s.ask_color;
   else if (s.theme_accent) document.getElementById('sAskColor').value = s.theme_accent;
   if (s.theme_bg)     document.getElementById('sThemeBg').value=s.theme_bg;
@@ -969,5 +970,30 @@ async function hxRestore(pageId, vid) {
   if (typeof bldLoadPages === 'function') { try { bldLoadPages(); } catch {} }
   hxLoadVersions(pageId);
 }
+
+async function loadAskIndexStatus() {
+  const row = document.getElementById('askIndexRow'), stat = document.getElementById('askIndexStat');
+  if (!row) return;
+  try {
+    const r = await fetch('/api/ai/reindex', { headers: authHeaders() });
+    const d = await r.json().catch(() => ({}));
+    if (d.enabled) {
+      row.style.display = '';
+      const ix = d.index || {};
+      stat.textContent = ix.chunks ? `${ix.chunks} chunks from ${ix.pages} page${ix.pages === 1 ? '' : 's'}` : 'not built yet';
+    } else { row.style.display = 'none'; }
+  } catch { row.style.display = 'none'; }
+}
+document.getElementById('askReindex')?.addEventListener('click', async (e) => {
+  const btn = e.currentTarget, stat = document.getElementById('askIndexStat');
+  btn.disabled = true; stat.textContent = 'Rebuilding…';
+  try {
+    const r = await fetch('/api/ai/reindex', { method: 'POST', headers: authHeaders() });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok) { stat.textContent = `✓ ${d.chunks} chunks from ${d.pages} page${d.pages === 1 ? '' : 's'}`; toast('Search index rebuilt ✓'); }
+    else { stat.textContent = d.error || 'failed'; toast(d.error || 'Reindex failed.', true); }
+  } catch { stat.textContent = 'failed'; toast('Reindex failed.', true); }
+  btn.disabled = false;
+});
 
 init(); // called here so all scripts are loaded first

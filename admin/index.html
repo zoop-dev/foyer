@@ -299,6 +299,13 @@
           </div>
         </div>
         <div class="field"><label>Instructions for the assistant <span style="opacity:.5">(optional)</span></label><textarea id="sAskPrompt" rows="4" placeholder="e.g. You are the assistant for Acme Studio. Be warm and concise. If asked about pricing, point visitors to the Pricing page. Encourage booking a call." style="background:var(--panel);border:1px solid var(--border);color:var(--white);font-weight:300;font-size:.78rem;padding:.6rem .85rem;outline:none;font-family:inherit;width:100%;resize:vertical;"></textarea><p style="font-size:.62rem;font-weight:100;color:var(--muted);line-height:1.6;margin:.4rem 0 0;">Sets the assistant's tone and rules. Your page content is always supplied as context automatically.</p></div>
+        <div class="field" id="askIndexRow" style="display:none;"><label>Semantic search index <span style="opacity:.5">(self-hosted)</span></label>
+          <div style="display:flex;gap:.5rem;align-items:center;">
+            <button class="btn btn-sm" id="askReindex" type="button">Rebuild index</button>
+            <span id="askIndexStat" style="font-size:.62rem;font-weight:100;color:var(--muted);"></span>
+          </div>
+          <p style="font-size:.62rem;font-weight:100;color:var(--muted);line-height:1.6;margin:.4rem 0 0;">When connected, the assistant retrieves only the most relevant page chunks (better answers) instead of all page text. Rebuild after big content changes.</p>
+        </div>
       </div>
       </div>
 

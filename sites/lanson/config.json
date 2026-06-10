@@ -13,6 +13,7 @@
   "keywords": "Zachary Lanson, tutorials, reviews, guides, deals",
   "captcha": "recaptcha",
   "kvId": "fe1baae7d911463796b224b3df961e30",
+  "rag": { "url": "https://db.zo0p.dev", "db": "lanson" },
   "cloudflare": {
     "accountId": "9e35de18c01b92479f813834c91e4b23",
     "project": "lanson",

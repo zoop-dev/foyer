@@ -20,7 +20,7 @@ Wire protocol (matches what functions/api/_lib/d1http.js sends):
        -> {results:[ {results, meta, success}, ... ], success:true}   (one transaction)
   GET  /health -> {ok:true}
 """
-import os, json, re, sqlite3, threading, hmac
+import os, json, re, sqlite3, threading, hmac, math
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 SECRET = os.environ.get("DB_SECRET", "")
@@ -57,6 +57,7 @@ def get_db(name):
             conn.execute("PRAGMA journal_mode=" + JOURNAL_MODE)
             conn.execute("PRAGMA busy_timeout=5000")
             conn.execute("PRAGMA foreign_keys=ON")
+            conn.execute("PRAGMA synchronous=NORMAL")   # fewer fsyncs — kinder to flash, safe under WAL
             conn.set_authorizer(_authorizer)   # after setup pragmas, before any user SQL
             _conns[name], _locks[name] = conn, threading.Lock()
         return _conns[name], _locks[name]
@@ -98,6 +99,67 @@ def do_batch(body):
         finally:
             cur.close()
 
+# ── RAG: a tiny vector store for "ask this site" ──────────────────────────────
+# The Worker computes embeddings (Workers AI) and ships them here; we store them per
+# page slug and do brute-force cosine search. For a small site (a few pages → at most a
+# few hundred chunks) brute force in Python is instant and needs no extensions.
+CREATE_RAG = "CREATE TABLE IF NOT EXISTS rag_chunks (id INTEGER PRIMARY KEY AUTOINCREMENT, slug TEXT, text TEXT, emb TEXT)"
+
+def _norm(v):
+    n = math.sqrt(sum(x * x for x in v)) or 1.0
+    return [x / n for x in v]
+
+def do_rag_upsert(body):
+    conn, lock = get_db(body.get("db"))
+    slug = str(body.get("slug", ""))
+    chunks = body.get("chunks", [])
+    with lock:
+        cur = conn.cursor()
+        try:
+            cur.execute(CREATE_RAG)
+            cur.execute("DELETE FROM rag_chunks WHERE slug=?", (slug,))
+            for c in chunks:
+                cur.execute("INSERT INTO rag_chunks (slug, text, emb) VALUES (?,?,?)",
+                            (slug, str(c.get("text", ""))[:4000], json.dumps(_norm(c.get("embedding", [])))))
+            conn.commit()
+            return {"ok": True, "stored": len(chunks)}
+        finally:
+            cur.close()
+
+def do_rag_search(body):
+    conn, lock = get_db(body.get("db"))
+    qv = _norm(body.get("embedding", []))
+    topk = max(1, min(20, int(body.get("topk", 6))))
+    with lock:
+        cur = conn.cursor()
+        try:
+            cur.execute(CREATE_RAG)
+            rows = cur.execute("SELECT slug, text, emb FROM rag_chunks").fetchall()
+        finally:
+            cur.close()
+    scored = []
+    for r in rows:
+        try:
+            e = json.loads(r["emb"])
+        except Exception:
+            continue
+        score = sum(a * b for a, b in zip(qv, e))   # both unit-normalized → dot = cosine
+        scored.append((score, r["slug"], r["text"]))
+    scored.sort(reverse=True, key=lambda x: x[0])
+    return {"results": [{"slug": s, "text": t, "score": round(sc, 4)} for sc, s, t in scored[:topk]]}
+
+def do_rag_stats(body):
+    conn, lock = get_db(body.get("db"))
+    with lock:
+        cur = conn.cursor()
+        try:
+            cur.execute(CREATE_RAG)
+            n = cur.execute("SELECT COUNT(*) AS c FROM rag_chunks").fetchone()["c"]
+            pages = cur.execute("SELECT COUNT(DISTINCT slug) AS c FROM rag_chunks").fetchone()["c"]
+        finally:
+            cur.close()
+    return {"chunks": n, "pages": pages}
+
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
     def log_message(self, *a): pass  # quiet
@@ -133,6 +195,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, do_query(body))
             if self.path == "/batch":
                 return self._send(200, do_batch(body))
+            if self.path == "/rag/upsert":
+                return self._send(200, do_rag_upsert(body))
+            if self.path == "/rag/search":
+                return self._send(200, do_rag_search(body))
+            if self.path == "/rag/stats":
+                return self._send(200, do_rag_stats(body))
             return self._send(404, {"error": "not found"})
         except ValueError as e:
             return self._send(400, {"error": str(e)})
