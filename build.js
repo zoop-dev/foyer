@@ -56,8 +56,7 @@ binding = "AI"
 
 [vars]
 FOYER_DOMAIN = "${cfg.domain}"
-${cfg.publicAccess === true ? `FOYER_PUBLIC = "1"\n` : ""}
-[[d1_databases]]
+${cfg.publicAccess === true ? `FOYER_PUBLIC = "1"\n` : ""}${cfg.dbHttp && cfg.dbHttp.url ? `DB_HTTP_URL = "${cfg.dbHttp.url}"\nDB_HTTP_NAME = "${cfg.dbHttp.name || cfg.cloudflare.project}"\n` : ""}[[d1_databases]]
 binding = "DB"
 database_name = "${cfg.cloudflare.d1Name}"
 database_id = "${cfg.cloudflare.d1Id}"
