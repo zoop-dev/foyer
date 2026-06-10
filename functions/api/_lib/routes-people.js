@@ -1,4 +1,7 @@
 
+import { canonHost } from './site-config.js';
+import { isPro } from './plan.js';
+
 export async function handlePeople(ctx) {
   const { route, method, request, env, headers, respond, compressJson, decompressJson, CREATE_SESSIONS, CREATE_BANNED_EMAILS, CREATE_PAGES, authed, visitorAuthed, _adminRole } = ctx;
 
@@ -235,48 +238,51 @@ export async function handlePeople(ctx) {
   if (route === 'analytics' && method === 'GET') {
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
     await env.DB.prepare(CREATE_PAGE_VIEWS).run();
-    const [total, today, week, uIPs, uCountries,
-           topPaths, topCountries, topCities, topISPs,
-           topASNs, topTZ, topScreens, topLang,
-           topColo, topTLS, recent, visitors] = await Promise.all([
+    const pro = await isPro(env, canonHost(env, request));
+
+    const [total, today, week, uIPs, uCountries, topPaths, visitors] = await Promise.all([
       env.DB.prepare("SELECT COUNT(*) n FROM page_views").first(),
       env.DB.prepare("SELECT COUNT(*) n FROM page_views WHERE viewed_at >= datetime('now','-1 day')").first(),
       env.DB.prepare("SELECT COUNT(*) n FROM page_views WHERE viewed_at >= datetime('now','-7 days')").first(),
       env.DB.prepare("SELECT COUNT(DISTINCT ip) n FROM page_views WHERE ip != ''").first(),
       env.DB.prepare("SELECT COUNT(DISTINCT country) n FROM page_views WHERE country != ''").first(),
       env.DB.prepare("SELECT path, COUNT(*) n FROM page_views GROUP BY path ORDER BY n DESC LIMIT 12").all(),
-      env.DB.prepare("SELECT country, COUNT(*) n FROM page_views WHERE country != '' GROUP BY country ORDER BY n DESC LIMIT 15").all(),
-      env.DB.prepare("SELECT city, region, country, COUNT(*) n FROM page_views WHERE city != '' GROUP BY city,country ORDER BY n DESC LIMIT 10").all(),
-      env.DB.prepare("SELECT isp, asn, COUNT(*) n FROM page_views WHERE isp != '' GROUP BY isp ORDER BY n DESC LIMIT 10").all(),
-      env.DB.prepare("SELECT asn, isp, COUNT(*) n FROM page_views WHERE asn != '' GROUP BY asn ORDER BY n DESC LIMIT 10").all(),
-      env.DB.prepare("SELECT tz, COUNT(*) n FROM page_views WHERE tz != '' GROUP BY tz ORDER BY n DESC LIMIT 10").all(),
-      env.DB.prepare("SELECT screen, COUNT(*) n FROM page_views WHERE screen != '' GROUP BY screen ORDER BY n DESC LIMIT 10").all(),
-      env.DB.prepare("SELECT lang, COUNT(*) n FROM page_views WHERE lang != '' GROUP BY lang ORDER BY n DESC LIMIT 10").all(),
-      env.DB.prepare("SELECT colo, COUNT(*) n FROM page_views WHERE colo != '' GROUP BY colo ORDER BY n DESC LIMIT 10").all(),
-      env.DB.prepare("SELECT tls, COUNT(*) n FROM page_views WHERE tls != '' GROUP BY tls ORDER BY n DESC LIMIT 6").all(),
-      env.DB.prepare("SELECT * FROM page_views ORDER BY viewed_at DESC LIMIT 100").all(),
       env.DB.prepare("SELECT id,email,name,picture,visit_count,is_banned,role,first_seen,last_seen FROM visitors ORDER BY last_seen DESC").all(),
     ]);
-    return respond({
+
+    const out = {
       caller_role: _adminRole || '',
-      total:    total?.n    || 0,
-      today:    today?.n    || 0,
-      week:     week?.n     || 0,
-      unique_ips:       uIPs?.n       || 0,
-      unique_countries: uCountries?.n || 0,
-      top_paths:     topPaths.results     || [],
-      top_countries: topCountries.results || [],
-      top_cities:    topCities.results    || [],
-      top_isps:      topISPs.results      || [],
-      top_asns:      topASNs.results      || [],
-      top_tz:        topTZ.results        || [],
-      top_screens:   topScreens.results   || [],
-      top_lang:      topLang.results      || [],
-      top_colo:      topColo.results      || [],
-      top_tls:       topTLS.results       || [],
-      recent:   recent.results   || [],
+      pro,
+      total: total?.n || 0, today: today?.n || 0, week: week?.n || 0,
+      unique_ips: uIPs?.n || 0, unique_countries: uCountries?.n || 0,
+      top_paths: topPaths.results || [],
       visitors: visitors.results || [],
-    });
+
+      top_countries: [], top_cities: [], top_isps: [], top_asns: [], top_tz: [],
+      top_screens: [], top_lang: [], top_colo: [], top_tls: [], recent: [],
+    };
+
+    if (pro) {
+      const [topCountries, topCities, topISPs, topASNs, topTZ, topScreens, topLang, topColo, topTLS, recent] = await Promise.all([
+        env.DB.prepare("SELECT country, COUNT(*) n FROM page_views WHERE country != '' GROUP BY country ORDER BY n DESC LIMIT 15").all(),
+        env.DB.prepare("SELECT city, region, country, COUNT(*) n FROM page_views WHERE city != '' GROUP BY city,country ORDER BY n DESC LIMIT 10").all(),
+        env.DB.prepare("SELECT isp, asn, COUNT(*) n FROM page_views WHERE isp != '' GROUP BY isp ORDER BY n DESC LIMIT 10").all(),
+        env.DB.prepare("SELECT asn, isp, COUNT(*) n FROM page_views WHERE asn != '' GROUP BY asn ORDER BY n DESC LIMIT 10").all(),
+        env.DB.prepare("SELECT tz, COUNT(*) n FROM page_views WHERE tz != '' GROUP BY tz ORDER BY n DESC LIMIT 10").all(),
+        env.DB.prepare("SELECT screen, COUNT(*) n FROM page_views WHERE screen != '' GROUP BY screen ORDER BY n DESC LIMIT 10").all(),
+        env.DB.prepare("SELECT lang, COUNT(*) n FROM page_views WHERE lang != '' GROUP BY lang ORDER BY n DESC LIMIT 10").all(),
+        env.DB.prepare("SELECT colo, COUNT(*) n FROM page_views WHERE colo != '' GROUP BY colo ORDER BY n DESC LIMIT 10").all(),
+        env.DB.prepare("SELECT tls, COUNT(*) n FROM page_views WHERE tls != '' GROUP BY tls ORDER BY n DESC LIMIT 6").all(),
+        env.DB.prepare("SELECT * FROM page_views ORDER BY viewed_at DESC LIMIT 100").all(),
+      ]);
+      Object.assign(out, {
+        top_countries: topCountries.results || [], top_cities: topCities.results || [],
+        top_isps: topISPs.results || [], top_asns: topASNs.results || [], top_tz: topTZ.results || [],
+        top_screens: topScreens.results || [], top_lang: topLang.results || [], top_colo: topColo.results || [],
+        top_tls: topTLS.results || [], recent: recent.results || [],
+      });
+    }
+    return respond(out);
   }
 
   return null;

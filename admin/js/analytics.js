@@ -82,13 +82,15 @@ async function fetchAnalytics() {
   document.getElementById('anCountriesN').textContent = d.unique_countries.toLocaleString();
   visBadge.textContent = d.total; visBadge.style.display = d.total ? 'inline-block' : 'none';
 
+  const proLock = (label) => `<div class="an-bd an-prolock"><p class="an-bd-title">${label} <span class="an-pro-badge">PRO</span></p><p class="an-prolock-msg">Detailed visitor analytics — countries, cities, networks, devices, and the live view log — are a <b>Pro</b> feature.</p></div>`;
+
   const feed = document.getElementById('anFeed');
-  window._anRecent = d.recent;
-  renderRecentFeed(20);
+  if (d.pro) { window._anRecent = d.recent; renderRecentFeed(20); }
+  else { window._anRecent = []; feed.innerHTML = `<div class="an-prolock-msg" style="padding:1rem;">The live visitor log (who's on your site, where from, what device) is a <b style="color:#7fa6d8;">Pro</b> feature.</div>`; }
 
   const bds = document.getElementById('anBreakdowns');
   const bd = (title, html) => `<div class="an-bd"><p class="an-bd-title">${title}</p>${html}</div>`;
-  bds.innerHTML = [
+  bds.innerHTML = (d.pro ? [
     bd('Top Pages',      anBars(d.top_paths,     'path',    'path')),
     bd('Countries',      anBars(d.top_countries, 'country', 'country')),
     bd('Cities',         anBars(d.top_cities,    'city',    'city')),
@@ -99,7 +101,11 @@ async function fetchAnalytics() {
     bd('Languages',      anBars(d.top_lang,      'lang',    'lang')),
     bd('CF Datacenters', anBars(d.top_colo,      'colo',    'colo')),
     bd('TLS Versions',   anBars(d.top_tls,       'tls',     'tls')),
-  ].join('');
+  ] : [
+    bd('Top Pages',      anBars(d.top_paths,     'path',    'path')),
+    proLock('Countries &amp; Cities'),
+    proLock('Networks &amp; Devices'),
+  ]).join('');
 
   const vList = document.getElementById('vList');
   if (!d.visitors.length) { vList.innerHTML = '<p class="vis-empty">No signed-in visitors yet.</p>'; return; }

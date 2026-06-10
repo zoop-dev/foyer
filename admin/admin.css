@@ -545,3 +545,8 @@
     .hx-sec-h { font-weight:200; font-size:.62rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:160px; }
     .hx-secprev { border:1px solid var(--border); border-radius:8px; overflow:hidden; max-height:420px; overflow-y:auto; }
     .hx-secprev:empty { display:none; }
+
+    
+    .an-prolock { border:1px dashed rgba(127,166,216,.4); background:rgba(127,166,216,.04); }
+    .an-pro-badge { background:#7fa6d8; color:#070a0e; font-size:.46rem; font-weight:600; letter-spacing:.12em; padding:.12rem .4rem; border-radius:3px; vertical-align:middle; margin-left:.3rem; }
+    .an-prolock-msg { font-size:.72rem; font-weight:200; line-height:1.7; color:var(--muted); margin:.5rem 0 0; }
