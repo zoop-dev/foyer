@@ -7,7 +7,8 @@ export async function buildCtx({ request, env, params, waitUntil }) {
 
 
   if (env && env.DB_HTTP_URL) {
-    const _db = makeD1Http(env.DB_HTTP_URL, env.DB_HTTP_SECRET || '', env.DB_HTTP_NAME || '');
+    const _db = makeD1Http(env.DB_HTTP_URL, env.DB_HTTP_SECRET || '', env.DB_HTTP_NAME || '',
+      env.CF_ACCESS_CLIENT_ID || '', env.CF_ACCESS_CLIENT_SECRET || '');
     env = new Proxy(env, { get(t, p) { return p === 'DB' ? _db : t[p]; } });
   }
 

@@ -5,9 +5,15 @@
 
 
 
-export function makeD1Http(baseUrl, secret, dbName) {
+export function makeD1Http(baseUrl, secret, dbName, accessId, accessSecret) {
   const url = baseUrl.replace(/\/$/, '');
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${secret}` };
+
+
+  if (accessId && accessSecret) {
+    headers['CF-Access-Client-Id'] = accessId;
+    headers['CF-Access-Client-Secret'] = accessSecret;
+  }
 
   async function send(path, payload) {
     let res;

@@ -7,6 +7,7 @@ import { handleMedia } from './_lib/routes-media.js';
 import { handleCollections } from './_lib/routes-collections.js';
 import { handleBackup } from './_lib/routes-backup.js';
 import { handleTerms, termsAccepted, TERMS_VERSION } from './_lib/routes-terms.js';
+import { cacheLookup, cacheSave, bumpEpoch } from './_lib/edge-cache.js';
 
 export async function onRequest(context) {
   const { request, env, params } = context;
@@ -31,9 +32,19 @@ export async function onRequest(context) {
     if (!(await termsAccepted(ctx))) return ctx.respond({ error: 'terms_required', version: TERMS_VERSION }, 403);
   }
 
+
+  const cached = await cacheLookup(ctx);
+  if (cached) return cached;
+
   for (const handler of [handleCore, handleAuth, handleContent, handlePeople, handleMedia, handleCollections, handleBackup, handleTerms]) {
     const res = await handler(ctx);
-    if (res) return res;
+    if (res) {
+
+      if (ctx._adminRole && (_m === 'POST' || _m === 'PUT' || _m === 'DELETE') && res.status >= 200 && res.status < 300) {
+        bumpEpoch(ctx);
+      }
+      return cacheSave(ctx, res);   // caches anon 200s; pass-through otherwise
+    }
   }
 
   return ctx.respond({ error: 'not found' }, 404);

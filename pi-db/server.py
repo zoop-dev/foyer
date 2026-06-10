@@ -38,6 +38,15 @@ os.makedirs(DATA_DIR, exist_ok=True)
 # One connection + lock per db file (SQLite is single-writer; we serialize per db).
 _conns, _locks, _glock = {}, {}, threading.Lock()
 
+# Hardening: the endpoint runs arbitrary SQL, so deny ATTACH/DETACH — that's the only
+# way a query could reach files outside its own db (e.g. ATTACH '/etc/...'). Extension
+# loading is already off by default in Python's sqlite3. Everything else is allowed
+# (Foyer legitimately needs full read/write DDL on its own db).
+def _authorizer(action, a1, a2, a3, a4):
+    if action in (sqlite3.SQLITE_ATTACH, sqlite3.SQLITE_DETACH):
+        return sqlite3.SQLITE_DENY
+    return sqlite3.SQLITE_OK
+
 def get_db(name):
     if not DB_NAME_RE.match(name or "") or (ALLOWED and name not in ALLOWED):
         raise ValueError("bad or disallowed db name")
@@ -48,6 +57,7 @@ def get_db(name):
             conn.execute("PRAGMA journal_mode=" + JOURNAL_MODE)
             conn.execute("PRAGMA busy_timeout=5000")
             conn.execute("PRAGMA foreign_keys=ON")
+            conn.set_authorizer(_authorizer)   # after setup pragmas, before any user SQL
             _conns[name], _locks[name] = conn, threading.Lock()
         return _conns[name], _locks[name]
 
@@ -134,5 +144,7 @@ class Handler(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     if not SECRET:
         raise SystemExit("DB_SECRET env var is required")
-    print(f"foyer-db on :{PORT}  data={DATA_DIR}  dbs={'all' if not ALLOWED else ','.join(ALLOWED)}")
-    ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
+    # Bind localhost ONLY — nothing on the LAN can reach this port; the sole path in is
+    # the Cloudflare tunnel (cloudflared runs on this same host and connects to localhost).
+    print(f"foyer-db on 127.0.0.1:{PORT}  data={DATA_DIR}  dbs={'all' if not ALLOWED else ','.join(ALLOWED)}")
+    ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()

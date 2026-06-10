@@ -54,7 +54,7 @@ pages_build_output_dir = "dist"
 [ai]
 binding = "AI"
 
-[vars]
+${cfg.kvId ? `# Edge read-cache epoch store (env.FOYER_KV).\n[[kv_namespaces]]\nbinding = "FOYER_KV"\nid = "${cfg.kvId}"\n\n` : ""}[vars]
 FOYER_DOMAIN = "${cfg.domain}"
 ${cfg.publicAccess === true ? `FOYER_PUBLIC = "1"\n` : ""}${cfg.dbHttp && cfg.dbHttp.url ? `DB_HTTP_URL = "${cfg.dbHttp.url}"\nDB_HTTP_NAME = "${cfg.dbHttp.name || cfg.cloudflare.project}"\n` : ""}[[d1_databases]]
 binding = "DB"
