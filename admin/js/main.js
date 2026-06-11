@@ -77,6 +77,7 @@ async function fetchSettings() {
   if (s.ask_color) document.getElementById('sAskColor').value = s.ask_color;
   else if (s.theme_accent) document.getElementById('sAskColor').value = s.theme_accent;
   await buildLangPicker((s.site_languages || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean));
+  loadPushAdmin();
   if (s.theme_bg)     document.getElementById('sThemeBg').value=s.theme_bg;
   if (s.theme_accent) document.getElementById('sThemeAccent').value=s.theme_accent;
   if (s.theme_text)   document.getElementById('sThemeText').value=s.theme_text;
@@ -1016,6 +1017,44 @@ document.getElementById('askReindex')?.addEventListener('click', async (e) => {
     else { stat.textContent = d.error || 'failed'; toast(d.error || 'Reindex failed.', true); }
   } catch { stat.textContent = 'failed'; toast('Reindex failed.', true); }
   btn.disabled = false;
+});
+
+function _pVapidBytes(b64){ const pad='='.repeat((4-(b64.length%4))%4); const s=(b64+pad).replace(/-/g,'+').replace(/_/g,'/'); const raw=atob(s); const o=new Uint8Array(raw.length); for(let i=0;i<raw.length;i++)o[i]=raw.charCodeAt(i); return o; }
+async function loadPushAdmin(){
+  const g=document.getElementById('pushGroup'); if(!g) return;
+  try{ const d=await fetch('/api/push/stats',{headers:authHeaders()}).then(r=>r.json());
+    if(d.enabled){ g.style.display=''; const s=document.getElementById('pushStat'); if(s) s.textContent=`${d.visitors} subscriber${d.visitors===1?'':'s'} · ${d.owners} owner device${d.owners===1?'':'s'}`; }
+    else g.style.display='none';
+  }catch{ g.style.display='none'; }
+}
+document.getElementById('pushOwner')?.addEventListener('click', async ()=>{
+  try{
+    if(!('serviceWorker' in navigator)||!('PushManager' in window)){ toast('Push not supported in this browser.',true); return; }
+    const cfg=await fetch('/api/push/config').then(r=>r.json()).catch(()=>({}));
+    if(!cfg.enabled||!cfg.vapid_public){ toast("Push isn't configured.",true); return; }
+    if(Notification.permission!=='granted' && (await Notification.requestPermission())!=='granted'){ toast('Notification permission denied.',true); return; }
+    await navigator.serviceWorker.register('/sw.js').catch(()=>{});
+    const reg=await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:_pVapidBytes(cfg.vapid_public)});
+    const r=await fetch('/api/push/subscribe',{method:'POST',headers:{...authHeaders(),'Content-Type':'application/json'},body:JSON.stringify({subscription:sub.toJSON(),kind:'owner'})});
+    toast(r.ok?'Owner alerts enabled on this device ✓':'Failed.',!r.ok); loadPushAdmin();
+  }catch(e){ toast('Could not enable: '+(e.message||e),true); }
+});
+document.getElementById('pushTest')?.addEventListener('click', async ()=>{
+  const r=await fetch('/api/push/test',{method:'POST',headers:authHeaders()}); const d=await r.json().catch(()=>({}));
+  toast(r.ok?`Test sent to ${d.sent||0} device(s).`:(d.error||'Failed.'),!r.ok);
+});
+document.getElementById('pushSend')?.addEventListener('click', async (e)=>{
+  const btn=e.currentTarget, stat=document.getElementById('pushSendStat');
+  const title=document.getElementById('pushTitle').value.trim();
+  if(!title){ toast('A title is required.',true); return; }
+  btn.disabled=true; stat.textContent='Sending…';
+  const body={ title, body:document.getElementById('pushBody').value.trim(), url:document.getElementById('pushUrl').value.trim()||'/' };
+  const r=await fetch('/api/push/broadcast',{method:'POST',headers:{...authHeaders(),'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d=await r.json().catch(()=>({})); btn.disabled=false;
+  stat.textContent=r.ok?`✓ sent to ${d.sent||0}`:(d.error||'failed');
+  toast(r.ok?`Sent to ${d.sent||0} subscriber(s).`:(d.error||'Failed.'),!r.ok);
 });
 
 init(); // called here so all scripts are loaded first

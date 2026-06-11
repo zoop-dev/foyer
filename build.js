@@ -56,6 +56,8 @@ binding = "AI"
 
 ${cfg.kvId ? `# Edge read-cache epoch store (env.FOYER_KV).\n[[kv_namespaces]]\nbinding = "FOYER_KV"\nid = "${cfg.kvId}"\n\n` : ""}[vars]
 FOYER_DOMAIN = "${cfg.domain}"
+# Web-push VAPID public key (shared across all Foyer sites; private key is a per-project secret).
+VAPID_PUBLIC = "BO1ElzS9nKWvk5-cWVr_MNm-dtgPkybFI_wpK7y4EPhCl_hV__sWVWdhSHqDgR2-lQt03Jt6sszyFj-ERxkq0MA"
 ${cfg.publicAccess === true ? `FOYER_PUBLIC = "1"\n` : ""}${cfg.dbHttp && cfg.dbHttp.url ? `DB_HTTP_URL = "${cfg.dbHttp.url}"\nDB_HTTP_NAME = "${cfg.dbHttp.name || cfg.cloudflare.project}"\n` : ""}${cfg.rag && cfg.rag.url ? `RAG_URL = "${cfg.rag.url}"\nRAG_DB = "${cfg.rag.db || cfg.cloudflare.project}"\n` : ""}[[d1_databases]]
 binding = "DB"
 database_name = "${cfg.cloudflare.d1Name}"

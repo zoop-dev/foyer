@@ -57,7 +57,11 @@
           + `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="rgba(var(--site-muted-rgb),0.6)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;right:.5rem;pointer-events:none;"><path d="M6 9l6 6 6-6"/></svg>`
           + `</span>`
         : '';
-      const links = [searchBtn, ...pageLinks, ...extLinks, langPicker].join('');
+
+      const pushBell = (window.foyerFeature && window.foyerFeature('push'))
+        ? `<button type="button" class="nav-a nav-bell" aria-label="Notifications" title="Get notified of updates"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></button>`
+        : '';
+      const links = [searchBtn, ...pageLinks, ...extLinks, pushBell, langPicker].join('');
       const wrapStyle = vertical
         ? `display:flex;flex-direction:column;gap:1rem;align-items:${j};width:100%;`
         : `flex:1;display:flex;align-items:center;gap:2rem;justify-content:${j};`;
@@ -66,6 +70,12 @@
         : '';
       nav.innerHTML = titleSpan + `<div style="${wrapStyle}">${links}</div>`;
       nav.querySelector('.nav-search')?.addEventListener('click', foyerOpenSearch);
+      const _bell = nav.querySelector('.nav-bell');
+      if (_bell) {
+        const _paint = (st) => { _bell.style.color = st === 'on' ? 'rgba(var(--site-accent-rgb),0.95)' : ''; _bell.title = st === 'on' ? 'Notifications on — click to turn off' : st === 'denied' ? 'Notifications blocked in your browser' : 'Get notified of updates'; };
+        window.foyerPushState().then(_paint);
+        _bell.addEventListener('click', async () => { _bell.disabled = true; const st = await window.foyerPushToggle(); _bell.disabled = false; _paint(st); });
+      }
       nav.querySelector('.nav-lang')?.addEventListener('change', async (e) => {
         const v = e.target.value;
         try { localStorage.setItem('foyer_lang', v); } catch {}
