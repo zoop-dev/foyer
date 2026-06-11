@@ -598,32 +598,69 @@
 
 
 
-    const _TR_SKIP = new Set(['id','type','variant','icon','align','anchor','slug','parent','font','kind','url','href','img','photo','src','bg_img','bg_image','image','avatar','cover','cover_image','data','access_key','target','buy_url','btn_url','btn2_url','button_url','bg','accent','color','bg_style','layout','pad','size','weight','ls','name_size','page_image','show_in_nav','new_tab','rating','featured']);
-    const _isTrText = (s) => typeof s === 'string' && s.trim().length > 1 && !/^(https?:|\/|#|data:|mailto:|tel:)/i.test(s) && !/^#?[0-9a-f]{3,8}$/i.test(s) && /[a-zA-ZÀ-ɏ]/.test(s);
-    async function _gtrans(text, from, to, memo) {
-      if (memo.has(text)) return memo.get(text);
-      let out = text;
+
+
+
+
+    const _TR_SKIP = new Set(['id','type','variant','icon','align','anchor','slug','parent','font','kind','url','href','img','photo','src','bg_img','bg_image','image','avatar','cover','cover_image','data','access_key','target','buy_url','btn_url','btn2_url','button_url','bg','accent','color','bg_style','layout','pad','size','weight','ls','name_size','page_image','show_in_nav','new_tab','rating','featured','buy','for_sale','sale','show_count','autoplay','loop']);
+    const _isTrText = (s) => typeof s === 'string' && s.trim().length > 1 && !/^(yes|no|true|false|on|off)$/i.test(s.trim()) && !/^(https?:|\/|#|data:|mailto:|tel:)/i.test(s) && !/^#?[0-9a-f]{3,8}$/i.test(s) && /[a-zA-ZÀ-ɏ]/.test(s);
+    async function _gtransOne(text, from, to) {
       for (let a = 0; a < 3; a++) {
         try {
           const r = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${from}&tl=${to}&dt=t&q=${encodeURIComponent(text)}`);
-          if (r.ok) { const d = await r.json(); if (Array.isArray(d) && Array.isArray(d[0])) { const o = d[0].map(s => (s && s[0]) || '').join(''); if (o) { out = o; break; } } }
+          if (r.ok) { const d = await r.json(); if (Array.isArray(d) && Array.isArray(d[0])) { const o = d[0].map(s => (s && s[0]) || '').join(''); if (o) return o; } }
         } catch {}
       }
-      memo.set(text, out); return out;
+      return text;
+    }
+    function _trOverlay(show, done, total) {
+      let el = document.getElementById('foyer-translating');
+      if (!show) { if (el) el.remove(); return; }
+      const cs = getComputedStyle(document.documentElement);
+      const bg = cs.getPropertyValue('--site-bg').trim() || '#020a03', accent = cs.getPropertyValue('--site-accent').trim() || '#4dbd6a', text = cs.getPropertyValue('--site-text').trim() || '#c8e6aa';
+      if (!el) {
+        if (!document.getElementById('foyer-tr-style')) { const st = document.createElement('style'); st.id = 'foyer-tr-style'; st.textContent = '@keyframes foyerspin{to{transform:rotate(360deg)}}'; document.head.appendChild(st); }
+        el = document.createElement('div'); el.id = 'foyer-translating';
+        el.style.cssText = `position:fixed;inset:0;z-index:9996;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.1rem;background:${bg};font-family:'Josefin Sans',sans-serif;`;
+        el.innerHTML = `<div style="width:34px;height:34px;border:3px solid ${pgRgb(accent, .2)};border-top-color:${accent};border-radius:50%;animation:foyerspin .8s linear infinite;"></div><div id="foyer-tr-label" style="font-weight:300;font-size:.9rem;letter-spacing:.05em;color:${pgRgb(text, .8)};"></div>`;
+        document.body.appendChild(el);
+      }
+      const lbl = el.querySelector('#foyer-tr-label');
+      if (lbl) lbl.textContent = (foyerT('translating') || 'Translating') + '…' + (total > 1 ? ` ${done}/${total}` : '');
     }
     async function foyerTranslateState(state, from, to, slug) {
       const ck = 'foyer_tr_' + to + '_' + slug;
       const srcLen = JSON.stringify(state).length;
       try { const c = JSON.parse(localStorage.getItem(ck) || 'null'); if (c && c.n === srcLen) return c.st; } catch {}
-      const memo = new Map();
-      const walk = async (o, d) => {
+
+      const set = new Set();
+      const collect = (o, d) => {
+        if (d > 9 || o == null) return;
+        if (typeof o === 'string') { if (_isTrText(o)) set.add(o); return; }
+        if (Array.isArray(o)) { for (const v of o) collect(v, d + 1); return; }
+        if (typeof o === 'object') { for (const k in o) if (!_TR_SKIP.has(k)) collect(o[k], d + 1); }
+      };
+      collect(state, 0);
+      const arr = [...set], map = new Map();
+
+      const CONC = 6;
+      _trOverlay(true, 0, arr.length);
+      for (let i = 0; i < arr.length; i += CONC) {
+        const batch = arr.slice(i, i + CONC);
+        const res = await Promise.all(batch.map(s => _gtransOne(s, from, to)));
+        batch.forEach((s, j) => map.set(s, res[j]));
+        _trOverlay(true, Math.min(i + CONC, arr.length), arr.length);
+      }
+      _trOverlay(false);
+
+      const sub = (o, d) => {
         if (d > 9 || o == null) return o;
-        if (typeof o === 'string') return _isTrText(o) ? await _gtrans(o, from, to, memo) : o;
-        if (Array.isArray(o)) { const a = []; for (const v of o) a.push(await walk(v, d + 1)); return a; }
-        if (typeof o === 'object') { const r = {}; for (const k in o) r[k] = _TR_SKIP.has(k) ? o[k] : await walk(o[k], d + 1); return r; }
+        if (typeof o === 'string') return map.has(o) ? map.get(o) : o;
+        if (Array.isArray(o)) return o.map(v => sub(v, d + 1));
+        if (typeof o === 'object') { const r = {}; for (const k in o) r[k] = _TR_SKIP.has(k) ? o[k] : sub(o[k], d + 1); return r; }
         return o;
       };
-      const out = await walk(state, 0);
+      const out = sub(state, 0);
       try { localStorage.setItem(ck, JSON.stringify({ n: srcLen, st: out })); } catch {}
       return out;
     }
