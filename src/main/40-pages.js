@@ -629,7 +629,7 @@
       if (lbl) lbl.textContent = (foyerT('translating') || 'Translating') + '…' + (total > 1 ? ` ${done}/${total}` : '');
     }
     async function foyerTranslateState(state, from, to, slug) {
-      const ck = 'foyer_tr_' + to + '_' + slug;
+      const ck = 'foyer_tr2_' + to + '_' + slug;   // bump prefix to invalidate old cached translations
       const srcLen = JSON.stringify(state).length;
       try { const c = JSON.parse(localStorage.getItem(ck) || 'null'); if (c && c.n === srcLen) return c.st; } catch {}
 
