@@ -2,27 +2,33 @@
 
 
 
-async function mm(env, text, from, to) {
-  try {
-    const email = (env && env.MYMEMORY_EMAIL) ? `&de=${encodeURIComponent(env.MYMEMORY_EMAIL)}` : '';
-    const u = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}${email}`;
-    const r = await fetch(u, { headers: { 'User-Agent': 'Foyer' } });
-    if (!r.ok) return text;
-    const d = await r.json();
-    const tr = d && d.responseData && d.responseData.translatedText;
-    return (tr && d.responseStatus === 200) ? tr : text;
-  } catch { return text; }
+
+async function gtrans(text, from, to) {
+  const u = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${encodeURIComponent(from)}&tl=${encodeURIComponent(to)}&dt=t&q=${encodeURIComponent(text)}`;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const r = await fetch(u);
+      if (r.ok) {
+        const d = await r.json();
+        if (Array.isArray(d) && Array.isArray(d[0])) {
+          const out = d[0].map((seg) => (seg && seg[0]) || '').join('');
+          if (out) return out;
+        }
+      }
+    } catch {}
+  }
+  return text;
 }
 
 async function translate(env, text, from, to, cache) {
   if (cache && cache.has(text)) return cache.get(text);
   let out;
-  if (text.length <= 480) out = await mm(env, text, from, to);
+  if (text.length <= 1200) out = await gtrans(text, from, to);
   else {
     const parts = []; let s = text;
-    while (s.length > 480) { let cut = s.lastIndexOf(' ', 480); if (cut < 1) cut = 480; parts.push(s.slice(0, cut)); s = s.slice(cut); }
+    while (s.length > 1200) { let cut = s.lastIndexOf(' ', 1200); if (cut < 1) cut = 1200; parts.push(s.slice(0, cut)); s = s.slice(cut); }
     parts.push(s);
-    const tr = []; for (const p of parts) tr.push(await mm(env, p, from, to));
+    const tr = []; for (const p of parts) tr.push(await gtrans(p, from, to));
     out = tr.join('');
   }
   if (cache) cache.set(text, out);
