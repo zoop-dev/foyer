@@ -58,12 +58,13 @@
         : '';
       nav.innerHTML = titleSpan + `<div style="${wrapStyle}">${links}</div>`;
       nav.querySelector('.nav-search')?.addEventListener('click', foyerOpenSearch);
-      nav.querySelector('.nav-lang')?.addEventListener('change', (e) => {
+      nav.querySelector('.nav-lang')?.addEventListener('change', async (e) => {
         const v = e.target.value;
         try { localStorage.setItem('foyer_lang', v); } catch {}
         window.foyerLang = v;
         _pageCache.clear();                 // content differs per language
         if (window._foyerSearchIdx) window._foyerSearchIdx = null;
+        try { await window.foyerLoadI18n(v); } catch {}   // refetch the UI-string catalog
         navigateTo(location.pathname + location.hash);   // re-render current page in the new language
       });
       nav.className = 'on pos-' + pos;

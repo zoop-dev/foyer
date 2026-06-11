@@ -190,6 +190,8 @@
         } else { window.foyerLang = ''; }
       } catch { window.__foyerLangs = []; window.foyerLang = ''; }
 
+      try { await window.foyerLoadI18n(window.foyerLang); } catch {}
+
       if (settings.theme_bg || settings.theme_accent || settings.theme_text) {
         const root = document.documentElement;
         if (settings.theme_bg)     root.style.setProperty('--site-bg',     settings.theme_bg);

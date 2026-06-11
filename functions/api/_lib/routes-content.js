@@ -341,7 +341,6 @@ export async function handleContent(ctx) {
 
   if (route === 'translate' && method === 'POST') {
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
-    if (!env.AI) return respond({ error: 'Translation isn’t available (no AI binding).' }, 503);
     if (!(await isPro(env, canonHost(env, request)))) return respond({ error: 'Multi-language is a Pro feature.' }, 403);
     const langs = await _siteLangs(env);
     if (langs.length < 2) return respond({ error: 'Add at least two languages in Settings first.' }, 400);
