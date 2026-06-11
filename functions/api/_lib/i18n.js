@@ -2,21 +2,6 @@
 
 
 
-
-export const UI_STRINGS = {
-  search: 'Search',
-  search_ph: 'Search this site',
-  search_none: 'No results',
-  ask_ph: 'Ask a question',
-  ask_hi: 'Hi! Ask me anything.',
-  pw_protected: 'This page is password protected.',
-  pw_unlock: 'Unlock',
-  pw_wrong: 'Incorrect password, try again.',
-  pw_ph: 'Password',
-  lang: 'Language',
-};
-const CATALOG_VERSION = '1';   // bump to invalidate cached UI-string translations
-
 async function mm(env, text, from, to) {
   try {
     const email = (env && env.MYMEMORY_EMAIL) ? `&de=${encodeURIComponent(env.MYMEMORY_EMAIL)}` : '';
@@ -69,17 +54,4 @@ export async function translatePageJson(env, jsonStr, from, to) {
   try { st = JSON.parse(jsonStr || '{}'); } catch { return jsonStr; }
   const out = await walk(env, st, from, to, new Map(), 0);
   return JSON.stringify(out);
-}
-
-
-
-export async function getCatalog(env, lang) {
-  lang = (lang || '').toLowerCase();
-  if (!lang || lang === 'en') return UI_STRINGS;
-  const key = `i18nc:${CATALOG_VERSION}:${lang}`;
-  if (env && env.FOYER_KV) { try { const c = await env.FOYER_KV.get(key, { type: 'json' }); if (c) return c; } catch {} }
-  const out = {}; const cache = new Map();
-  for (const k in UI_STRINGS) out[k] = await translate(env, UI_STRINGS[k], 'en', lang, cache);
-  if (env && env.FOYER_KV) { try { await env.FOYER_KV.put(key, JSON.stringify(out)); } catch {} }
-  return out;
 }

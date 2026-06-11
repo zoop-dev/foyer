@@ -2,7 +2,6 @@
 import { canonHost } from './site-config.js';
 import { isPro } from './plan.js';
 import { ragEnabled, ragSearch, ragUpsertPage, ragStats, extractPageText } from './rag.js';
-import { getCatalog } from './i18n.js';
 
 
 const AI_SB_URL = 'https://tvtfoghrdqwssdwvebuo.supabase.co';
@@ -25,12 +24,6 @@ export async function handleCore(ctx) {
 
   if (route === 'config' && method === 'GET') {
     return respond({ google_client_id: env.GOOGLE_CLIENT_ID || '', github_client_id: env.GITHUB_CLIENT_ID || '', discord_client_id: env.DISCORD_CLIENT_ID || '', magic_enabled: !!env.RESEND_API_KEY, turnstile_site_key: env.TURNSTILE_SITE_KEY || '', recaptcha_site_key: env.RECAPTCHA_SITE_KEY || '' });
-  }
-
-  if (route === 'i18n' && method === 'GET') {
-    const lang = (new URL(request.url).searchParams.get('lang') || '').toLowerCase();
-    const cat = await getCatalog(env, lang);
-    return new Response(JSON.stringify(cat), { status: 200, headers: { ...headers, 'Cache-Control': 'public, max-age=86400' } });
   }
 
 

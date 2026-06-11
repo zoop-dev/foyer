@@ -76,7 +76,7 @@ async function fetchSettings() {
   loadAskIndexStatus();
   if (s.ask_color) document.getElementById('sAskColor').value = s.ask_color;
   else if (s.theme_accent) document.getElementById('sAskColor').value = s.theme_accent;
-  document.getElementById('sLanguages').value = s.site_languages || '';
+  await buildLangPicker((s.site_languages || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean));
   loadTranslateStatus();
   if (s.theme_bg)     document.getElementById('sThemeBg').value=s.theme_bg;
   if (s.theme_accent) document.getElementById('sThemeAccent').value=s.theme_accent;
@@ -121,7 +121,7 @@ document.getElementById('saveSettingsBtn').addEventListener('click', async () =>
       ask_corner:document.getElementById('sAskCorner').value,
       ask_color:document.getElementById('sAskColor').value,
       ask_prompt:document.getElementById('sAskPrompt').value.trim(),
-      site_languages:document.getElementById('sLanguages').value.trim().toLowerCase(),
+      site_languages:getLanguagesValue(),
       theme_bg:document.getElementById('sThemeBg').value,
       theme_accent:document.getElementById('sThemeAccent').value,
       theme_text:document.getElementById('sThemeText').value,
@@ -138,7 +138,28 @@ document.getElementById('saveSettingsBtn').addEventListener('click', async () =>
       signup_domain_window_h:String(parseInt(document.getElementById('sSignupDomainWindow').value,10)||24),
       signup_domain_exempt:document.getElementById('sSignupDomainExempt').value.trim()})});
   sp.style.display='none'; btn.disabled=false; ss.textContent=res.ok?'Saved.':'Error.';
+  if (res.ok) loadTranslateStatus();   // languages may have changed → refresh the Translate button
 });
+
+
+let _i18nCodes = null;
+async function buildLangPicker(selected) {
+  const base = document.getElementById('sLangBase'), opts = document.getElementById('sLangOptions');
+  if (!base || !opts) return;
+  if (!_i18nCodes) { try { _i18nCodes = Object.keys(await fetch('/assets/i18n.json').then(r => r.json())); } catch { _i18nCodes = ['en']; } }
+  let dn; try { dn = new Intl.DisplayNames(['en'], { type: 'language' }); } catch {}
+  const name = c => { try { return dn ? (dn.of(c) || c) : c; } catch { return c; } };
+  const baseSel = (selected && selected[0]) || 'en';
+  const extras = new Set((selected || []).slice(1));
+  base.innerHTML = _i18nCodes.map(c => `<option value="${c}"${c === baseSel ? ' selected' : ''}>${name(c)} (${c})</option>`).join('');
+  opts.innerHTML = _i18nCodes.filter(c => c !== baseSel).map(c => `<label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.7rem;font-weight:200;color:rgba(220,245,225,.8);"><input type="checkbox" data-lang="${c}" ${extras.has(c) ? 'checked' : ''} style="width:auto;" /> ${name(c)} <span style="opacity:.45;">${c}</span></label>`).join('');
+  base.onchange = () => buildLangPicker([base.value, ...[...opts.querySelectorAll('input[data-lang]:checked')].map(i => i.dataset.lang).filter(c => c !== base.value)]);
+}
+function getLanguagesValue() {
+  const base = document.getElementById('sLangBase')?.value || 'en';
+  const extras = [...document.querySelectorAll('#sLangOptions input[data-lang]:checked')].map(i => i.dataset.lang);
+  return extras.length ? [base, ...extras].join(',') : '';   // only base selected = single-language
+}
 
 let _navCustomLinks = [];
 let _navPageOrder = null; // null = not loaded yet

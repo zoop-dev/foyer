@@ -3,19 +3,18 @@
 
 
 
-    const FOYER_I18N_EN = { search:'Search', search_ph:'Search this site', search_none:'No results', ask_ph:'Ask a question', ask_hi:'Hi! Ask me anything.', pw_protected:'This page is password protected.', pw_unlock:'Unlock', pw_wrong:'Incorrect password, try again.', pw_ph:'Password', lang:'Language' };
     try { window.foyerLang = localStorage.getItem('foyer_lang') || ''; } catch { window.foyerLang = ''; }
-    window.__i18n = null;
-    function t(key) { return (window.__i18n && window.__i18n[key]) || FOYER_I18N_EN[key] || key; }
+    window.__i18nAll = null;   // the whole file (all languages)
+    window.__i18n = null;      // the current language's strings
+    function t(key) { return (window.__i18n && window.__i18n[key]) || key; }
     window.foyerT = t;
-
     window.foyerLoadI18n = async function (lang) {
-      if (!lang || lang === 'en') { window.__i18n = null; return; }
-      try { const c = localStorage.getItem('foyer_i18n_' + lang); if (c) window.__i18n = JSON.parse(c); } catch {}
-      try {
-        const d = await fetch('/api/i18n?lang=' + encodeURIComponent(lang)).then(r => r.json());
-        if (d && typeof d === 'object') { window.__i18n = d; try { localStorage.setItem('foyer_i18n_' + lang, JSON.stringify(d)); } catch {} }
-      } catch {}
+      lang = lang || 'en';
+      if (!window.__i18nAll) {
+        try { const c = localStorage.getItem('foyer_i18n_all'); if (c) window.__i18nAll = JSON.parse(c); } catch {}
+        try { const d = await fetch('/assets/i18n.json').then(r => r.json()); if (d) { window.__i18nAll = d; try { localStorage.setItem('foyer_i18n_all', JSON.stringify(d)); } catch {} } } catch {}
+      }
+      window.__i18n = (window.__i18nAll && (window.__i18nAll[lang] || window.__i18nAll.en)) || null;
     };
 
 
