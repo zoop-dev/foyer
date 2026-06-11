@@ -256,6 +256,7 @@
         dismissGate();
         loadAndShow(session);
         try { mountAskWidget(settings, session); } catch {}
+        setTimeout(() => { try { window.foyerNotifyBeg(); } catch {} }, 2800);
       } else {
         startGate(clientId, settings);
         if (foyerOn)   startFoyerBtn();
@@ -343,4 +344,34 @@
       const st = await window.foyerPushState();
       if (st === 'on') { await window.foyerPushUnsubscribe(); return 'off'; }
       return (await window.foyerPushSubscribe()) ? 'on' : st;
+    };
+
+
+    window.foyerNotifyBeg = async () => {
+      try {
+        if (!(window.foyerFeature && window.foyerFeature('push')) || !window.foyerPushSupported()) return;
+        if (Notification.permission === 'denied') return;
+        try { if (localStorage.getItem('foyer_notif_begged') === '1') return; } catch {}
+        const cfg = await window.foyerPushConfig(); if (!cfg.enabled || !cfg.vapid_public) return;
+        if ((await window.foyerPushState()) === 'on') return;
+        const cs = getComputedStyle(document.documentElement);
+        const bg = cs.getPropertyValue('--site-bg').trim() || '#020a03', accent = cs.getPropertyValue('--site-accent').trim() || '#4dbd6a', text = cs.getPropertyValue('--site-text').trim() || '#c8e6aa';
+        const rgb = (h, a) => { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); return `rgba(${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)},${a})`; };
+        if (!document.getElementById('foyer-beg-style')) { const st = document.createElement('style'); st.id = 'foyer-beg-style'; st.textContent = '@keyframes foyerbegin{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:none}}@keyframes foyerring{0%,55%,100%{transform:rotate(0)}10%,30%,50%{transform:rotate(13deg)}20%,40%{transform:rotate(-13deg)}}'; document.head.appendChild(st); }
+        const name = (window.__SITE__ && __SITE__.name) || 'us';
+        const ov = document.createElement('div'); ov.id = 'foyer-notif-beg';
+        ov.style.cssText = `position:fixed;inset:0;z-index:9998;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.25rem;padding:2rem;text-align:center;background:${bg}f2;backdrop-filter:blur(10px);font-family:'Josefin Sans',sans-serif;color:${text};animation:foyerbegin .35s ease;`;
+        ov.innerHTML = `<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="${accent}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="transform-origin:50% 4px;animation:foyerring 2.4s ease-in-out infinite;"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`
+          + `<h2 style="font-weight:300;font-size:clamp(1.4rem,5vw,2rem);letter-spacing:.01em;margin:0;">Pssst… can I notify you? 🥺</h2>`
+          + `<p style="font-weight:200;font-size:.95rem;line-height:1.6;color:${rgb(text, .6)};max-width:360px;margin:0;">I'll ping you the moment ${name} posts something new. No spam, pinky promise. 🤏</p>`
+          + `<div style="display:flex;flex-direction:column;gap:.55rem;width:100%;max-width:300px;margin-top:.4rem;">`
+          + `<button id="fnb-yes" style="padding:.85rem;background:${accent};color:${bg};border:none;border-radius:11px;font-family:inherit;font-weight:400;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;">Okay, notify me 🔔</button>`
+          + `<button id="fnb-no" style="padding:.65rem;background:transparent;color:${rgb(text, .5)};border:none;font-family:inherit;font-weight:200;font-size:.8rem;cursor:pointer;">Maybe later</button>`
+          + `</div>`;
+        document.body.appendChild(ov);
+        const close = () => { try { localStorage.setItem('foyer_notif_begged', '1'); } catch {} ov.remove(); };
+        ov.querySelector('#fnb-no').onclick = close;
+        ov.querySelector('#fnb-yes').onclick = async () => { const y = ov.querySelector('#fnb-yes'); y.textContent = '…'; y.disabled = true; await window.foyerPushSubscribe(); close(); };
+        ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+      } catch {}
     };
