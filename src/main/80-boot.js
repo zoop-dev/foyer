@@ -180,14 +180,16 @@
       }
       startVersionPoll();
 
+      try { window.foyerFlags = (await fetch('/api/sb/flags', { cache: 'no-store' }).then(r => r.ok ? r.json() : {}).catch(() => ({}))) || {}; } catch { window.foyerFlags = window.foyerFlags || {}; }
+
 
       try {
         const ls = (settings.site_languages || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-        window.__foyerLangs = ls;
-        if (ls.length > 1) {
+        if (window.foyerFeature('multilang') && ls.length > 1) {
+          window.__foyerLangs = ls;
           let stored = ''; try { stored = localStorage.getItem('foyer_lang') || ''; } catch {}
           window.foyerLang = (stored && ls.includes(stored)) ? stored : ls[0];
-        } else { window.foyerLang = ''; }
+        } else { window.__foyerLangs = []; window.foyerLang = ''; }
       } catch { window.__foyerLangs = []; window.foyerLang = ''; }
 
       try { await window.foyerLoadI18n(window.foyerLang); } catch {}

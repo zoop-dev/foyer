@@ -45,9 +45,17 @@
         ? `<button type="button" class="nav-a nav-search" aria-label="${foyerT('search')}" title="${foyerT('search')} (⌘K)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><span>${foyerT('search')}</span></button>`
         : '';
 
+
       const _langs = window.__foyerLangs || [];
+      const _lname = (c) => { try { const n = new Intl.DisplayNames([c], { type: 'language' }).of(c); return n ? n.charAt(0).toUpperCase() + n.slice(1) : c.toUpperCase(); } catch { return c.toUpperCase(); } };
       const langPicker = _langs.length > 1
-        ? `<select class="nav-a nav-lang" aria-label="${foyerT('lang')}" style="background:transparent;border:1px solid ${pgRgb(siteAccent,.25)};color:rgba(var(--site-muted-rgb),0.85);font-family:inherit;font-size:.62rem;letter-spacing:.1em;padding:.25rem .4rem;border-radius:5px;cursor:pointer;">${_langs.map(l => `<option value="${l}" style="color:#000;"${l === (window.foyerLang || _langs[0]) ? ' selected' : ''}>${l.toUpperCase()}</option>`).join('')}</select>`
+        ? `<span class="nav-lang-wrap" style="position:relative;display:inline-flex;align-items:center;">`
+          + `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(var(--site-muted-rgb),0.7)" stroke-width="1.9" stroke-linecap="round" style="position:absolute;left:.52rem;pointer-events:none;"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>`
+          + `<select class="nav-a nav-lang" aria-label="${foyerT('lang')}" style="appearance:none;-webkit-appearance:none;-moz-appearance:none;background:${siteBg}88;border:1px solid ${pgRgb(siteAccent, .22)};color:rgba(var(--site-muted-rgb),0.92);font-family:inherit;font-weight:300;font-size:.66rem;letter-spacing:.03em;padding:.34rem 1.5rem .34rem 1.65rem;border-radius:7px;cursor:pointer;outline:none;transition:border-color .2s;">`
+          + _langs.map(l => `<option value="${l}" style="color:#111;background:#fff;"${l === (window.foyerLang || _langs[0]) ? ' selected' : ''}>${_lname(l)}</option>`).join('')
+          + `</select>`
+          + `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="rgba(var(--site-muted-rgb),0.6)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;right:.5rem;pointer-events:none;"><path d="M6 9l6 6 6-6"/></svg>`
+          + `</span>`
         : '';
       const links = [searchBtn, ...pageLinks, ...extLinks, langPicker].join('');
       const wrapStyle = vertical
@@ -162,6 +170,7 @@
         items = await r.json();
       } catch(e) {}
       if (!Array.isArray(items)) items = [];
+      items = await foyerMaybeTr(items, '/' + kind + '/all');
 
       const starStr = n => { n = Math.max(0, Math.min(5, parseInt(n)||0)); return n ? '★'.repeat(n) : ''; };
       const cards = items.map(t => `<a href="/${isRev?'review':'tutorials'}/${escAttr(t.slug)}" style="display:block;text-decoration:none;border:1px solid ${pgRgb(accent,.12)};background:${pgRgb(accent,.03)};transition:border-color .2s,transform .2s;">
@@ -248,6 +257,7 @@
       let items = [];
       try { const r = await fetch(`/api/collections/${encodeURIComponent(coll.slug)}/items`, { headers: sessionHeaders(session) }); items = await r.json(); } catch (e) {}
       if (!Array.isArray(items)) items = [];
+      items = await foyerMaybeTr(items, '/' + coll.slug + '/all');
       const base = '/' + coll.slug;
       const card = (t) => `<a href="${escAttr(base + '/' + t.slug)}" style="display:block;text-decoration:none;border:1px solid ${pgRgb(accent, .12)};background:${pgRgb(accent, .03)};border-radius:10px;overflow:hidden;transition:border-color .2s,transform .2s;">
         ${t.cover_image ? `<img data-src="${escAttr(t.cover_image)}" alt="" decoding="async" style="width:100%;height:150px;object-fit:cover;display:block;background:${pgRgb(accent, .06)};" />` : `<div style="width:100%;height:150px;background:${pgRgb(accent, .06)};"></div>`}
@@ -632,6 +642,7 @@
       const ck = 'foyer_tr2_' + to + '_' + slug;   // bump prefix to invalidate old cached translations
       const srcLen = JSON.stringify(state).length;
       try { const c = JSON.parse(localStorage.getItem(ck) || 'null'); if (c && c.n === srcLen) return c.st; } catch {}
+      try { await window.foyerLoadI18n(to); } catch {}   // so the overlay label is in the target language
 
       const set = new Set();
       const collect = (o, d) => {
@@ -665,6 +676,13 @@
       return out;
     }
 
+
+    async function foyerMaybeTr(obj, key) {
+      const base = (window.__foyerLangs && window.__foyerLangs[0]) || 'en';
+      if (window.foyerLang && window.foyerLang !== base) { try { return await foyerTranslateState(obj, base, window.foyerLang, key); } catch {} }
+      return obj;
+    }
+
     async function loadAndShow(session) {
       _session = session; wireRouter(); initLiveSettings();
       if (!versionPollStarted) { versionPollStarted = true; }
@@ -689,8 +707,9 @@
 
       const tutMatch = slug.match(/^\/tutorials\/(.+)$/);
       if (tutMatch) {
-        const tut = await protectedFetch(`/api/tutorials/by-slug/${encodeURIComponent(tutMatch[1])}`, session);
+        let tut = await protectedFetch(`/api/tutorials/by-slug/${encodeURIComponent(tutMatch[1])}`, session);
         if (tut && tut.id) {
+          tut = await foyerMaybeTr(tut, slug);
           setMeta(tut.title || 'Tutorial', tut.description || '', slug);
           renderTutorialDetail(tut, session);
           return;
@@ -700,8 +719,9 @@
 
       const revMatch = slug.match(/^\/review\/(.+)$/);
       if (revMatch) {
-        const rev = await protectedFetch(`/api/reviews/by-slug/${encodeURIComponent(revMatch[1])}`, session);
+        let rev = await protectedFetch(`/api/reviews/by-slug/${encodeURIComponent(revMatch[1])}`, session);
         if (rev && rev.id) {
+          rev = await foyerMaybeTr(rev, slug);
           setMeta(rev.title || 'Review', rev.description || '', slug);
           renderReviewDetail(rev, session);
           return;
@@ -714,8 +734,8 @@
         if (coll) {
           const sub = parts.slice(1).join('/');
           if (!sub || sub === 'all') { setMeta(coll.name, '', slug); renderCollIndex(coll, session); return; }
-          const item = await protectedFetch(`/api/collections/${encodeURIComponent(coll.slug)}/items/by-slug/${encodeURIComponent(sub)}`, session);
-          if (item && item.id) { setMeta(item.title || coll.name, item.description || '', slug, item.cover_image); renderCollItem(coll, item, session); return; }
+          let item = await protectedFetch(`/api/collections/${encodeURIComponent(coll.slug)}/items/by-slug/${encodeURIComponent(sub)}`, session);
+          if (item && item.id) { item = await foyerMaybeTr(item, slug); setMeta(item.title || coll.name, item.description || '', slug, item.cover_image); renderCollItem(coll, item, session); return; }
 
         }
       }

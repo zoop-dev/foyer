@@ -18,6 +18,33 @@
     };
 
 
+
+
+
+    try {
+      const _bp = new URLSearchParams(location.search).get('beta');
+      if (_bp === '1') localStorage.setItem('foyer_beta', '1');
+      else if (_bp === '0') localStorage.removeItem('foyer_beta');
+      window.foyerBeta = localStorage.getItem('foyer_beta') === '1';
+    } catch { window.foyerBeta = false; }
+    window.foyerFeature = function (key) {
+      if (window.foyerBeta) return true;
+      const v = (window.foyerFlags || {})[key];
+      return v === true || v === 1 || v === '1' || v === 'true' || v === 'on';
+    };
+    if (window.foyerBeta) {
+      const _betaBadge = () => {
+        if (!document.body || document.getElementById('foyer-beta-badge')) return;
+        const b = document.createElement('button');
+        b.id = 'foyer-beta-badge'; b.textContent = 'β BETA'; b.title = 'Beta preview is on for this device — click to exit';
+        b.style.cssText = 'position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:9997;background:#7fa6d8;color:#070a0e;border:none;border-radius:999px;font:600 .58rem/1 system-ui,sans-serif;letter-spacing:.14em;padding:.42rem .75rem;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.35);';
+        b.onclick = () => { try { localStorage.removeItem('foyer_beta'); } catch {} location.href = location.pathname; };
+        document.body.appendChild(b);
+      };
+      if (document.body) _betaBadge(); else document.addEventListener('DOMContentLoaded', _betaBadge);
+    }
+
+
     try { if (!localStorage.getItem('foyer_cleared_v1')) { localStorage.clear(); localStorage.setItem('foyer_cleared_v1', '1'); } } catch {}
 
     const ring = document.getElementById('cr');
