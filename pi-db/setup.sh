@@ -31,6 +31,8 @@ mkdir -p ~/foyer-db
 SRC=$(find /mnt/foyerdb /media/"$USER" /media 2>/dev/null -maxdepth 4 -name server.py -path '*pi-db*' | head -1)
 [ -n "$SRC" ] || { echo "ERROR: server.py not found (looked for **/pi-db/server.py). Re-copy the pi-db folder onto the stick."; exit 1; }
 cp "$SRC" ~/foyer-db/server.py
+# keep the ~/startup convenience helper fresh
+cp "$(dirname "$SRC")/startup.sh" ~/startup 2>/dev/null && chmod +x ~/startup 2>/dev/null || true
 
 echo '== 4/6  writing the systemd unit =='
 PY=$(command -v python3)

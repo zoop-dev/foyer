@@ -42,9 +42,14 @@
       );
       window._foyerSearchOn = data.search_enabled !== false;   // admin toggle (default on)
       const searchBtn = window._foyerSearchOn
-        ? `<button type="button" class="nav-a nav-search" aria-label="Search" title="Search (⌘K)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><span>Search</span></button>`
+        ? `<button type="button" class="nav-a nav-search" aria-label="${foyerT('search')}" title="${foyerT('search')} (⌘K)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><span>${foyerT('search')}</span></button>`
         : '';
-      const links = [searchBtn, ...pageLinks, ...extLinks].join('');
+
+      const _langs = window.__foyerLangs || [];
+      const langPicker = _langs.length > 1
+        ? `<select class="nav-a nav-lang" aria-label="${foyerT('lang')}" style="background:transparent;border:1px solid ${pgRgb(siteAccent,.25)};color:rgba(var(--site-muted-rgb),0.85);font-family:inherit;font-size:.62rem;letter-spacing:.1em;padding:.25rem .4rem;border-radius:5px;cursor:pointer;">${_langs.map(l => `<option value="${l}" style="color:#000;"${l === (window.foyerLang || _langs[0]) ? ' selected' : ''}>${l.toUpperCase()}</option>`).join('')}</select>`
+        : '';
+      const links = [searchBtn, ...pageLinks, ...extLinks, langPicker].join('');
       const wrapStyle = vertical
         ? `display:flex;flex-direction:column;gap:1rem;align-items:${j};width:100%;`
         : `flex:1;display:flex;align-items:center;gap:2rem;justify-content:${j};`;
@@ -53,6 +58,14 @@
         : '';
       nav.innerHTML = titleSpan + `<div style="${wrapStyle}">${links}</div>`;
       nav.querySelector('.nav-search')?.addEventListener('click', foyerOpenSearch);
+      nav.querySelector('.nav-lang')?.addEventListener('change', (e) => {
+        const v = e.target.value;
+        try { localStorage.setItem('foyer_lang', v); } catch {}
+        window.foyerLang = v;
+        _pageCache.clear();                 // content differs per language
+        if (window._foyerSearchIdx) window._foyerSearchIdx = null;
+        navigateTo(location.pathname + location.hash);   // re-render current page in the new language
+      });
       nav.className = 'on pos-' + pos;
       const scene = document.getElementById('scene');
       scene.classList.remove('nav-pad-top','nav-pad-bottom','nav-pad-left','nav-pad-right');
@@ -342,10 +355,13 @@
     let _session = null, _routerWired = false;
     const _pageCache = new Map();   // slug → { t, p }  (timestamp + Promise of /api/pages)
     function fetchPage(slug, session) {
-      const hit = _pageCache.get(slug);
+
+      const lang = window.foyerLang || '';
+      const key = slug + '|' + lang;
+      const hit = _pageCache.get(key);
       if (hit && Date.now() - hit.t < 60000) return hit.p;
-      const p = protectedFetch(`/api/pages?slug=${encodeURIComponent(slug)}`, session);
-      _pageCache.set(slug, { t: Date.now(), p });
+      const p = protectedFetch(`/api/pages?slug=${encodeURIComponent(slug)}${lang ? '&lang=' + encodeURIComponent(lang) : ''}`, session);
+      _pageCache.set(key, { t: Date.now(), p });
       return p;
     }
 
@@ -387,7 +403,7 @@
         if (!_routable(url) || url.hash) return;
         const slug = url.pathname.replace(/\/$/, '') || '/';
         if (/^\/(tutorials|review|reviews)(\/|$)/.test(slug)) return;   // these load via other endpoints
-        if (!_pageCache.has(slug)) fetchPage(slug, _session);
+        fetchPage(slug, _session);   // fetchPage dedups by slug+lang internally
       };
       document.addEventListener('mouseover', prefetch);
       document.addEventListener('touchstart', prefetch, { passive: true });
@@ -426,7 +442,7 @@
       const ov = document.createElement('div'); ov.id = 'foyer-search';
       ov.style.cssText = 'position:fixed;inset:0;z-index:9995;background:rgba(0,0,0,.5);backdrop-filter:blur(5px);display:flex;align-items:flex-start;justify-content:center;padding:14vh 1rem 1rem;';
       ov.innerHTML = `<div style="width:100%;max-width:540px;background:${bg};border:1px solid ${pgRgb(accent, .25)};border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.5);font-family:'Josefin Sans',sans-serif;">
-        <input id="fsq" type="text" placeholder="Search this site…" autocomplete="off" style="width:100%;box-sizing:border-box;padding:1.05rem 1.3rem;background:transparent;border:none;border-bottom:1px solid ${pgRgb(accent, .15)};color:${text};font-family:inherit;font-weight:300;font-size:1.05rem;letter-spacing:.02em;outline:none;" />
+        <input id="fsq" type="text" placeholder="${foyerT('search_ph')}" autocomplete="off" style="width:100%;box-sizing:border-box;padding:1.05rem 1.3rem;background:transparent;border:none;border-bottom:1px solid ${pgRgb(accent, .15)};color:${text};font-family:inherit;font-weight:300;font-size:1.05rem;letter-spacing:.02em;outline:none;" />
         <div id="fsr" style="max-height:52vh;overflow-y:auto;"></div>
       </div>`;
       const close = () => { ov.remove(); document.removeEventListener('keydown', onKey); };
@@ -487,7 +503,7 @@
           </div>
           <div id="askMsgs" style="flex:1;overflow-y:auto;padding:1rem 1.1rem;display:flex;flex-direction:column;gap:.7rem;"></div>
           <form id="askForm" style="display:flex;gap:.5rem;padding:.8rem;border-top:1px solid ${pgRgb(accent, .14)};">
-            <input id="askInput" type="text" placeholder="Ask a question…" autocomplete="off" style="flex:1;box-sizing:border-box;padding:.7rem .9rem;background:${pgRgb(accent, .05)};border:1px solid ${pgRgb(accent, .18)};border-radius:10px;color:${text};font-family:inherit;font-weight:300;font-size:.88rem;outline:none;" />
+            <input id="askInput" type="text" placeholder="${foyerT('ask_ph')}" autocomplete="off" style="flex:1;box-sizing:border-box;padding:.7rem .9rem;background:${pgRgb(accent, .05)};border:1px solid ${pgRgb(accent, .18)};border-radius:10px;color:${text};font-family:inherit;font-weight:300;font-size:.88rem;outline:none;" />
             <button type="submit" aria-label="Send" style="flex-shrink:0;width:42px;border:none;border-radius:10px;background:${accent};color:${bg};font-size:1.1rem;cursor:pointer;">↑</button>
           </form>
         </div>`;
@@ -512,7 +528,7 @@
         panel.style.display = open ? 'flex' : 'none';
         bubble.style.transform = open ? 'scale(.9)' : '';
         if (open) {
-          if (!greeted) { greeted = true; addMsg('assistant', `Hi! Ask me anything about ${siteName}.`); }
+          if (!greeted) { greeted = true; addMsg('assistant', foyerT('ask_hi')); }
           setTimeout(() => input.focus(), 50);
         }
       };
@@ -549,11 +565,11 @@
       scene.innerHTML = `<div style="width:100%;max-width:360px;text-align:center;font-family:'Josefin Sans',sans-serif;color:${text};">
         <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="${accent}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:1.2rem;opacity:.8;"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         <h1 style="font-weight:300;font-size:1.5rem;letter-spacing:.01em;margin:0 0 .4rem;">${pgE(page.title || 'Protected page')}</h1>
-        <p style="font-weight:200;font-size:.82rem;color:${pgRgb(text, .5)};margin:0 0 1.6rem;">This page is password protected.</p>
+        <p style="font-weight:200;font-size:.82rem;color:${pgRgb(text, .5)};margin:0 0 1.6rem;">${foyerT('pw_protected')}</p>
         <form id="pwform" style="display:flex;flex-direction:column;gap:.7rem;">
-          <input id="pwin" type="password" placeholder="Password" autocomplete="current-password" style="box-sizing:border-box;padding:.85rem 1rem;background:${pgRgb(accent, .04)};border:1px solid ${pgRgb(accent, bad ? .55 : .2)};border-radius:10px;color:${text};font-family:inherit;font-weight:300;font-size:.95rem;outline:none;text-align:center;letter-spacing:.04em;" />
-          ${bad ? `<div style="font-size:.72rem;font-weight:200;color:#e88;">Incorrect password — try again.</div>` : ''}
-          <button type="submit" style="padding:.8rem;background:${accent};color:${bg};border:none;border-radius:10px;font-family:inherit;font-weight:400;font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;">Unlock</button>
+          <input id="pwin" type="password" placeholder="${foyerT('pw_ph')}" autocomplete="current-password" style="box-sizing:border-box;padding:.85rem 1rem;background:${pgRgb(accent, .04)};border:1px solid ${pgRgb(accent, bad ? .55 : .2)};border-radius:10px;color:${text};font-family:inherit;font-weight:300;font-size:.95rem;outline:none;text-align:center;letter-spacing:.04em;" />
+          ${bad ? `<div style="font-size:.72rem;font-weight:200;color:#e88;">${foyerT('pw_wrong')}</div>` : ''}
+          <button type="submit" style="padding:.8rem;background:${accent};color:${bg};border:none;border-radius:10px;font-family:inherit;font-weight:400;font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;">${foyerT('pw_unlock')}</button>
         </form>
       </div>`;
       scene.querySelectorAll('a, button, input').forEach(hookHover);
@@ -568,7 +584,7 @@
         try { const r = await fetch(`/api/pages?slug=${encodeURIComponent(slug)}`, { headers }); data = await r.json(); } catch (err) {}
         if (!data || data.locked) { renderLockedPage(slug, page, session, true); return; }
 
-        _pageCache.set(slug, { t: Date.now(), p: Promise.resolve(data) });
+        _pageCache.set(slug + '|' + (window.foyerLang || ''), { t: Date.now(), p: Promise.resolve(data) });
         if (data.page_json) {
           try {
             const state = JSON.parse(data.page_json);

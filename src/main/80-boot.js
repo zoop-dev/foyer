@@ -180,6 +180,16 @@
       }
       startVersionPoll();
 
+
+      try {
+        const ls = (settings.site_languages || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+        window.__foyerLangs = ls;
+        if (ls.length > 1) {
+          let stored = ''; try { stored = localStorage.getItem('foyer_lang') || ''; } catch {}
+          window.foyerLang = (stored && ls.includes(stored)) ? stored : ls[0];
+        } else { window.foyerLang = ''; }
+      } catch { window.__foyerLangs = []; window.foyerLang = ''; }
+
       if (settings.theme_bg || settings.theme_accent || settings.theme_text) {
         const root = document.documentElement;
         if (settings.theme_bg)     root.style.setProperty('--site-bg',     settings.theme_bg);

@@ -307,6 +307,18 @@
           <p style="font-size:.62rem;font-weight:100;color:var(--muted);line-height:1.6;margin:.4rem 0 0;">When connected, the assistant retrieves only the most relevant page chunks (better answers) instead of all page text. Rebuild after big content changes.</p>
         </div>
       </div>
+      <div class="settings-group">
+        <p class="settings-group-title">Languages <span style="background:#7fa6d8;color:#070a0e;font-size:.5rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.1rem .35rem;border-radius:3px;vertical-align:middle;">Pro</span></p>
+        <p style="font-weight:100;font-size:.66rem;color:var(--muted);line-height:1.8;margin-bottom:1.1rem;">Offer your site in multiple languages. Visitors get a language picker; your pages are AI-translated. The <b>first</b> code is your original language.</p>
+        <div class="field"><label>Languages <span style="opacity:.5">(comma-separated ISO codes, e.g. en, es, fr)</span></label><input type="text" id="sLanguages" placeholder="en" style="background:var(--panel);border:1px solid var(--border);color:var(--white);font-weight:300;font-size:.82rem;padding:.6rem .85rem;outline:none;font-family:inherit;width:100%;" /></div>
+        <div class="field" id="trRow" style="display:none;"><label>Translations</label>
+          <div style="display:flex;gap:.5rem;align-items:center;">
+            <button class="btn btn-sm" id="trTranslate" type="button">Translate pages</button>
+            <span id="trStat" style="font-size:.62rem;font-weight:100;color:var(--muted);"></span>
+          </div>
+          <p style="font-size:.62rem;font-weight:100;color:var(--muted);line-height:1.6;margin:.4rem 0 0;">Generates a translated copy of every page for each extra language. Re-run after editing content. (Save the language list first.)</p>
+        </div>
+      </div>
       </div>
 
       <div class="set-panel" data-panel="access">

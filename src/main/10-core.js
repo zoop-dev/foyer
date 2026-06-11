@@ -1,6 +1,20 @@
     const VERSION = __VERSION__;
 
 
+
+
+    const FOYER_I18N = {
+      en: { search:'Search', search_ph:'Search this site…', search_none:'No results', ask_ph:'Ask a question…', ask_hi:'Hi! Ask me anything.', pw_protected:'This page is password protected.', pw_unlock:'Unlock', pw_wrong:'Incorrect password — try again.', pw_ph:'Password', lang:'Language' },
+      es: { search:'Buscar', search_ph:'Buscar en el sitio…', search_none:'Sin resultados', ask_ph:'Haz una pregunta…', ask_hi:'¡Hola! Pregúntame lo que quieras.', pw_protected:'Esta página está protegida con contraseña.', pw_unlock:'Desbloquear', pw_wrong:'Contraseña incorrecta — inténtalo de nuevo.', pw_ph:'Contraseña', lang:'Idioma' },
+      fr: { search:'Rechercher', search_ph:'Rechercher sur le site…', search_none:'Aucun résultat', ask_ph:'Posez une question…', ask_hi:'Bonjour ! Posez-moi vos questions.', pw_protected:'Cette page est protégée par un mot de passe.', pw_unlock:'Déverrouiller', pw_wrong:'Mot de passe incorrect — réessayez.', pw_ph:'Mot de passe', lang:'Langue' },
+      de: { search:'Suchen', search_ph:'Diese Seite durchsuchen…', search_none:'Keine Ergebnisse', ask_ph:'Stelle eine Frage…', ask_hi:'Hallo! Frag mich alles.', pw_protected:'Diese Seite ist passwortgeschützt.', pw_unlock:'Entsperren', pw_wrong:'Falsches Passwort — bitte erneut versuchen.', pw_ph:'Passwort', lang:'Sprache' },
+      pt: { search:'Pesquisar', search_ph:'Pesquisar no site…', search_none:'Sem resultados', ask_ph:'Faça uma pergunta…', ask_hi:'Olá! Pergunte-me qualquer coisa.', pw_protected:'Esta página está protegida por senha.', pw_unlock:'Desbloquear', pw_wrong:'Senha incorreta — tente novamente.', pw_ph:'Senha', lang:'Idioma' },
+    };
+    try { window.foyerLang = localStorage.getItem('foyer_lang') || ''; } catch { window.foyerLang = ''; }
+    function t(key) { const l = window.foyerLang || 'en'; return (FOYER_I18N[l] && FOYER_I18N[l][key]) || FOYER_I18N.en[key] || key; }
+    window.foyerT = t;
+
+
     try { if (!localStorage.getItem('foyer_cleared_v1')) { localStorage.clear(); localStorage.setItem('foyer_cleared_v1', '1'); } } catch {}
 
     const ring = document.getElementById('cr');
