@@ -2,15 +2,6 @@
 import { moderatePage, logModeration, getModConfig } from './moderation.js';
 import { canonHost } from './site-config.js';
 import { isPro } from './plan.js';
-import { translatePageJson } from './i18n.js';
-
-const CREATE_TRANSLATIONS = "CREATE TABLE IF NOT EXISTS page_translations (page_id INTEGER NOT NULL, lang TEXT NOT NULL, page_json TEXT, updated_at TEXT, PRIMARY KEY (page_id, lang))";
-let _trReady = false;
-async function _ensureTr(env) { if (_trReady) return; await env.DB.prepare(CREATE_TRANSLATIONS).run().catch(() => {}); _trReady = true; }
-async function _siteLangs(env) {
-  const r = await env.DB.prepare("SELECT value FROM site_settings WHERE key='site_languages'").first().catch(() => null);
-  return (r?.value || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-}
 
 let _pwColReady = false;
 async function _ensurePwCol(env) { if (_pwColReady) return; await env.DB.prepare('ALTER TABLE pages ADD COLUMN pw_hash TEXT').run().catch(() => {}); _pwColReady = true; }
@@ -73,21 +64,7 @@ export async function handleContent(ctx) {
           return respond({ id: page.id, title: page.title, slug: page.slug, locked: true, bad: pw ? true : undefined });
         }
       }
-      if (page) {
-        page.page_json = await decompressJson(page.page_json);
-        delete page.pw_hash;
-
-
-        const lang = (url.searchParams.get('lang') || '').toLowerCase();
-        if (lang) {
-          const langs = await _siteLangs(env);
-          if (langs.length > 1 && lang !== langs[0] && langs.includes(lang)) {
-            await _ensureTr(env);
-            const tr = await env.DB.prepare('SELECT page_json FROM page_translations WHERE page_id=? AND lang=?').bind(page.id, lang).first().catch(() => null);
-            if (tr && tr.page_json) page.page_json = tr.page_json;
-          }
-        }
-      }
+      if (page) { page.page_json = await decompressJson(page.page_json); delete page.pw_hash; }
       return respond(page || null);
     }
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
@@ -323,42 +300,6 @@ export async function handleContent(ctx) {
       "INSERT INTO site_settings (key, value) VALUES ('nav_page_order', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
     ).bind(JSON.stringify(order || [])).run();
     return respond({ ok: true });
-  }
-
-
-
-
-  if (route === 'translate' && method === 'GET') {
-    if (!authed()) return respond({ error: 'unauthorized' }, 401);
-    const langs = await _siteLangs(env);
-    if (langs.length < 2) return respond({ enabled: false, langs });
-    await _ensureTr(env);
-    await env.DB.prepare(CREATE_PAGES).run();
-    const pages = (await env.DB.prepare("SELECT id, title, slug FROM pages WHERE is_published=1 AND slug!='__404__' ORDER BY sort_order ASC, id ASC").all().catch(() => ({ results: [] }))).results || [];
-    const done = (await env.DB.prepare('SELECT page_id, lang FROM page_translations').all().catch(() => ({ results: [] }))).results || [];
-    return respond({ enabled: true, base: langs[0], langs, pages, variants: done.length });
-  }
-
-  if (route === 'translate' && method === 'POST') {
-    if (!authed()) return respond({ error: 'unauthorized' }, 401);
-    if (!(await isPro(env, canonHost(env, request)))) return respond({ error: 'Multi-language is a Pro feature.' }, 403);
-    const langs = await _siteLangs(env);
-    if (langs.length < 2) return respond({ error: 'Add at least two languages in Settings first.' }, 400);
-    const base = langs[0];
-    const body = await request.json().catch(() => ({}));
-    const lang = String(body.lang || '').toLowerCase();
-    const pageId = parseInt(body.page_id);
-    if (!lang || lang === base || !langs.includes(lang)) return respond({ error: 'bad language' }, 400);
-    if (!pageId) return respond({ error: 'page_id required' }, 400);
-    await _ensureTr(env);
-    const p = await env.DB.prepare('SELECT id, page_json FROM pages WHERE id=?').bind(pageId).first();
-    if (!p) return respond({ error: 'not found' }, 404);
-    const src = await decompressJson(p.page_json);
-    let translated;
-    try { translated = await translatePageJson(env, src, base, lang); }
-    catch { return respond({ error: 'translation failed — try again' }, 502); }
-    await env.DB.prepare("INSERT INTO page_translations (page_id, lang, page_json, updated_at) VALUES (?,?,?,datetime('now')) ON CONFLICT(page_id,lang) DO UPDATE SET page_json=excluded.page_json, updated_at=datetime('now')").bind(pageId, lang, translated).run();
-    return respond({ ok: true, page_id: pageId, lang });
   }
 
   return null;

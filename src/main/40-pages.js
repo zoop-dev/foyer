@@ -357,12 +357,10 @@
     const _pageCache = new Map();   // slug → { t, p }  (timestamp + Promise of /api/pages)
     function fetchPage(slug, session) {
 
-      const lang = window.foyerLang || '';
-      const key = slug + '|' + lang;
-      const hit = _pageCache.get(key);
+      const hit = _pageCache.get(slug);
       if (hit && Date.now() - hit.t < 60000) return hit.p;
-      const p = protectedFetch(`/api/pages?slug=${encodeURIComponent(slug)}${lang ? '&lang=' + encodeURIComponent(lang) : ''}`, session);
-      _pageCache.set(key, { t: Date.now(), p });
+      const p = protectedFetch(`/api/pages?slug=${encodeURIComponent(slug)}`, session);
+      _pageCache.set(slug, { t: Date.now(), p });
       return p;
     }
 
@@ -585,7 +583,7 @@
         try { const r = await fetch(`/api/pages?slug=${encodeURIComponent(slug)}`, { headers }); data = await r.json(); } catch (err) {}
         if (!data || data.locked) { renderLockedPage(slug, page, session, true); return; }
 
-        _pageCache.set(slug + '|' + (window.foyerLang || ''), { t: Date.now(), p: Promise.resolve(data) });
+        _pageCache.set(slug, { t: Date.now(), p: Promise.resolve(data) });
         if (data.page_json) {
           try {
             const state = JSON.parse(data.page_json);
@@ -595,6 +593,39 @@
         }
         showFallback(session);
       });
+    }
+
+
+
+
+    const _TR_SKIP = new Set(['id','type','variant','icon','align','anchor','slug','parent','font','kind','url','href','img','photo','src','bg_img','bg_image','image','avatar','cover','cover_image','data','access_key','target','buy_url','btn_url','btn2_url','button_url','bg','accent','color','bg_style','layout','pad','size','weight','ls','name_size','page_image','show_in_nav','new_tab','rating','featured']);
+    const _isTrText = (s) => typeof s === 'string' && s.trim().length > 1 && !/^(https?:|\/|#|data:|mailto:|tel:)/i.test(s) && !/^#?[0-9a-f]{3,8}$/i.test(s) && /[a-zA-ZÀ-ɏ]/.test(s);
+    async function _gtrans(text, from, to, memo) {
+      if (memo.has(text)) return memo.get(text);
+      let out = text;
+      for (let a = 0; a < 3; a++) {
+        try {
+          const r = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${from}&tl=${to}&dt=t&q=${encodeURIComponent(text)}`);
+          if (r.ok) { const d = await r.json(); if (Array.isArray(d) && Array.isArray(d[0])) { const o = d[0].map(s => (s && s[0]) || '').join(''); if (o) { out = o; break; } } }
+        } catch {}
+      }
+      memo.set(text, out); return out;
+    }
+    async function foyerTranslateState(state, from, to, slug) {
+      const ck = 'foyer_tr_' + to + '_' + slug;
+      const srcLen = JSON.stringify(state).length;
+      try { const c = JSON.parse(localStorage.getItem(ck) || 'null'); if (c && c.n === srcLen) return c.st; } catch {}
+      const memo = new Map();
+      const walk = async (o, d) => {
+        if (d > 9 || o == null) return o;
+        if (typeof o === 'string') return _isTrText(o) ? await _gtrans(o, from, to, memo) : o;
+        if (Array.isArray(o)) { const a = []; for (const v of o) a.push(await walk(v, d + 1)); return a; }
+        if (typeof o === 'object') { const r = {}; for (const k in o) r[k] = _TR_SKIP.has(k) ? o[k] : await walk(o[k], d + 1); return r; }
+        return o;
+      };
+      const out = await walk(state, 0);
+      try { localStorage.setItem(ck, JSON.stringify({ n: srcLen, st: out })); } catch {}
+      return out;
     }
 
     async function loadAndShow(session) {
@@ -662,7 +693,10 @@
 
       if (page?.page_json) {
         try {
-          const state = JSON.parse(page.page_json);
+          let state = JSON.parse(page.page_json);
+
+          const _base = (window.__foyerLangs && window.__foyerLangs[0]) || 'en';
+          if (window.foyerLang && window.foyerLang !== _base) state = await foyerTranslateState(state, _base, window.foyerLang, slug);
           if (state.kind === 'text') {
             setMeta(state.page_title || page.title || __SITE__.name, state.page_subtitle || state.desc || '', slug, state.page_image || state.cover);
             renderTextPage(state, session, page.title);

@@ -77,7 +77,6 @@ async function fetchSettings() {
   if (s.ask_color) document.getElementById('sAskColor').value = s.ask_color;
   else if (s.theme_accent) document.getElementById('sAskColor').value = s.theme_accent;
   await buildLangPicker((s.site_languages || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean));
-  loadTranslateStatus();
   if (s.theme_bg)     document.getElementById('sThemeBg').value=s.theme_bg;
   if (s.theme_accent) document.getElementById('sThemeAccent').value=s.theme_accent;
   if (s.theme_text)   document.getElementById('sThemeText').value=s.theme_text;
@@ -138,7 +137,6 @@ document.getElementById('saveSettingsBtn').addEventListener('click', async () =>
       signup_domain_window_h:String(parseInt(document.getElementById('sSignupDomainWindow').value,10)||24),
       signup_domain_exempt:document.getElementById('sSignupDomainExempt').value.trim()})});
   sp.style.display='none'; btn.disabled=false; ss.textContent=res.ok?'Saved.':'Error.';
-  if (res.ok) loadTranslateStatus();   // languages may have changed → refresh the Translate button
 });
 
 
@@ -1018,43 +1016,6 @@ document.getElementById('askReindex')?.addEventListener('click', async (e) => {
     else { stat.textContent = d.error || 'failed'; toast(d.error || 'Reindex failed.', true); }
   } catch { stat.textContent = 'failed'; toast('Reindex failed.', true); }
   btn.disabled = false;
-});
-
-let _trData = null;
-async function loadTranslateStatus() {
-  const row = document.getElementById('trRow'), stat = document.getElementById('trStat');
-  if (!row) return;
-  try {
-    const r = await fetch('/api/translate', { headers: authHeaders() });
-    _trData = await r.json().catch(() => ({}));
-    if (_trData.enabled) {
-      row.style.display = '';
-      const targets = (_trData.langs || []).slice(1);
-      stat.textContent = `${_trData.variants || 0} variants · ${targets.map(l => l.toUpperCase()).join(', ')}`;
-    } else { row.style.display = 'none'; }
-  } catch { row.style.display = 'none'; }
-}
-document.getElementById('trTranslate')?.addEventListener('click', async (e) => {
-  const btn = e.currentTarget, stat = document.getElementById('trStat');
-  if (!_trData || !_trData.enabled) { await loadTranslateStatus(); if (!_trData?.enabled) return; }
-  const pages = _trData.pages || [], targets = (_trData.langs || []).slice(1);
-  const jobs = [];
-  for (const p of pages) for (const lang of targets) jobs.push({ page_id: p.id, lang });
-  if (!jobs.length) { toast('Nothing to translate.', true); return; }
-  btn.disabled = true;
-  let done = 0, failed = 0;
-  for (const j of jobs) {
-    stat.textContent = `Translating… ${done + 1}/${jobs.length}`;
-    try {
-      const r = await fetch('/api/translate', { method: 'POST', headers: { ...authHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify(j) });
-      if (!r.ok) failed++;
-    } catch { failed++; }
-    done++;
-  }
-  btn.disabled = false;
-  stat.textContent = failed ? `Done with ${failed} error(s) — try again.` : `✓ Translated ${pages.length} page(s) → ${targets.map(l => l.toUpperCase()).join(', ')}`;
-  toast(failed ? `${failed} translation(s) failed.` : 'Pages translated ✓', !!failed);
-  loadTranslateStatus();
 });
 
 init(); // called here so all scripts are loaded first
