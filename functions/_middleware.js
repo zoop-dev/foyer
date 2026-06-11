@@ -31,28 +31,47 @@ const escA = (s) => esc(s).replace(/"/g,'&quot;');
 
 
 const OG_BOT = /(facebookexternalhit|Facebot|Twitterbot|Slackbot|Discordbot|LinkedInBot|WhatsApp|TelegramBot|Pinterest|redditbot|Applebot|SkypeUriPreview|vkShare|embedly|Iframely|Google-InspectionTool)/i;
+
+async function lookupOg(env, url) {
+  const path = url.pathname === '' ? '/' : url.pathname;
+  let m, out = null;
+  if ((m = path.match(/^\/tutorials\/(.+)$/))) {
+    const r = await env.DB.prepare('SELECT title, description, cover_image FROM tutorials WHERE slug=?').bind(m[1]).first();
+    if (r) out = { title: r.title || '', desc: r.description || '', image: r.cover_image || '', ld: { '@type': 'Article', headline: r.title || '', description: r.description || '' } };
+  } else if ((m = path.match(/^\/review\/(.+)$/))) {
+    const r = await env.DB.prepare('SELECT title, description, cover_image, rating FROM reviews WHERE slug=?').bind(m[1]).first();
+    if (r) { out = { title: r.title || '', desc: r.description || '', image: r.cover_image || '', ld: { '@type': 'Review', name: r.title || '', reviewBody: r.description || '', itemReviewed: { '@type': 'Thing', name: r.title || '' } } }; if (r.rating) out.ld.reviewRating = { '@type': 'Rating', ratingValue: r.rating, bestRating: 5 }; }
+  } else if ((m = path.match(/^\/([^\/]+)\/([^\/]+)$/)) && m[2] !== 'all') {
+    const coll = await env.DB.prepare('SELECT id FROM collections WHERE slug=?').bind(m[1]).first();
+    if (coll) { const it = await env.DB.prepare('SELECT title, description, cover_image FROM collection_items WHERE collection_id=? AND slug=?').bind(coll.id, m[2]).first(); if (it) out = { title: it.title || '', desc: it.description || '', image: it.cover_image || '', ld: { '@type': 'Article', headline: it.title || '', description: it.description || '' } }; }
+  } else {
+    const row = await env.DB.prepare('SELECT title, page_json FROM pages WHERE slug = ? AND is_published = 1').bind(path).first();
+    if (row) { let p = {}; try { p = JSON.parse(row.page_json || '{}'); } catch {} out = { title: p.page_title || row.title || '', desc: p.page_subtitle || '', image: p.page_image || '', ld: null }; }
+  }
+  if (out && out.image && !/^https?:\/\//.test(out.image)) out.image = `https://${url.hostname}${out.image.startsWith('/') ? '' : '/'}${out.image}`;
+  return out;
+}
 async function injectOg(ctx, url) {
   const { request, env } = ctx;
   if (!env.DB) return null;
   try {
-    const slug = url.pathname === '' ? '/' : url.pathname;
-    const row = await env.DB.prepare('SELECT title, page_json FROM pages WHERE slug = ? AND is_published = 1').bind(slug).first();
-    if (!row) return null;
-    let p = {}; try { p = JSON.parse(row.page_json || '{}'); } catch { p = {}; }
-    const title = p.page_title || row.title || '';
-    const desc  = p.page_subtitle || '';
-    let image = p.page_image || '';
-    if (image && !/^https?:\/\//.test(image)) image = `https://${url.hostname}${image.startsWith('/') ? '' : '/'}${image}`;
-    if (!title && !desc && !image) return null;
+    const data = await lookupOg(env, url);
+    if (!data || (!data.title && !data.desc && !data.image)) return null;
+    const { title, desc, image, ld } = data;
     const res = await env.ASSETS.fetch(new Request(new URL('/index.html', url), { headers: request.headers }));
     let html = await res.text();
-    const pageUrl = `https://${url.hostname}${slug}`;
+    const pageUrl = `https://${url.hostname}${url.pathname === '' ? '/' : url.pathname}`;
     const setM = (id, val) => { if (!val) return; html = html.replace(new RegExp(`<meta\\b[^>]*\\bid="${id}"[^>]*>`), (tag) => tag.replace(/content="[^"]*"/, `content="${escA(val)}"`)); };
     if (title) { html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`); setM('og-title', title); setM('tw-title', title); }
     if (desc)  { setM('og-desc', desc); setM('tw-desc', desc); }
     if (image) { setM('og-image', image); setM('tw-image', image); setM('tw-card', 'summary_large_image'); }
     html = html.replace(/<meta\b[^>]*\bid="og-url"[^>]*>/, (t) => t.replace(/content="[^"]*"/, `content="${escA(pageUrl)}"`))
                .replace(/<link\b[^>]*\bid="canonical"[^>]*>/, (t) => t.replace(/href="[^"]*"/, `href="${escA(pageUrl)}"`));
+
+    if (ld) {
+      const json = JSON.stringify({ '@context': 'https://schema.org', ...ld, url: pageUrl, ...(image ? { image } : {}) });
+      html = html.replace(/<script\b[^>]*\bid="ld-json"[^>]*>[\s\S]*?<\/script>/, `<script type="application/ld+json" id="ld-json">${json}</script>`);
+    }
     return new Response(html, { status: 200, headers: { 'content-type': 'text/html;charset=utf-8', 'cache-control': 'public, max-age=300' } });
   } catch { return null; }
 }
