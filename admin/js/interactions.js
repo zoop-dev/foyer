@@ -42,7 +42,7 @@ function defineFoyerBlocks() {
   if (_blocksDefined) return; _blocksDefined = true;
   var B = window.Blockly;
 
-  var EVENT_COLOUR = '#f59e0b', ACTION_COLOUR = '#3b82f6', ADV_COLOUR = '#8b5cf6', SECTION_COLOUR = '#d6209a';
+  var EVENT_COLOUR = '#f59e0b', ACTION_COLOUR = '#3b82f6', ADV_COLOUR = '#8b5cf6', SECTION_COLOUR = '#d6209a', TYPE_COLOUR = '#14b8a6';
   var EV = [{ type: 'input_dummy' }, { type: 'input_statement', name: 'DO' }];
   B.defineBlocksWithJsonArray([
 
@@ -51,7 +51,20 @@ function defineFoyerBlocks() {
     { type: 'foyer_on_load', message0: '🔄  when the page opens %1 %2', args0: EV, colour: EVENT_COLOUR, tooltip: 'Runs once, right after the page finishes loading.' },
     { type: 'foyer_on_visible', message0: '👁️  when this block scrolls into view %1 %2', args0: EV, colour: EVENT_COLOUR, tooltip: 'Runs the first time this block appears on screen as the visitor scrolls down.' },
 
-    { type: 'foyer_toast', message0: '💬  show a pop-up message %1 coloured %2', args0: [{ type: 'field_input', name: 'TEXT', text: 'Hello!' }, { type: 'field_dropdown', name: 'TYPE', options: [['grey', 'default'], ['green ✓', 'success'], ['red ✕', 'error'], ['blue ℹ', 'info'], ['amber ⚠', 'warning']] }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR, tooltip: 'Shows a small pop-up message in the corner of the screen.' },
+    {
+      type: 'foyer_toast',
+      message0: '💬  show a pop-up message %1', args0: [{ type: 'field_input', name: 'TEXT', text: 'Hello!' }],
+      message1: 'colour %1 theme %2', args1: [
+        { type: 'field_dropdown', name: 'TYPE', options: [['grey', 'default'], ['green ✓', 'success'], ['red ✕', 'error'], ['blue ℹ', 'info'], ['amber ⚠', 'warning']] },
+        { type: 'field_dropdown', name: 'THEME', options: [['colourful', 'colored'], ['light', 'light'], ['dark', 'dark']] }
+      ],
+      message2: 'at %1 for %2 sec, animate %3', args2: [
+        { type: 'field_dropdown', name: 'POS', options: [['top right', 'top-right'], ['top centre', 'top-center'], ['top left', 'top-left'], ['bottom right', 'bottom-right'], ['bottom centre', 'bottom-center'], ['bottom left', 'bottom-left']] },
+        { type: 'field_number', name: 'SECS', value: 4, min: 0, precision: 0.5 },
+        { type: 'field_dropdown', name: 'TRANS', options: [['bounce', 'bounce'], ['slide', 'slide'], ['zoom', 'zoom'], ['flip', 'flip']] }
+      ],
+      previousStatement: null, nextStatement: null, colour: ACTION_COLOUR, tooltip: 'Shows a pop-up message in the corner. Set the seconds to 0 to keep it up until the visitor closes it.'
+    },
     { type: 'foyer_go', message0: '🔗  go to the web page %1 open in a new tab %2', args0: [{ type: 'field_input', name: 'URL', text: 'https://' }, { type: 'field_checkbox', name: 'NEWTAB', checked: false }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR, tooltip: 'Sends the visitor to a web address. Tick the box to open it in a new tab instead.' },
     { type: 'foyer_scroll', message0: '⬇️  smoothly scroll to the section %1', args0: [{ type: 'field_input', name: 'SEL', text: '#about' }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR, tooltip: 'Glides the page down (or up) to a section. Type the #name you gave the section in its “anchor” setting, e.g. #about.' },
     { type: 'foyer_show', message0: '👁️  show %1', args0: [{ type: 'field_input', name: 'SEL', text: '' }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR, tooltip: 'Makes something appear. Leave the box empty to mean THIS block, or type a section’s #name.' },
@@ -69,7 +82,12 @@ function defineFoyerBlocks() {
     { type: 'foyer_this_scroll', message0: '⬇️  scroll to this section', previousStatement: null, nextStatement: null, colour: SECTION_COLOUR, tooltip: 'Glides the page to this block.' },
     { type: 'foyer_this_flash', message0: '✨  flash this section', previousStatement: null, nextStatement: null, colour: SECTION_COLOUR, tooltip: 'A quick attention pulse on this block.' },
     { type: 'foyer_this_bg', message0: '🎨  set this section’s background to %1', args0: [{ type: 'field_input', name: 'COLOR', text: '#ffd54a' }], previousStatement: null, nextStatement: null, colour: SECTION_COLOUR, tooltip: 'Changes this block’s background. Use a colour name (red) or hex (#ffd54a).' },
-    { type: 'foyer_this_text', message0: '✏️  set this section’s text to %1', args0: [{ type: 'field_input', name: 'TEXT', text: 'New text' }], previousStatement: null, nextStatement: null, colour: SECTION_COLOUR, tooltip: 'Replaces the text shown in this block.' }
+    { type: 'foyer_this_text', message0: '✏️  set this section’s text to %1', args0: [{ type: 'field_input', name: 'TEXT', text: 'New text' }], previousStatement: null, nextStatement: null, colour: SECTION_COLOUR, tooltip: 'Replaces the text shown in this block.' },
+
+    { type: 'foyer_btn_text', message0: '🔘  set this button’s text to %1', args0: [{ type: 'field_input', name: 'TEXT', text: 'Click me' }], previousStatement: null, nextStatement: null, colour: TYPE_COLOUR, tooltip: 'Changes the words on this button.' },
+    { type: 'foyer_btn_disable', message0: '🚫  disable this button', previousStatement: null, nextStatement: null, colour: TYPE_COLOUR, tooltip: 'Greys the button out so it can’t be clicked.' },
+    { type: 'foyer_btn_enable', message0: '✅  enable this button', previousStatement: null, nextStatement: null, colour: TYPE_COLOUR, tooltip: 'Re-enables a disabled button.' },
+    { type: 'foyer_img_src', message0: '🖼️  change this image to %1', args0: [{ type: 'field_input', name: 'URL', text: 'https://' }], previousStatement: null, nextStatement: null, colour: TYPE_COLOUR, tooltip: 'Swaps the picture for the one at this link.' }
   ]);
 
   var JS = B.JavaScript;
@@ -79,7 +97,11 @@ function defineFoyerBlocks() {
     foyer_on_hover: function (b) { return 'ctx.el.addEventListener("mouseenter", async function(event){\n' + JS.statementToCode(b, 'DO') + '});\n'; },
     foyer_on_load: function (b) { return '(async function(){\n' + JS.statementToCode(b, 'DO') + '})();\n'; },
     foyer_on_visible: function (b) { return 'ctx.onVisible(async function(){\n' + JS.statementToCode(b, 'DO') + '});\n'; },
-    foyer_toast: function (b) { return 'ctx.toast(' + S(b.getFieldValue('TEXT')) + ',' + S(b.getFieldValue('TYPE')) + ');\n'; },
+    foyer_toast: function (b) {
+      var secs = Number(b.getFieldValue('SECS'));
+      var opts = { type: b.getFieldValue('TYPE'), theme: b.getFieldValue('THEME'), position: b.getFieldValue('POS'), transition: b.getFieldValue('TRANS'), autoClose: secs > 0 ? Math.round(secs * 1000) : false };
+      return 'ctx.toast(' + S(b.getFieldValue('TEXT')) + ',' + JSON.stringify(opts) + ');\n';
+    },
     foyer_go: function (b) { return 'ctx.go(' + S(b.getFieldValue('URL')) + ',' + (b.getFieldValue('NEWTAB') === 'TRUE') + ');\n'; },
     foyer_scroll: function (b) { return 'ctx.scrollToSel(' + S(b.getFieldValue('SEL')) + ');\n'; },
     foyer_show: function (b) { return 'ctx.show(' + S(b.getFieldValue('SEL')) + ');\n'; },
@@ -96,7 +118,11 @@ function defineFoyerBlocks() {
     foyer_this_scroll: function () { return 'ctx.scrollHere();\n'; },
     foyer_this_flash: function () { return 'ctx.flash();\n'; },
     foyer_this_bg: function (b) { return 'ctx.setBg(' + S(b.getFieldValue('COLOR')) + ');\n'; },
-    foyer_this_text: function (b) { return 'ctx.setText("",' + S(b.getFieldValue('TEXT')) + ');\n'; }
+    foyer_this_text: function (b) { return 'ctx.setText("",' + S(b.getFieldValue('TEXT')) + ');\n'; },
+    foyer_btn_text: function (b) { return 'ctx.setText("a,button",' + S(b.getFieldValue('TEXT')) + ');\n'; },
+    foyer_btn_disable: function () { return 'ctx.disable("a,button");\n'; },
+    foyer_btn_enable: function () { return 'ctx.enable("a,button");\n'; },
+    foyer_img_src: function (b) { return 'ctx.setImg(' + S(b.getFieldValue('URL')) + ');\n'; }
   };
   for (var k in gen) { JS[k] = gen[k]; if (JS.forBlock) JS.forBlock[k] = gen[k]; }
 }
@@ -129,22 +155,24 @@ function foyerDarkTheme() {
   return _darkTheme;
 }
 
-var TOOLBOX =
-  '<xml>' +
-  '<category name="When…" colour="#f59e0b">' +
+var CAT_WHEN = '<category name="When…" colour="#f59e0b">' +
   '<block type="foyer_on_click"></block><block type="foyer_on_hover"></block><block type="foyer_on_load"></block><block type="foyer_on_visible"></block>' +
-  '</category>' +
-  '<category name="Do…" colour="#3b82f6">' +
+  '</category>';
+var CAT_DO = '<category name="Do…" colour="#3b82f6">' +
   '<block type="foyer_toast"></block><block type="foyer_go"></block><block type="foyer_scroll"></block>' +
   '<block type="foyer_show"></block><block type="foyer_hide"></block><block type="foyer_toggle"></block>' +
   '<block type="foyer_toggleclass"></block><block type="foyer_settext"></block><block type="foyer_copy"></block>' +
   '<block type="foyer_sound"></block><block type="foyer_wait"></block>' +
-  '</category>' +
-  '<category name="For this section" colour="#d6209a">' +
+  '</category>';
+var CAT_SECTION = '<category name="For this section" colour="#d6209a">' +
   '<block type="foyer_this_show"></block><block type="foyer_this_hide"></block><block type="foyer_this_toggle"></block>' +
   '<block type="foyer_this_scroll"></block><block type="foyer_this_flash"></block><block type="foyer_this_bg"></block><block type="foyer_this_text"></block>' +
-  '</category>' +
-  '</xml>';
+  '</category>';
+
+var CAT_BUTTON = '<category name="🔘 Button only" colour="#14b8a6"><block type="foyer_btn_text"></block><block type="foyer_btn_disable"></block><block type="foyer_btn_enable"></block></category>';
+var CAT_IMAGE = '<category name="🖼️ Image only" colour="#14b8a6"><block type="foyer_img_src"></block></category>';
+var TYPE_CATS = { cta: CAT_BUTTON, buttongroup: CAT_BUTTON, image: CAT_IMAGE, imgtext: CAT_IMAGE, hero: CAT_IMAGE, banner: CAT_IMAGE };
+function buildToolbox(type) { return '<xml>' + CAT_WHEN + CAT_DO + CAT_SECTION + (TYPE_CATS[type] || '') + '</xml>'; }
 
 
 
@@ -182,7 +210,7 @@ function openInteractions(sectionId) {
 
   ensureBlockly().then(function () {
     var B = window.Blockly;
-    _bhvWs = B.inject(ov.querySelector('#bhvCanvas'), { toolbox: TOOLBOX, renderer: 'zelos', trashcan: true, zoom: { controls: true, wheel: true, startScale: .85 }, grid: { spacing: 26, length: 2, colour: 'rgba(255,255,255,.06)', snap: true }, theme: foyerDarkTheme() });
+    _bhvWs = B.inject(ov.querySelector('#bhvCanvas'), { toolbox: buildToolbox(sec.type), renderer: 'zelos', trashcan: true, zoom: { controls: true, wheel: true, startScale: .85 }, grid: { spacing: 26, length: 2, colour: 'rgba(255,255,255,.06)', snap: true }, theme: foyerDarkTheme() });
     if (sec.behaviors && sec.behaviors.workspace) { try { B.serialization.workspaces.load(sec.behaviors.workspace, _bhvWs); } catch (e) {} }
     setTimeout(function () { B.svgResize(_bhvWs); }, 30);
   }).catch(function () { toast('Could not load the Blockly editor (offline?)', true); close(); });

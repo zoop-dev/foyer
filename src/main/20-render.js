@@ -682,7 +682,9 @@
       return {
         el,
         $: pick, $$: (sel) => { try { return Array.from(document.querySelectorAll(sel)); } catch (e) { return []; } },
-        toast(msg, type) { ensureToast().then(() => { if (window.foyerToast) window.foyerToast(String(msg == null ? '' : msg), { type: type || 'default', theme: 'colored' }); }); },
+
+
+        toast(msg, opts) { ensureToast().then(() => { if (!window.foyerToast) return; const o = (typeof opts === 'string') ? { type: opts } : (opts || {}); if (!o.theme) o.theme = 'colored'; if (!o.type) o.type = 'default'; window.foyerToast(String(msg == null ? '' : msg), o); }); },
         go(url, newTab) { if (!url) return; if (newTab) window.open(url, '_blank', 'noopener'); else window.location.href = url; },
         scrollToSel(sel) { const t = pick(sel); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
         show(sel) { const t = pick(sel); if (t) t.style.display = ''; },
@@ -697,6 +699,10 @@
         scrollHere() { try { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {} },
         setBg(color) { try { el.style.background = String(color || ''); } catch (e) {} },
         flash() { try { el.animate([{ transform: 'scale(1)', filter: 'brightness(1)' }, { transform: 'scale(1.025)', filter: 'brightness(1.25)' }, { transform: 'scale(1)', filter: 'brightness(1)' }], { duration: 520, easing: 'ease-in-out' }); } catch (e) {} },
+
+        setImg(url) { try { const t = el.querySelector('img'); if (t) t.src = String(url || ''); } catch (e) {} },
+        disable(sel) { try { const t = pick(sel); if (t) { t.style.pointerEvents = 'none'; t.style.opacity = '.55'; t.setAttribute('aria-disabled', 'true'); if ('disabled' in t) t.disabled = true; } } catch (e) {} },
+        enable(sel) { try { const t = pick(sel); if (t) { t.style.pointerEvents = ''; t.style.opacity = ''; t.removeAttribute('aria-disabled'); if ('disabled' in t) t.disabled = false; } } catch (e) {} },
         onVisible(fn) { try { const io = new IntersectionObserver((es) => { es.forEach((en) => { if (en.isIntersecting) { io.disconnect(); fn(); } }); }); io.observe(el); } catch (e) { fn(); } }
       };
     }
