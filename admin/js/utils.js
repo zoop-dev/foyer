@@ -110,17 +110,10 @@ function mainSiteSessionToken() {
   catch { return ''; }
 }
 
-function timeAgo(str) {
-  const d = new Date(str.endsWith('Z') ? str : str + 'Z');
-  const s = Math.floor((Date.now() - d) / 1000);
-  if (s < 60) return 'just now';
-  const m = Math.floor(s/60); if (m < 60) return m+'m ago';
-  const h = Math.floor(m/60); if (h < 24) return h+'h ago';
-  return Math.floor(h/24)+'d ago';
-}
 
-function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function escAttr(s) { return String(s||'').replace(/"/g,'&quot;'); }
+function timeAgo(str) { return F.fmt.timeAgo(str); }
+function escHtml(s) { return F.esc(s); }
+function escAttr(s) { return F.escAttr(s); }
 
 function insertAtCursor(ta, text) {
   if (!ta) return;

@@ -81,7 +81,11 @@ function defineFoyerBlocks() {
     { type: 'foyer_this_toggle', message0: '🔁  show or hide this section', previousStatement: null, nextStatement: null, colour: SECTION_COLOUR, tooltip: 'Flips this block between shown and hidden.' },
     { type: 'foyer_this_scroll', message0: '⬇️  scroll to this section', previousStatement: null, nextStatement: null, colour: SECTION_COLOUR, tooltip: 'Glides the page to this block.' },
     { type: 'foyer_this_flash', message0: '✨  flash this section', previousStatement: null, nextStatement: null, colour: SECTION_COLOUR, tooltip: 'A quick attention pulse on this block.' },
+    { type: 'foyer_this_shake', message0: '📳  shake this section', previousStatement: null, nextStatement: null, colour: SECTION_COLOUR, tooltip: 'Wiggles this block side to side — good for “wrong answer” feedback.' },
+    { type: 'foyer_this_fadein', message0: '🌅  fade this section in', previousStatement: null, nextStatement: null, colour: SECTION_COLOUR, tooltip: 'Reveals this block with a soft fade.' },
+    { type: 'foyer_this_fadeout', message0: '🌇  fade this section out', previousStatement: null, nextStatement: null, colour: SECTION_COLOUR, tooltip: 'Hides this block with a soft fade.' },
     { type: 'foyer_this_bg', message0: '🎨  set this section’s background to %1', args0: [{ type: 'field_input', name: 'COLOR', text: '#ffd54a' }], previousStatement: null, nextStatement: null, colour: SECTION_COLOUR, tooltip: 'Changes this block’s background. Use a colour name (red) or hex (#ffd54a).' },
+    { type: 'foyer_this_color', message0: '🖍️  set this section’s text colour to %1', args0: [{ type: 'field_input', name: 'COLOR', text: '#111111' }], previousStatement: null, nextStatement: null, colour: SECTION_COLOUR, tooltip: 'Changes the text colour of this block.' },
     { type: 'foyer_this_text', message0: '✏️  set this section’s text to %1', args0: [{ type: 'field_input', name: 'TEXT', text: 'New text' }], previousStatement: null, nextStatement: null, colour: SECTION_COLOUR, tooltip: 'Replaces the text shown in this block.' },
 
     { type: 'foyer_btn_text', message0: '🔘  set this button’s text to %1', args0: [{ type: 'field_input', name: 'TEXT', text: 'Click me' }], previousStatement: null, nextStatement: null, colour: TYPE_COLOUR, tooltip: 'Changes the words on this button.' },
@@ -117,7 +121,11 @@ function defineFoyerBlocks() {
     foyer_this_toggle: function () { return 'ctx.toggle("");\n'; },
     foyer_this_scroll: function () { return 'ctx.scrollHere();\n'; },
     foyer_this_flash: function () { return 'ctx.flash();\n'; },
+    foyer_this_shake: function () { return 'ctx.shake();\n'; },
+    foyer_this_fadein: function () { return 'ctx.fadeIn();\n'; },
+    foyer_this_fadeout: function () { return 'ctx.fadeOut();\n'; },
     foyer_this_bg: function (b) { return 'ctx.setBg(' + S(b.getFieldValue('COLOR')) + ');\n'; },
+    foyer_this_color: function (b) { return 'ctx.setColor(' + S(b.getFieldValue('COLOR')) + ');\n'; },
     foyer_this_text: function (b) { return 'ctx.setText("",' + S(b.getFieldValue('TEXT')) + ');\n'; },
     foyer_btn_text: function (b) { return 'ctx.setText("a,button",' + S(b.getFieldValue('TEXT')) + ');\n'; },
     foyer_btn_disable: function () { return 'ctx.disable("a,button");\n'; },
@@ -166,7 +174,9 @@ var CAT_DO = '<category name="Do…" colour="#3b82f6">' +
   '</category>';
 var CAT_SECTION = '<category name="For this section" colour="#d6209a">' +
   '<block type="foyer_this_show"></block><block type="foyer_this_hide"></block><block type="foyer_this_toggle"></block>' +
-  '<block type="foyer_this_scroll"></block><block type="foyer_this_flash"></block><block type="foyer_this_bg"></block><block type="foyer_this_text"></block>' +
+  '<block type="foyer_this_scroll"></block><block type="foyer_this_flash"></block><block type="foyer_this_shake"></block>' +
+  '<block type="foyer_this_fadein"></block><block type="foyer_this_fadeout"></block>' +
+  '<block type="foyer_this_bg"></block><block type="foyer_this_color"></block><block type="foyer_this_text"></block>' +
   '</category>';
 
 var CAT_BUTTON = '<category name="🔘 Button only" colour="#14b8a6"><block type="foyer_btn_text"></block><block type="foyer_btn_disable"></block><block type="foyer_btn_enable"></block></category>';

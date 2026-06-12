@@ -228,7 +228,7 @@ function bldBlockMenuItems(id){
   const ico = n => (typeof foyerIcon === 'function' ? foyerIcon('@' + n, '1em') : '');
   return [
     {label:'Edit', icon:ico('edit'), action:()=>{ bldSel=id; bldParentId=null; bldDrawCanvas(); bldDrawEditor(); }},
-    ...((typeof foyerInteractive==='function' && foyerInteractive(bldState.sections[i]?.type) && foyerInteractionsBeta())?[{label:'Interactions (beta)', icon:ico('sparkles'), action:()=>openInteractions(id)}]:[]),
+    ...((typeof foyerInteractive==='function' && foyerInteractive(bldState.sections[i]?.type) && foyerInteractionsBeta())?[{label:'Interactions (beta)', icon:ico('bolt'), action:()=>openInteractions(id)}]:[]),
     ...(bldAiOn?[{label:'Polish copy with AI', icon:ico('sparkles'), action:()=>bldPolishBlock(id)}]:[]),
     {label:'Duplicate', icon:ico('copy'), action:()=>bldDuplicateBlock(id)},
     {label:'Move up', icon:ico('arrow-up'), action:()=>bldMoveBlock(id,-1)},
@@ -804,10 +804,16 @@ function bldDrawEditor() {
   if (!s) return;
   const {html,label}=bEditorFields(s);
   const backBtn=parentGroup?`<button class="btn btn-xs" id="bEdBack" style="margin-bottom:.6rem;width:100%;">← Back to group</button>`:'';
-  panel.innerHTML=`<div class="bld-ep">${backBtn}<div class="bld-ep-head">${label} <span class="bld-ep-type">${parentGroup?'in Group':'Section'}</span></div>${html}</div>`;
+
+
+  const interactBtn=(!parentGroup && typeof foyerInteractive==='function' && foyerInteractive(s.type) && typeof foyerInteractionsBeta==='function' && foyerInteractionsBeta())
+    ? `<button class="btn btn-sm" id="bEdInteract" style="width:100%;margin:.55rem 0 .3rem;display:flex;align-items:center;justify-content:center;gap:.45rem;">${typeof foyerIcon==='function'?foyerIcon('@bolt','1em'):'⚡'} Interactions <span style="font-size:.5rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;background:#7fa6d8;color:#070a0e;padding:.08rem .3rem;border-radius:3px;">Beta</span></button>`
+    : '';
+  panel.innerHTML=`<div class="bld-ep">${backBtn}<div class="bld-ep-head">${label} <span class="bld-ep-type">${parentGroup?'in Group':'Section'}</span></div>${interactBtn}${html}</div>`;
   if (parentGroup) {
     panel.querySelector('#bEdBack')?.addEventListener('click',()=>{bldSel=parentGroup.id;bldParentId=null;bldDrawEditor();});
   }
+  panel.querySelector('#bEdInteract')?.addEventListener('click',()=>{ if(typeof openInteractions==='function') openInteractions(s.id); });
   bBindEditor(panel, s, (sec, extra) => {
     if (parentGroup) { bldDrawCanvas(); } else { bldPatch(sec); }
     if (extra==='re-editor') bldDrawEditor();

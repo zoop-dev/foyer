@@ -494,11 +494,7 @@ async function compressImage(file, maxPx=1200, quality=0.75) {
   });
 }
 
-function fmtBytes(b) {
-  if (b < 1024) return b + ' B';
-  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
-  return (b/1048576).toFixed(1) + ' MB';
-}
+function fmtBytes(b) { return F.fmt.bytes(b); }
 
 let _imgList = [];
 

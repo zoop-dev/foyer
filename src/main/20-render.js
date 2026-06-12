@@ -698,6 +698,10 @@
 
         scrollHere() { try { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {} },
         setBg(color) { try { el.style.background = String(color || ''); } catch (e) {} },
+        setColor(color) { try { el.style.color = String(color || ''); } catch (e) {} },
+        fadeIn() { try { el.style.display = ''; el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 450, easing: 'ease' }); el.style.opacity = ''; } catch (e) {} },
+        fadeOut() { try { const a = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 450, easing: 'ease', fill: 'forwards' }); a.onfinish = () => { el.style.opacity = '0'; }; } catch (e) {} },
+        shake() { try { el.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-8px)' }, { transform: 'translateX(7px)' }, { transform: 'translateX(-5px)' }, { transform: 'translateX(3px)' }, { transform: 'translateX(0)' }], { duration: 450, easing: 'ease-in-out' }); } catch (e) {} },
         flash() { try { el.animate([{ transform: 'scale(1)', filter: 'brightness(1)' }, { transform: 'scale(1.025)', filter: 'brightness(1.25)' }, { transform: 'scale(1)', filter: 'brightness(1)' }], { duration: 520, easing: 'ease-in-out' }); } catch (e) {} },
 
         setImg(url) { try { const t = el.querySelector('img'); if (t) t.src = String(url || ''); } catch (e) {} },
