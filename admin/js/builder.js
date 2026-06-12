@@ -658,6 +658,7 @@ function bldDrawCanvas() {
         <span class="bld-drag-handle" title="Drag to reorder">⠿</span>
         <button class="bld-ob bld-w-tog" data-wtog="${s.id}" title="Change column width">${wLabel}</button>
         ${bldAiOn&&s.type!=='group'?`<button class="bld-ob bld-polish" data-polish="${s.id}" title="Polish copy with AI">${typeof foyerIcon==='function'?foyerIcon('@sparkles','1em'):'✨'}</button>`:''}
+        ${(typeof foyerInteractive==='function'&&foyerInteractive(s.type)&&typeof foyerInteractionsBeta==='function'&&foyerInteractionsBeta())?`<button class="bld-ob bld-interact" data-interact="${s.id}" title="Interactions (beta)">${typeof foyerIcon==='function'?foyerIcon('@bolt','1em'):'⚡'}</button>`:''}
         <button class="bld-ob" data-edit="${s.id}">Edit</button>
         <button class="bld-ob rm" data-del="${s.id}">✕</button>
       </div>
@@ -686,6 +687,7 @@ function bldDrawCanvas() {
     bldDrawEditor();
   }));
   el.querySelectorAll('[data-polish]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();bldPolishBlock(b.dataset.polish);}));
+  el.querySelectorAll('[data-interact]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(typeof openInteractions==='function')openInteractions(b.dataset.interact);}));
   el.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',e=>{
     e.stopPropagation();
     const id=b.dataset.del, sec=bldState.sections.find(x=>x.id===id);
