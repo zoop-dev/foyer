@@ -13,8 +13,15 @@ const _ls = (() => {
 let token = '';
 try { token = _ls.getItem(KEY) || ''; } catch { token = ''; }
 
-function toast(msg, isErr) {
+
+
+
+function toast(msg, isErr, opts) {
+  if (window.foyerToast) {
+    return window.foyerToast(msg, Object.assign({ type: isErr ? 'error' : 'success' }, opts || {}));
+  }
   const shelf = document.getElementById('toast-shelf');
+  if (!shelf) return;
   const t = document.createElement('div');
   t.className = 'toast' + (isErr ? ' err' : '');
   t.textContent = msg;
