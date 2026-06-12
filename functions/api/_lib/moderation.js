@@ -1,3 +1,4 @@
+import { sb } from './supabase.js';
 
 
 
@@ -36,9 +37,7 @@ export async function getModConfig(env, host) {
   const k = host || '';
   const hit = _cfgCache.get(k);
   if (hit && Date.now() - hit.at < 60000) return hit.cfg;
-  const base = (env.SUPABASE_URL || SB_URL).replace(/\/$/, '');
-  const key = env.SUPABASE_ANON_KEY || SB_ANON;
-  const H = { apikey: key, Authorization: `Bearer ${key}` };
+  const { base, headers: H } = sb(env);
   let cfg = { ...DEFAULT_CFG };
   try {
     const r = await fetch(`${base}/rest/v1/foyer_meta?key=eq.moderation_config&select=value`, { headers: H, cf: { cacheTtl: 60, cacheEverything: true } });
@@ -132,16 +131,13 @@ const LOG_DDL = `CREATE TABLE IF NOT EXISTS moderation_log (
   removed_at TEXT NOT NULL DEFAULT (datetime('now')))`;
 
 
-const SB_URL = 'https://tvtfoghrdqwssdwvebuo.supabase.co';
-const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2dGZvZ2hyZHF3c3Nkd3ZlYnVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMzk2ODksImV4cCI6MjA5NTgxNTY4OX0.n_CRdzQQKYNGDHYmoVxyKafFJCfezKKlSiZddx8MXH4';
 export async function logModeration(env, host, slug, log) {
   if (!log || !log.length) return;
   await env.DB.prepare(LOG_DDL).run();
   await env.DB.batch(log.map((e) => env.DB.prepare('INSERT INTO moderation_log (slug, url, reason, block_type) VALUES (?,?,?,?)').bind(slug || '', e.url, e.reason, e.block)));
   try {
-    const base = (env.SUPABASE_URL || SB_URL).replace(/\/$/, '');
-    const key = env.SUPABASE_ANON_KEY || SB_ANON;
+    const { base, headers: H2 } = sb(env);
     const rows = log.map((e) => ({ domain: host || '', slug: slug || '', url: e.url, reason: e.reason, block_type: e.block }));
-    await fetch(`${base}/rest/v1/foyer_moderation`, { method: 'POST', headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(rows), signal: AbortSignal.timeout(4000) });
+    await fetch(`${base}/rest/v1/foyer_moderation`, { method: 'POST', headers: { ...H2, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(rows), signal: AbortSignal.timeout(4000) });
   } catch (e) {}
 }

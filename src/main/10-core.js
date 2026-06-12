@@ -6,7 +6,7 @@
     try { window.foyerLang = localStorage.getItem('foyer_lang') || ''; } catch { window.foyerLang = ''; }
     window.__i18nAll = null;   // the whole file (all languages)
     window.__i18n = null;      // the current language's strings
-    function t(key) { return (window.__i18n && window.__i18n[key]) || key; }
+    function t(key) { return (window.__i18n && window.__i18n[key]) || (window.__i18nAll && window.__i18nAll.en && window.__i18nAll.en[key]) || key; }
     window.foyerT = t;
     window.foyerLoadI18n = async function (lang) {
       lang = lang || 'en';

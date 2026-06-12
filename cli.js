@@ -8,6 +8,7 @@ import { createInterface } from "node:readline";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import process from "node:process";
+import { SB_URL, SB_ANON } from "./functions/api/_lib/supabase.js";
 
 const ROOT = path.dirname(new URL(import.meta.url).pathname);
 const tty = process.stdout.isTTY;
@@ -652,8 +653,7 @@ async function resolveTargets(target) {
   return [one];
 }
 
-const SB_URL = "https://tvtfoghrdqwssdwvebuo.supabase.co";
-const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2dGZvZ2hyZHF3c3Nkd3ZlYnVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMzk2ODksImV4cCI6MjA5NTgxNTY4OX0.n_CRdzQQKYNGDHYmoVxyKafFJCfezKKlSiZddx8MXH4";
+
 async function sbServiceKey() {
   if (process.env.FOYER_SB_SERVICE_KEY) return process.env.FOYER_SB_SERVICE_KEY;
   const env = await readFile(path.join(ROOT, ".foyer.env"), "utf8").catch(() => "");

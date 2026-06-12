@@ -159,6 +159,7 @@
       let discordId = settings.auth_discord !== '0' ? (cfg.discord_client_id || '') : '';
       let magicOn   = settings.auth_magic   !== '0' && !!cfg.magic_enabled;
       let foyerOn   = settings.auth_foyer   === '1';   // Foyer Auth (opt-in)
+      window.__foyerComments = settings.comments_enabled === '1';   // comments on tutorials/reviews/items (Pro)
       const publicMode = settings.site_public === '1' || __SITE__.publicAccess === true;
 
       try { localStorage.setItem('foyer_public', publicMode ? '1' : '0'); } catch {}
@@ -349,7 +350,7 @@
 
     window.foyerNotifyBeg = async () => {
       try {
-        if (!(window.foyerFeature && window.foyerFeature('push')) || !window.foyerPushSupported()) return;
+        if (!window.foyerPushSupported()) return;
         if (Notification.permission === 'denied') return;
         try { if (localStorage.getItem('foyer_notif_begged') === '1') return; } catch {}
         const cfg = await window.foyerPushConfig(); if (!cfg.enabled || !cfg.vapid_public) return;

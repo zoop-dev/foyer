@@ -2,6 +2,7 @@
 
 import { sendWebPush } from './webpush.js';
 import { canonHost } from './site-config.js';
+import { isPro } from './plan.js';
 
 const CREATE_PUSH = "CREATE TABLE IF NOT EXISTS push_subs (endpoint TEXT PRIMARY KEY, p256dh TEXT NOT NULL, auth TEXT NOT NULL, kind TEXT NOT NULL DEFAULT 'visitor', created_at TEXT NOT NULL DEFAULT (datetime('now')))";
 let _pushReady = false;
@@ -39,11 +40,14 @@ export async function handlePush(ctx) {
   const { route, method, request, env, respond, authed } = ctx;
   if (!route.startsWith('push/')) return null;
 
+  const configured = !!(env.VAPID_PUBLIC && env.VAPID_PRIVATE) && await isPro(env, canonHost(env, request));
+
   if (route === 'push/config' && method === 'GET') {
-    return respond({ vapid_public: env.VAPID_PUBLIC || '', enabled: !!(env.VAPID_PUBLIC && env.VAPID_PRIVATE) });
+    return respond({ vapid_public: configured ? (env.VAPID_PUBLIC || '') : '', enabled: configured });
   }
 
   if (route === 'push/subscribe' && method === 'POST') {
+    if (!configured) return respond({ error: 'Notifications are a Pro feature.' }, 403);
     const b = await request.json().catch(() => ({}));
     const sub = b.subscription || {};
     const kind = b.kind === 'owner' ? 'owner' : 'visitor';
@@ -67,12 +71,12 @@ export async function handlePush(ctx) {
     await ensurePush(env);
     const v = await env.DB.prepare("SELECT COUNT(*) n FROM push_subs WHERE kind='visitor'").first().catch(() => null);
     const o = await env.DB.prepare("SELECT COUNT(*) n FROM push_subs WHERE kind='owner'").first().catch(() => null);
-    return respond({ enabled: !!(env.VAPID_PUBLIC && env.VAPID_PRIVATE), visitors: v?.n || 0, owners: o?.n || 0 });
+    return respond({ enabled: configured, visitors: v?.n || 0, owners: o?.n || 0 });
   }
 
   if (route === 'push/broadcast' && method === 'POST') {
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
-    if (!env.VAPID_PRIVATE) return respond({ error: 'Push isn’t configured (no VAPID key).' }, 503);
+    if (!configured) return respond({ error: 'Notifications are a Pro feature.' }, 403);
     const b = await request.json().catch(() => ({}));
     const title = String(b.title || '').slice(0, 120).trim();
     if (!title) return respond({ error: 'A title is required.' }, 400);
@@ -83,7 +87,7 @@ export async function handlePush(ctx) {
 
   if (route === 'push/test' && method === 'POST') {
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
-    if (!env.VAPID_PRIVATE) return respond({ error: 'Push isn’t configured.' }, 503);
+    if (!configured) return respond({ error: 'Notifications are a Pro feature.' }, 403);
     const host = canonHost(env, request);
     const res = await sendToKind(env, 'owner', { title: host || 'Foyer', body: 'Test notification ✓ — owner alerts are working.', url: '/admin', icon: '/icons/favicon.svg' });
     return respond({ ok: true, ...res });

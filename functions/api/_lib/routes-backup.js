@@ -1,4 +1,5 @@
 import { canonHost } from './site-config.js';
+import { sb } from './supabase.js';
 
 
 
@@ -28,15 +29,11 @@ async function decryptBundle(envlp, secret) {
 
 
 
-const SB_URL = 'https://tvtfoghrdqwssdwvebuo.supabase.co';
-const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2dGZvZ2hyZHF3c3Nkd3ZlYnVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMzk2ODksImV4cCI6MjA5NTgxNTY4OX0.n_CRdzQQKYNGDHYmoVxyKafFJCfezKKlSiZddx8MXH4';
 
 
 
 async function backupUsage(env, host) {
-  const base = (env.SUPABASE_URL || SB_URL).replace(/\/$/, '');
-  const key = env.SUPABASE_ANON_KEY || SB_ANON;
-  const H = { apikey: key, Authorization: `Bearer ${key}` };
+  const { base, headers: H } = sb(env);
 
   let quota = 5, used = 0;
   try {
@@ -55,9 +52,8 @@ async function backupUsage(env, host) {
 }
 async function recordBackup(env, host, scope, size) {
   try {
-    const base = (env.SUPABASE_URL || SB_URL).replace(/\/$/, '');
-    const key = env.SUPABASE_ANON_KEY || SB_ANON;
-    await fetch(`${base}/rest/v1/foyer_backups`, { method: 'POST', headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ domain: host || '', scope: scope || '', size: size || 0 }), signal: AbortSignal.timeout(4000) });
+    const { base, headers } = sb(env);
+    await fetch(`${base}/rest/v1/foyer_backups`, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ domain: host || '', scope: scope || '', size: size || 0 }), signal: AbortSignal.timeout(4000) });
   } catch (e) {}
 }
 
@@ -65,10 +61,9 @@ let _bkKeyCache = null, _bkKeyAt = 0;
 async function backupSecret(env) {
   if (env.BACKUP_KEY) return env.BACKUP_KEY;
   if (_bkKeyCache && Date.now() - _bkKeyAt < 300000) return _bkKeyCache;
-  const base = (env.SUPABASE_URL || SB_URL).replace(/\/$/, '');
-  const key = env.SUPABASE_ANON_KEY || SB_ANON;
+  const { base, headers } = sb(env);
   try {
-    const r = await fetch(`${base}/rest/v1/foyer_meta?key=eq.backup_key&select=value`, { headers: { apikey: key, Authorization: `Bearer ${key}` }, cf: { cacheTtl: 300, cacheEverything: true } });
+    const r = await fetch(`${base}/rest/v1/foyer_meta?key=eq.backup_key&select=value`, { headers, cf: { cacheTtl: 300, cacheEverything: true } });
     if (r.ok) { const rows = await r.json(); const v = Array.isArray(rows) && rows[0] && rows[0].value; if (v) { _bkKeyCache = v; _bkKeyAt = Date.now(); return v; } }
   } catch (e) {}
   return null;

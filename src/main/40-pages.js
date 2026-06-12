@@ -59,9 +59,7 @@
         : '';
 
 
-      const pushBell = (window.foyerFeature && window.foyerFeature('push'))
-        ? `<button type="button" class="nav-a nav-bell" aria-label="Notifications" title="Get notified of updates" style="display:none;align-items:center;background:none;border:none;color:inherit;cursor:pointer;padding:0;font:inherit;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></button>`
-        : '';
+      const pushBell = `<button type="button" class="nav-a nav-bell" aria-label="Notifications" title="Get notified of updates" style="display:none;align-items:center;background:none;border:none;color:inherit;cursor:pointer;padding:0;font:inherit;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></button>`;
       const links = [searchBtn, ...pageLinks, ...extLinks, pushBell, langPicker].join('');
       const wrapStyle = vertical
         ? `display:flex;flex-direction:column;gap:1rem;align-items:${j};width:100%;`
@@ -74,9 +72,9 @@
       const _bell = nav.querySelector('.nav-bell');
       if (_bell) {
 
-        const _paint = (st) => { _bell.style.display = (st === 'on' || st === 'denied' || st === 'unsupported') ? 'none' : 'inline-flex'; };
-        window.foyerPushState().then(_paint);
-        _bell.addEventListener('click', async () => { _bell.disabled = true; const st = await window.foyerPushToggle(); _bell.disabled = false; _paint(st); });
+        const _paint = (st, enabled) => { _bell.style.display = (enabled && st === 'off') ? 'inline-flex' : 'none'; };
+        Promise.all([window.foyerPushConfig(), window.foyerPushState()]).then(([cfg, st]) => _paint(st, cfg && cfg.enabled));
+        _bell.addEventListener('click', async () => { _bell.disabled = true; const st = await window.foyerPushToggle(); _bell.disabled = false; const cfg = await window.foyerPushConfig(); _paint(st, cfg && cfg.enabled); });
       }
       nav.querySelector('.nav-lang')?.addEventListener('change', async (e) => {
         const v = e.target.value;
@@ -313,6 +311,7 @@
       </article>`;
       scene.querySelectorAll('a, button').forEach(hookHover);
       foyerHL(scene); _foyerUserBadge(session);
+      foyerCommentsSection(coll.slug + ':' + (item.slug || item.id), session);
     }
 
     function renderTutorialDetail(tut, session) {
@@ -341,6 +340,7 @@
         document.getElementById('userNameText').textContent = session.name || session.email || '';
         document.getElementById('userBadge').style.display = 'flex';
       }
+      foyerCommentsSection('tutorial:' + (tut.slug || tut.id), session);
     }
 
     function renderReviewDetail(rev, session) {
@@ -370,6 +370,85 @@
         document.getElementById('userNameText').textContent = session.name || session.email || '';
         document.getElementById('userBadge').style.display = 'flex';
       }
+      foyerCommentsSection('review:' + (rev.slug || rev.id), session);
+    }
+
+
+
+
+    function _cmtAgo(iso) {
+      const d = new Date((iso || '').replace(' ', 'T') + (/(Z|[+-]\d\d:?\d\d)$/.test(iso || '') ? '' : 'Z'));
+      const s = Math.max(1, Math.floor((Date.now() - d.getTime()) / 1000));
+      if (s < 60) return s + 's'; if (s < 3600) return Math.floor(s / 60) + 'm';
+      if (s < 86400) return Math.floor(s / 3600) + 'h'; if (s < 2592000) return Math.floor(s / 86400) + 'd';
+      return d.toLocaleDateString();
+    }
+    function _cmtRow(c, accent, text) {
+      const av = c.avatar
+        ? `<img src="${escAttr(c.avatar)}" alt="" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex:0 0 34px;" />`
+        : `<div style="width:34px;height:34px;border-radius:50%;flex:0 0 34px;display:flex;align-items:center;justify-content:center;background:${pgRgb(accent,.16)};color:${accent};font-size:.85rem;font-weight:300;">${pgE((c.name||'?').trim().charAt(0).toUpperCase())}</div>`;
+      return `<div style="display:flex;gap:.75rem;padding:.9rem 0;border-top:1px solid ${pgRgb(accent,.1)};">
+        ${av}
+        <div style="min-width:0;flex:1;">
+          <div style="display:flex;align-items:baseline;gap:.5rem;"><span style="font-weight:300;font-size:.9rem;color:${pgRgb(text,.95)};">${pgE(c.name||'')}</span><span style="font-size:.62rem;font-weight:200;color:${pgRgb(text,.4)};">${_cmtAgo(c.created_at)}</span></div>
+          <div style="font-weight:200;font-size:.9rem;line-height:1.6;color:${pgRgb(text,.78)};white-space:pre-wrap;word-break:break-word;margin-top:.15rem;">${pgE(c.body||'')}</div>
+        </div>
+      </div>`;
+    }
+    async function foyerCommentsSection(target, session) {
+      if (!window.__foyerComments) return;
+      const article = document.querySelector('#scene article');
+      if (!article || article.querySelector('#foyerCmts')) return;
+      const accent = getComputedStyle(document.documentElement).getPropertyValue('--site-accent').trim() || '#4dbd6a';
+      const text = getComputedStyle(document.documentElement).getPropertyValue('--site-text').trim() || '#c8e6aa';
+      const loggedName = session && (session.name || session.email) ? (session.name || session.email) : '';
+      const sec = document.createElement('section');
+      sec.id = 'foyerCmts';
+      sec.style.cssText = 'margin-top:3rem;padding-top:1.5rem;border-top:1px solid ' + pgRgb(accent, .18) + ';';
+      sec.innerHTML = `
+        <h3 style="font-weight:300;font-size:1.05rem;letter-spacing:.02em;color:${pgRgb(text,.9)};margin:0 0 1rem;">${pgE(foyerT('comments'))} <span id="cmtCount" style="color:${pgRgb(text,.4)};font-size:.85rem;"></span></h3>
+        <form id="cmtForm" style="margin-bottom:1.4rem;">
+          ${loggedName ? '' : `<input id="cmtName" maxlength="60" placeholder="${escAttr(foyerT('comment_name_ph'))}" style="width:100%;box-sizing:border-box;background:${pgRgb(accent,.06)};border:1px solid ${pgRgb(accent,.18)};border-radius:8px;padding:.6rem .8rem;color:${text};font-family:inherit;font-weight:200;font-size:.9rem;margin-bottom:.5rem;outline:none;" />`}
+          <textarea id="cmtBody" maxlength="2000" rows="3" placeholder="${escAttr(foyerT('comment_ph'))}" style="width:100%;box-sizing:border-box;background:${pgRgb(accent,.06)};border:1px solid ${pgRgb(accent,.18)};border-radius:8px;padding:.6rem .8rem;color:${text};font-family:inherit;font-weight:200;font-size:.9rem;resize:vertical;outline:none;"></textarea>
+          <div style="display:flex;align-items:center;gap:.8rem;margin-top:.5rem;">
+            <button type="submit" id="cmtPost" style="background:${accent};color:${pgRgb('#000',.85)};border:none;border-radius:8px;padding:.5rem 1.4rem;font-family:inherit;font-weight:300;font-size:.85rem;letter-spacing:.03em;cursor:pointer;">${pgE(foyerT('comment_post'))}</button>
+            <span id="cmtErr" style="font-size:.75rem;font-weight:200;color:#e88;"></span>
+          </div>
+        </form>
+        <div id="cmtList" style="font-family:'Josefin Sans',sans-serif;"></div>`;
+      article.appendChild(sec);
+      sec.querySelectorAll('a, button').forEach(hookHover);
+
+      const listEl = sec.querySelector('#cmtList');
+      const countEl = sec.querySelector('#cmtCount');
+      const paint = (rows) => {
+        countEl.textContent = rows.length ? '· ' + rows.length : '';
+        listEl.innerHTML = rows.length ? rows.map(c => _cmtRow(c, accent, text)).join('')
+          : `<p style="font-weight:200;font-size:.85rem;color:${pgRgb(text,.45)};padding:.6rem 0;">${pgE(foyerT('comment_none'))}</p>`;
+      };
+      let rows = [];
+      try { rows = await fetch('/api/comments?target=' + encodeURIComponent(target)).then(r => r.ok ? r.json() : []); } catch {}
+      if (!Array.isArray(rows)) rows = [];
+      paint(rows);
+
+      sec.querySelector('#cmtForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const errEl = sec.querySelector('#cmtErr'); errEl.textContent = '';
+        const nameEl = sec.querySelector('#cmtName');
+        const name = (loggedName || (nameEl ? nameEl.value : '')).trim();
+        const body = sec.querySelector('#cmtBody').value.trim();
+        if (!name || !body) { errEl.textContent = foyerT('comment_name_ph'); return; }
+        const btn = sec.querySelector('#cmtPost'); const orig = btn.textContent;
+        btn.disabled = true; btn.textContent = foyerT('comment_sending');
+        try {
+          const res = await fetch('/api/comments', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ target, name, body, avatar: (session && session.picture) || '' }) });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) { errEl.textContent = data.error || 'Could not post.'; }
+          else { rows.unshift(data); paint(rows); sec.querySelector('#cmtBody').value = ''; }
+        } catch { errEl.textContent = 'Could not post.'; }
+        btn.disabled = false; btn.textContent = orig;
+      });
     }
 
 

@@ -1,0 +1,47 @@
+
+
+import { canonHost } from './site-config.js';
+import { isPro } from './plan.js';
+
+const CREATE_COMMENTS = "CREATE TABLE IF NOT EXISTS comments (id INTEGER PRIMARY KEY AUTOINCREMENT, target TEXT NOT NULL, name TEXT NOT NULL, body TEXT NOT NULL, avatar TEXT, visitor_id INTEGER, created_at TEXT NOT NULL DEFAULT (datetime('now')))";
+let _cReady = false;
+async function ensureComments(env) { if (_cReady) return; await env.DB.prepare(CREATE_COMMENTS).run().catch(() => {}); _cReady = true; }
+async function commentsOn(env) {
+  const r = await env.DB.prepare("SELECT value FROM site_settings WHERE key='comments_enabled'").first().catch(() => null);
+  return !!(r && r.value === '1');
+}
+
+export async function handleComments(ctx) {
+  const { route, method, request, env, respond, authed } = ctx;
+
+  if (route === 'comments' && method === 'GET') {
+    const target = (new URL(request.url).searchParams.get('target') || '').slice(0, 160).trim();
+    if (!target || !(await commentsOn(env))) return respond([]);
+    await ensureComments(env);
+    const { results } = await env.DB.prepare('SELECT id, name, body, avatar, created_at FROM comments WHERE target = ? ORDER BY id DESC LIMIT 200').bind(target).all().catch(() => ({ results: [] }));
+    return respond(results || []);
+  }
+
+  if (route === 'comments' && method === 'POST') {
+    if (!(await commentsOn(env))) return respond({ error: 'Comments are turned off.' }, 403);
+    if (!(await isPro(env, canonHost(env, request)))) return respond({ error: 'Comments are a Pro feature.' }, 403);
+    const b = await request.json().catch(() => ({}));
+    const target = String(b.target || '').slice(0, 160).trim();
+    const name = String(b.name || '').slice(0, 60).trim();
+    const body = String(b.body || '').slice(0, 2000).trim();
+    const avatar = String(b.avatar || '').slice(0, 400);
+    if (!target || !name || !body) return respond({ error: 'Name and comment are required.' }, 400);
+    await ensureComments(env);
+    const r = await env.DB.prepare('INSERT INTO comments (target, name, body, avatar) VALUES (?,?,?,?)').bind(target, name, body, avatar).run();
+    return respond({ id: r.meta?.last_row_id, name, body, avatar, created_at: new Date().toISOString() }, 201);
+  }
+
+  const single = route.match(/^comments\/(\d+)$/);
+  if (single && method === 'DELETE') {
+    if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    await env.DB.prepare('DELETE FROM comments WHERE id = ?').bind(parseInt(single[1])).run().catch(() => {});
+    return respond({ ok: true });
+  }
+
+  return null;
+}

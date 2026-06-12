@@ -8,6 +8,7 @@ import { handleCollections } from './_lib/routes-collections.js';
 import { handleBackup } from './_lib/routes-backup.js';
 import { handleTerms, termsAccepted, TERMS_VERSION } from './_lib/routes-terms.js';
 import { handlePush } from './_lib/routes-push.js';
+import { handleComments } from './_lib/routes-comments.js';
 import { cacheLookup, cacheSave, bumpEpoch } from './_lib/edge-cache.js';
 
 export async function onRequest(context) {
@@ -37,7 +38,7 @@ export async function onRequest(context) {
   const cached = await cacheLookup(ctx);
   if (cached) return cached;
 
-  for (const handler of [handleCore, handleAuth, handleContent, handlePeople, handleMedia, handleCollections, handleBackup, handleTerms, handlePush]) {
+  for (const handler of [handleCore, handleAuth, handleContent, handlePeople, handleMedia, handleCollections, handleBackup, handleTerms, handlePush, handleComments]) {
     const res = await handler(ctx);
     if (res) {
 

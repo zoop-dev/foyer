@@ -2,16 +2,14 @@
 import { canonHost } from './site-config.js';
 import { isPro } from './plan.js';
 import { ragEnabled, ragSearch, ragUpsertPage, ragStats, extractPageText } from './rag.js';
+import { sb } from './supabase.js';
 
 
-const AI_SB_URL = 'https://tvtfoghrdqwssdwvebuo.supabase.co';
-const AI_SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2dGZvZ2hyZHF3c3Nkd3ZlYnVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMzk2ODksImV4cCI6MjA5NTgxNTY4OX0.n_CRdzQQKYNGDHYmoVxyKafFJCfezKKlSiZddx8MXH4';
 async function aiEnabledForHost(env, host) {
   try {
-    const base = (env.SUPABASE_URL || AI_SB_URL).replace(/\/$/, '');
-    const key = env.SUPABASE_ANON_KEY || AI_SB_ANON;
+    const { base, headers } = sb(env);
     const r = await fetch(`${base}/rest/v1/foyer_sites?domain=eq.${encodeURIComponent(host)}&select=ai_enabled`, {
-      headers: { apikey: key, authorization: `Bearer ${key}` }, cf: { cacheTtl: 60, cacheEverything: true },
+      headers, cf: { cacheTtl: 60, cacheEverything: true },
     });
     if (!r.ok) return true;
     const row = (await r.json())[0];
@@ -29,9 +27,7 @@ export async function handleCore(ctx) {
 
 
   if (route && route.startsWith('sb/')) {
-    const sbBase = (env.SUPABASE_URL || AI_SB_URL).replace(/\/$/, '');
-    const sbKey = env.SUPABASE_ANON_KEY || AI_SB_ANON;
-    const sbH = { apikey: sbKey, authorization: `Bearer ${sbKey}` };
+    const { base: sbBase, headers: sbH } = sb(env);
     const host = new URL(request.url).hostname, enc = encodeURIComponent(host);
     const get = (p, ttl) => fetch(`${sbBase}/rest/v1/${p}`, { headers: sbH, cf: { cacheTtl: ttl, cacheEverything: true } }).then(r => r.ok ? r.json() : null).catch(() => null);
 

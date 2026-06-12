@@ -71,6 +71,7 @@ async function fetchSettings() {
   document.getElementById('sScrambleStrings').value = s.scramble_strings || '';
   document.getElementById('sScrambleInterval').value = s.scramble_interval || '';
   document.getElementById('sAskEnabled').checked = s.ask_enabled === '1';
+  document.getElementById('sCommentsEnabled').checked = s.comments_enabled === '1';
   if (s.ask_corner) document.getElementById('sAskCorner').value = s.ask_corner;
   document.getElementById('sAskPrompt').value = s.ask_prompt || '';
   loadAskIndexStatus();
@@ -118,6 +119,7 @@ document.getElementById('saveSettingsBtn').addEventListener('click', async () =>
       scramble_strings:document.getElementById('sScrambleStrings').value,
       scramble_interval:document.getElementById('sScrambleInterval').value,
       ask_enabled:document.getElementById('sAskEnabled').checked?'1':'0',
+      comments_enabled:document.getElementById('sCommentsEnabled').checked?'1':'0',
       ask_corner:document.getElementById('sAskCorner').value,
       ask_color:document.getElementById('sAskColor').value,
       ask_prompt:document.getElementById('sAskPrompt').value.trim(),
