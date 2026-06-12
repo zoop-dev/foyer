@@ -127,8 +127,20 @@ var TOOLBOX =
   '</category>' +
   '</xml>';
 
+
+
+function injectBhvFieldCss() {
+  if (document.getElementById('foyer-bhv-css')) return;
+  var s = document.createElement('style');
+  s.id = 'foyer-bhv-css';
+  s.textContent = '.blocklyHtmlInput{caret-color:#111!important;color:#111!important;background:#fff!important;border-radius:5px!important;}'
+    + '.blocklyWidgetDiv .goog-menuitem,.blocklyDropDownDiv .blocklyMenuItemContent{color:#111;}';
+  document.head.appendChild(s);
+}
+
 var _bhvWs = null, _bhvSectionId = null;
 function openInteractions(sectionId) {
+  injectBhvFieldCss();
   _bhvSectionId = sectionId;
   var sec = (typeof bldState !== 'undefined' && bldState.sections || []).find(function (s) { return s.id === sectionId; });
   if (!sec) return;
