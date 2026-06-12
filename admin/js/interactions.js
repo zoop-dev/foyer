@@ -9,7 +9,7 @@
 
 
 
-var FOYER_INTERACTIVE = new Set(['cta', 'buttongroup', 'links', 'link', 'image', 'hero', 'cards', 'gallery', 'banner', 'imgtext', 'logos', 'badges', 'social']);
+var FOYER_INTERACTIVE = new Set(['cta', 'buttongroup', 'links', 'link', 'image', 'hero', 'cards', 'gallery', 'masonry', 'banner', 'imgtext', 'logos', 'badges', 'social']);
 function foyerInteractive(type) { return FOYER_INTERACTIVE.has(type); }
 
 (function () {
@@ -89,9 +89,18 @@ function defineFoyerBlocks() {
     { type: 'foyer_this_text', message0: '✏️  set this section’s text to %1', args0: [{ type: 'field_input', name: 'TEXT', text: 'New text' }], previousStatement: null, nextStatement: null, colour: SECTION_COLOUR, tooltip: 'Replaces the text shown in this block.' },
 
     { type: 'foyer_btn_text', message0: '🔘  set this button’s text to %1', args0: [{ type: 'field_input', name: 'TEXT', text: 'Click me' }], previousStatement: null, nextStatement: null, colour: TYPE_COLOUR, tooltip: 'Changes the words on this button.' },
+    { type: 'foyer_btn_link', message0: '🔗  point this button at %1', args0: [{ type: 'field_input', name: 'URL', text: 'https://' }], previousStatement: null, nextStatement: null, colour: TYPE_COLOUR, tooltip: 'Sets where this button goes when clicked.' },
     { type: 'foyer_btn_disable', message0: '🚫  disable this button', previousStatement: null, nextStatement: null, colour: TYPE_COLOUR, tooltip: 'Greys the button out so it can’t be clicked.' },
     { type: 'foyer_btn_enable', message0: '✅  enable this button', previousStatement: null, nextStatement: null, colour: TYPE_COLOUR, tooltip: 'Re-enables a disabled button.' },
-    { type: 'foyer_img_src', message0: '🖼️  change this image to %1', args0: [{ type: 'field_input', name: 'URL', text: 'https://' }], previousStatement: null, nextStatement: null, colour: TYPE_COLOUR, tooltip: 'Swaps the picture for the one at this link.' }
+
+    { type: 'foyer_links_open', message0: '🔗  open link number %1', args0: [{ type: 'field_number', name: 'N', value: 1, min: 1, precision: 1 }], previousStatement: null, nextStatement: null, colour: TYPE_COLOUR, tooltip: 'Follows the Nth link in this list (1 = the first one).' },
+
+    { type: 'foyer_img_src', message0: '🖼️  change this image to %1', args0: [{ type: 'field_input', name: 'URL', text: 'https://' }], previousStatement: null, nextStatement: null, colour: TYPE_COLOUR, tooltip: 'Swaps the picture for the one at this link.' },
+    { type: 'foyer_img_alt', message0: '🏷️  set this image’s description to %1', args0: [{ type: 'field_input', name: 'TEXT', text: 'A photo of…' }], previousStatement: null, nextStatement: null, colour: TYPE_COLOUR, tooltip: 'Sets the alt text (for screen readers & SEO).' },
+
+    { type: 'foyer_hero_bg', message0: '🌄  change this hero’s background to %1', args0: [{ type: 'field_input', name: 'URL', text: 'https://' }], previousStatement: null, nextStatement: null, colour: TYPE_COLOUR, tooltip: 'Sets the hero’s background image.' },
+
+    { type: 'foyer_cards_shuffle', message0: '🔀  shuffle these items', previousStatement: null, nextStatement: null, colour: TYPE_COLOUR, tooltip: 'Randomly reorders the cards / images in this block.' }
   ]);
 
   var JS = B.JavaScript;
@@ -128,9 +137,14 @@ function defineFoyerBlocks() {
     foyer_this_color: function (b) { return 'ctx.setColor(' + S(b.getFieldValue('COLOR')) + ');\n'; },
     foyer_this_text: function (b) { return 'ctx.setText("",' + S(b.getFieldValue('TEXT')) + ');\n'; },
     foyer_btn_text: function (b) { return 'ctx.setText("a,button",' + S(b.getFieldValue('TEXT')) + ');\n'; },
+    foyer_btn_link: function (b) { return 'ctx.setLink("a,button",' + S(b.getFieldValue('URL')) + ');\n'; },
     foyer_btn_disable: function () { return 'ctx.disable("a,button");\n'; },
     foyer_btn_enable: function () { return 'ctx.enable("a,button");\n'; },
-    foyer_img_src: function (b) { return 'ctx.setImg(' + S(b.getFieldValue('URL')) + ');\n'; }
+    foyer_links_open: function (b) { return 'ctx.openLink(' + (Number(b.getFieldValue('N')) || 1) + ');\n'; },
+    foyer_img_src: function (b) { return 'ctx.setImg(' + S(b.getFieldValue('URL')) + ');\n'; },
+    foyer_img_alt: function (b) { return 'ctx.setAlt(' + S(b.getFieldValue('TEXT')) + ');\n'; },
+    foyer_hero_bg: function (b) { return 'ctx.setBgImage(' + S(b.getFieldValue('URL')) + ');\n'; },
+    foyer_cards_shuffle: function () { return 'ctx.shuffle();\n'; }
   };
   for (var k in gen) { JS[k] = gen[k]; if (JS.forBlock) JS.forBlock[k] = gen[k]; }
 }
@@ -179,9 +193,18 @@ var CAT_SECTION = '<category name="For this section" colour="#d6209a">' +
   '<block type="foyer_this_bg"></block><block type="foyer_this_color"></block><block type="foyer_this_text"></block>' +
   '</category>';
 
-var CAT_BUTTON = '<category name="🔘 Button only" colour="#14b8a6"><block type="foyer_btn_text"></block><block type="foyer_btn_disable"></block><block type="foyer_btn_enable"></block></category>';
-var CAT_IMAGE = '<category name="🖼️ Image only" colour="#14b8a6"><block type="foyer_img_src"></block></category>';
-var TYPE_CATS = { cta: CAT_BUTTON, buttongroup: CAT_BUTTON, image: CAT_IMAGE, imgtext: CAT_IMAGE, hero: CAT_IMAGE, banner: CAT_IMAGE };
+var CAT_BUTTON = '<category name="🔘 Button only" colour="#14b8a6"><block type="foyer_btn_text"></block><block type="foyer_btn_link"></block><block type="foyer_btn_disable"></block><block type="foyer_btn_enable"></block></category>';
+var CAT_LINKS = '<category name="🔗 Links only" colour="#14b8a6"><block type="foyer_links_open"></block></category>';
+var CAT_IMAGE = '<category name="🖼️ Image only" colour="#14b8a6"><block type="foyer_img_src"></block><block type="foyer_img_alt"></block></category>';
+var CAT_HERO = '<category name="🌄 Hero only" colour="#14b8a6"><block type="foyer_hero_bg"></block><block type="foyer_img_src"></block></category>';
+var CAT_CARDS = '<category name="🃏 Cards only" colour="#14b8a6"><block type="foyer_cards_shuffle"></block></category>';
+var TYPE_CATS = {
+  cta: CAT_BUTTON, buttongroup: CAT_BUTTON,
+  links: CAT_LINKS, link: CAT_LINKS, social: CAT_LINKS, logos: CAT_LINKS, badges: CAT_LINKS,
+  image: CAT_IMAGE, imgtext: CAT_IMAGE, banner: CAT_IMAGE,
+  hero: CAT_HERO,
+  cards: CAT_CARDS, gallery: CAT_CARDS, masonry: CAT_CARDS
+};
 function buildToolbox(type) { return '<xml>' + CAT_WHEN + CAT_DO + CAT_SECTION + (TYPE_CATS[type] || '') + '</xml>'; }
 
 

@@ -705,8 +705,13 @@
         flash() { try { el.animate([{ transform: 'scale(1)', filter: 'brightness(1)' }, { transform: 'scale(1.025)', filter: 'brightness(1.25)' }, { transform: 'scale(1)', filter: 'brightness(1)' }], { duration: 520, easing: 'ease-in-out' }); } catch (e) {} },
 
         setImg(url) { try { const t = el.querySelector('img'); if (t) t.src = String(url || ''); } catch (e) {} },
+        setAlt(txt) { try { const t = el.querySelector('img'); if (t) t.alt = String(txt == null ? '' : txt); } catch (e) {} },
+        setBgImage(url) { try { el.style.backgroundImage = url ? ('url("' + String(url).replace(/"/g, '%22') + '")') : ''; el.style.backgroundSize = 'cover'; el.style.backgroundPosition = 'center'; } catch (e) {} },
         disable(sel) { try { const t = pick(sel); if (t) { t.style.pointerEvents = 'none'; t.style.opacity = '.55'; t.setAttribute('aria-disabled', 'true'); if ('disabled' in t) t.disabled = true; } } catch (e) {} },
         enable(sel) { try { const t = pick(sel); if (t) { t.style.pointerEvents = ''; t.style.opacity = ''; t.removeAttribute('aria-disabled'); if ('disabled' in t) t.disabled = false; } } catch (e) {} },
+        setLink(sel, url) { try { const t = pick(sel); if (!t) return; if (t.tagName === 'A') t.href = String(url || '#'); else t.onclick = () => { window.location.href = String(url || '#'); }; } catch (e) {} },
+        openLink(n) { try { const a = el.querySelectorAll('a')[(Number(n) || 1) - 1]; if (a) { if (a.target === '_blank') window.open(a.href, '_blank', 'noopener'); else window.location.href = a.href; } } catch (e) {} },
+        shuffle() { try { let best = el, max = 0; el.querySelectorAll('*').forEach((n) => { if (n.children.length > max) { max = n.children.length; best = n; } }); const arr = Array.prototype.slice.call(best.children); for (let i = arr.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0, t = arr[i]; arr[i] = arr[j]; arr[j] = t; } arr.forEach((c) => best.appendChild(c)); } catch (e) {} },
         onVisible(fn) { try { const io = new IntersectionObserver((es) => { es.forEach((en) => { if (en.isIntersecting) { io.disconnect(); fn(); } }); }); io.observe(el); } catch (e) { fn(); } }
       };
     }
