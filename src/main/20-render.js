@@ -122,7 +122,14 @@
           const bs = s.btn_style||'solid';
           const bsz = s.btn_size==='sm'?'.5rem 1.3rem':s.btn_size==='lg'?'.9rem 2.8rem':'.7rem 2rem';
           const btnCss = bs==='outline'?`background:transparent;border:1px solid ${accent};color:${accent};`:bs==='ghost'?`background:transparent;border:1px solid ${pgRgb(text,.25)};color:${text};`:`background:${accent};border:1px solid ${accent};color:${bg};`;
-          return `<div style="${f}${c}${ta}padding:${p};">${s.text?`<p style="font-size:1.05rem;font-weight:200;line-height:1.75;color:${pgRgb(text,.75)};margin-bottom:1.5rem;">${pgE(s.text)}</p>`:''}${s.button_label?`<a href="${escAttr(s.button_url||'#')}" target="_blank" rel="noopener" style="display:inline-block;font-weight:300;font-size:.78rem;letter-spacing:.25em;text-transform:uppercase;padding:${bsz};text-decoration:none;${btnCss}">${pgE(s.button_label)}</a>`:''}</div>`;
+
+
+
+          const btnCommon = `display:inline-block;font-weight:300;font-size:.78rem;letter-spacing:.25em;text-transform:uppercase;padding:${bsz};text-decoration:none;${btnCss}`;
+          const btnEl = s.button_label ? (s.button_url
+            ? `<a href="${escAttr(s.button_url)}" target="_blank" rel="noopener" style="${btnCommon}">${pgE(s.button_label)}</a>`
+            : `<button type="button" style="${btnCommon}cursor:pointer;font-family:inherit;">${pgE(s.button_label)}</button>`) : '';
+          return `<div style="${f}${c}${ta}padding:${p};">${s.text?`<p style="font-size:1.05rem;font-weight:200;line-height:1.75;color:${pgRgb(text,.75)};margin-bottom:1.5rem;">${pgE(s.text)}</p>`:''}${btnEl}</div>`;
         }
         case 'image': {
           const mw = s.size==='sm'?'280px':s.size==='md'?'420px':'100%';
@@ -686,6 +693,10 @@
         copy(txt) { try { navigator.clipboard.writeText(String(txt == null ? '' : txt)); } catch (e) {} },
         playSound(url) { try { new Audio(url).play().catch(() => {}); } catch (e) {} },
         wait(ms) { return new Promise((r) => setTimeout(r, ms)); },
+
+        scrollHere() { try { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {} },
+        setBg(color) { try { el.style.background = String(color || ''); } catch (e) {} },
+        flash() { try { el.animate([{ transform: 'scale(1)', filter: 'brightness(1)' }, { transform: 'scale(1.025)', filter: 'brightness(1.25)' }, { transform: 'scale(1)', filter: 'brightness(1)' }], { duration: 520, easing: 'ease-in-out' }); } catch (e) {} },
         onVisible(fn) { try { const io = new IntersectionObserver((es) => { es.forEach((en) => { if (en.isIntersecting) { io.disconnect(); fn(); } }); }); io.observe(el); } catch (e) { fn(); } }
       };
     }

@@ -42,7 +42,7 @@ function defineFoyerBlocks() {
   if (_blocksDefined) return; _blocksDefined = true;
   var B = window.Blockly;
 
-  var EVENT_COLOUR = '#f59e0b', ACTION_COLOUR = '#3b82f6', ADV_COLOUR = '#8b5cf6';
+  var EVENT_COLOUR = '#f59e0b', ACTION_COLOUR = '#3b82f6', ADV_COLOUR = '#8b5cf6', SECTION_COLOUR = '#d6209a';
   var EV = [{ type: 'input_dummy' }, { type: 'input_statement', name: 'DO' }];
   B.defineBlocksWithJsonArray([
 
@@ -61,7 +61,15 @@ function defineFoyerBlocks() {
     { type: 'foyer_copy', message0: '📋  copy %1 to the clipboard', args0: [{ type: 'field_input', name: 'TEXT', text: 'Copied!' }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR, tooltip: 'Puts some text on the visitor’s clipboard so they can paste it.' },
     { type: 'foyer_sound', message0: '🔊  play a sound from %1', args0: [{ type: 'field_input', name: 'URL', text: 'https://' }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR, tooltip: 'Plays an audio file (mp3/wav) from a link.' },
     { type: 'foyer_wait', message0: '⏳  wait %1 seconds, then keep going', args0: [{ type: 'field_number', name: 'N', value: 1, min: 0, precision: 0.1 }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR, tooltip: 'Pauses before running the next block below.' },
-    { type: 'foyer_toggleclass', message0: '🎨  (advanced) switch style %1 on/off for %2', args0: [{ type: 'field_input', name: 'CLS', text: 'active' }, { type: 'field_input', name: 'SEL', text: '' }], previousStatement: null, nextStatement: null, colour: ADV_COLOUR, tooltip: 'Advanced: adds/removes a CSS class name. Leave the target empty for THIS block.' }
+    { type: 'foyer_toggleclass', message0: '🎨  (advanced) switch style %1 on/off for %2', args0: [{ type: 'field_input', name: 'CLS', text: 'active' }, { type: 'field_input', name: 'SEL', text: '' }], previousStatement: null, nextStatement: null, colour: ADV_COLOUR, tooltip: 'Advanced: adds/removes a CSS class name. Leave the target empty for THIS block.' },
+
+    { type: 'foyer_this_show', message0: '👁️  show this section', previousStatement: null, nextStatement: null, colour: SECTION_COLOUR, tooltip: 'Makes this very block appear.' },
+    { type: 'foyer_this_hide', message0: '🙈  hide this section', previousStatement: null, nextStatement: null, colour: SECTION_COLOUR, tooltip: 'Makes this very block disappear.' },
+    { type: 'foyer_this_toggle', message0: '🔁  show or hide this section', previousStatement: null, nextStatement: null, colour: SECTION_COLOUR, tooltip: 'Flips this block between shown and hidden.' },
+    { type: 'foyer_this_scroll', message0: '⬇️  scroll to this section', previousStatement: null, nextStatement: null, colour: SECTION_COLOUR, tooltip: 'Glides the page to this block.' },
+    { type: 'foyer_this_flash', message0: '✨  flash this section', previousStatement: null, nextStatement: null, colour: SECTION_COLOUR, tooltip: 'A quick attention pulse on this block.' },
+    { type: 'foyer_this_bg', message0: '🎨  set this section’s background to %1', args0: [{ type: 'field_input', name: 'COLOR', text: '#ffd54a' }], previousStatement: null, nextStatement: null, colour: SECTION_COLOUR, tooltip: 'Changes this block’s background. Use a colour name (red) or hex (#ffd54a).' },
+    { type: 'foyer_this_text', message0: '✏️  set this section’s text to %1', args0: [{ type: 'field_input', name: 'TEXT', text: 'New text' }], previousStatement: null, nextStatement: null, colour: SECTION_COLOUR, tooltip: 'Replaces the text shown in this block.' }
   ]);
 
   var JS = B.JavaScript;
@@ -81,7 +89,14 @@ function defineFoyerBlocks() {
     foyer_settext: function (b) { return 'ctx.setText(' + S(b.getFieldValue('SEL')) + ',' + S(b.getFieldValue('TEXT')) + ');\n'; },
     foyer_copy: function (b) { return 'ctx.copy(' + S(b.getFieldValue('TEXT')) + ');\n'; },
     foyer_sound: function (b) { return 'ctx.playSound(' + S(b.getFieldValue('URL')) + ');\n'; },
-    foyer_wait: function (b) { return 'await ctx.wait(' + (Number(b.getFieldValue('N')) * 1000) + ');\n'; }
+    foyer_wait: function (b) { return 'await ctx.wait(' + (Number(b.getFieldValue('N')) * 1000) + ');\n'; },
+    foyer_this_show: function () { return 'ctx.show("");\n'; },
+    foyer_this_hide: function () { return 'ctx.hide("");\n'; },
+    foyer_this_toggle: function () { return 'ctx.toggle("");\n'; },
+    foyer_this_scroll: function () { return 'ctx.scrollHere();\n'; },
+    foyer_this_flash: function () { return 'ctx.flash();\n'; },
+    foyer_this_bg: function (b) { return 'ctx.setBg(' + S(b.getFieldValue('COLOR')) + ');\n'; },
+    foyer_this_text: function (b) { return 'ctx.setText("",' + S(b.getFieldValue('TEXT')) + ');\n'; }
   };
   for (var k in gen) { JS[k] = gen[k]; if (JS.forBlock) JS.forBlock[k] = gen[k]; }
 }
@@ -124,6 +139,10 @@ var TOOLBOX =
   '<block type="foyer_show"></block><block type="foyer_hide"></block><block type="foyer_toggle"></block>' +
   '<block type="foyer_toggleclass"></block><block type="foyer_settext"></block><block type="foyer_copy"></block>' +
   '<block type="foyer_sound"></block><block type="foyer_wait"></block>' +
+  '</category>' +
+  '<category name="For this section" colour="#d6209a">' +
+  '<block type="foyer_this_show"></block><block type="foyer_this_hide"></block><block type="foyer_this_toggle"></block>' +
+  '<block type="foyer_this_scroll"></block><block type="foyer_this_flash"></block><block type="foyer_this_bg"></block><block type="foyer_this_text"></block>' +
   '</category>' +
   '</xml>';
 
