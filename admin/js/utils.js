@@ -15,10 +15,31 @@ try { token = _ls.getItem(KEY) || ''; } catch { token = ''; }
 
 
 
+if (window.foyerToast) {
+  window.foyerToast.configure({ theme: 'colored', autoClose: 4000, position: 'top-right' });
+}
+
+
+
+
+function classifyToast(msg, isErr) {
+  const m = String(msg == null ? '' : msg).toLowerCase();
+  if (isErr) {
+    if (/(required|\bfirst\b|pick a|pick or|select |type a|no page|not supported|coming soon|isn'?t configured|not configured|too large|denied|permission|max )/.test(m)) return 'warning';
+    return 'error';
+  }
+  if (/(discard|no unsaved|no changes|copied|moved to|sub-page|top level|pushed|fixed format|builds block|added to nav|removed from nav|skipped|^restored unsaved)/.test(m)) return 'info';
+  return 'success';
+}
+
+
+
 
 function toast(msg, isErr, opts) {
   if (window.foyerToast) {
-    return window.foyerToast(msg, Object.assign({ type: isErr ? 'error' : 'success' }, opts || {}));
+    opts = opts || {};
+    const type = opts.type || classifyToast(msg, isErr);
+    return window.foyerToast(msg, Object.assign({ type }, opts));
   }
   const shelf = document.getElementById('toast-shelf');
   if (!shelf) return;
@@ -31,6 +52,13 @@ function toast(msg, isErr, opts) {
     t.classList.remove('show');
     setTimeout(() => t.remove(), 250);
   }, 2800);
+}
+
+
+if (window.foyerToast) {
+  ['success', 'error', 'info', 'warning', 'warn', 'dark', 'loading', 'promise', 'update', 'dismiss', 'isActive'].forEach(function (k) {
+    toast[k] = window.foyerToast[k].bind(window.foyerToast);
+  });
 }
 
 const dlg = (() => {

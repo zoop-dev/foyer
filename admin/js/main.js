@@ -1072,13 +1072,16 @@ document.getElementById('pushTest')?.addEventListener('click', async ()=>{
 document.getElementById('pushSend')?.addEventListener('click', async (e)=>{
   const btn=e.currentTarget, stat=document.getElementById('pushSendStat');
   const title=document.getElementById('pushTitle').value.trim();
-  if(!title){ toast('A title is required.',true); return; }
+  if(!title){ toast.warning('A title is required.'); return; }
   btn.disabled=true; stat.textContent='Sending…';
+  const tid=toast.loading('Broadcasting to subscribers…');
   const body={ title, body:document.getElementById('pushBody').value.trim(), url:document.getElementById('pushUrl').value.trim()||'/' };
   const r=await fetch('/api/push/broadcast',{method:'POST',headers:{...authHeaders(),'Content-Type':'application/json'},body:JSON.stringify(body)});
   const d=await r.json().catch(()=>({})); btn.disabled=false;
   stat.textContent=r.ok?`✓ sent to ${d.sent||0}`:(d.error||'failed');
-  toast(r.ok?`Sent to ${d.sent||0} subscriber(s).`:(d.error||'Failed.'),!r.ok);
+  toast.update(tid, r.ok
+    ? { type:'success', message:`Sent to ${d.sent||0} subscriber${(d.sent===1)?'':'s'}.`, autoClose:4000 }
+    : { type:'error', message:d.error||'Failed to send.', autoClose:4000 });
 });
 
 init(); // called here so all scripts are loaded first
