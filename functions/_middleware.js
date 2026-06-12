@@ -82,6 +82,16 @@ export async function onRequest(ctx) {
   const { request, next, env } = ctx;
   try {
     const url = new URL(request.url);
+
+
+
+
+    if (url.pathname === '/beta' || url.pathname.startsWith('/beta/')) {
+      const rest = url.pathname.slice(5) || '/';
+      const dest = new URL(rest + url.search, url.origin);
+      dest.searchParams.set('beta', '1');
+      return Response.redirect(dest.toString(), 302);
+    }
     const p = url.pathname;
 
 

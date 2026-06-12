@@ -84,6 +84,34 @@ function defineFoyerBlocks() {
   for (var k in gen) { JS[k] = gen[k]; if (JS.forBlock) JS.forBlock[k] = gen[k]; }
 }
 
+var _darkTheme = null;
+function foyerDarkTheme() {
+  if (_darkTheme) return _darkTheme;
+  var B = window.Blockly;
+  try {
+    _darkTheme = B.Theme.defineTheme('foyerDark', {
+      base: B.Themes.Classic,
+      componentStyles: {
+        workspaceBackgroundColour: '#0d1117',
+        toolboxBackgroundColour: '#11161d',
+        toolboxForegroundColour: '#cdd6e0',
+        flyoutBackgroundColour: '#161b22',
+        flyoutForegroundColour: '#cdd6e0',
+        flyoutOpacity: 1,
+        scrollbarColour: '#39414d',
+        scrollbarOpacity: 0.5,
+        insertionMarkerColour: '#ffffff',
+        insertionMarkerOpacity: 0.35,
+        cursorColour: '#ffffff',
+        selectedGlowColour: '#4dbd6a',
+        markerColour: '#4dbd6a'
+      },
+      fontStyle: { family: 'inherit', size: 11 }
+    });
+  } catch (e) { _darkTheme = undefined; }
+  return _darkTheme;
+}
+
 var TOOLBOX =
   '<xml>' +
   '<category name="When…" colour="40">' +
@@ -121,7 +149,7 @@ function openInteractions(sectionId) {
 
   ensureBlockly().then(function () {
     var B = window.Blockly;
-    _bhvWs = B.inject(ov.querySelector('#bhvCanvas'), { toolbox: TOOLBOX, trashcan: true, zoom: { controls: true, wheel: true, startScale: .9 }, grid: { spacing: 22, length: 2, colour: 'rgba(255,255,255,.06)', snap: true }, theme: B.Themes && B.Themes.Dark ? B.Themes.Dark : undefined });
+    _bhvWs = B.inject(ov.querySelector('#bhvCanvas'), { toolbox: TOOLBOX, trashcan: true, zoom: { controls: true, wheel: true, startScale: .9 }, grid: { spacing: 22, length: 2, colour: 'rgba(255,255,255,.07)', snap: true }, theme: foyerDarkTheme() });
     if (sec.behaviors && sec.behaviors.workspace) { try { B.serialization.workspaces.load(sec.behaviors.workspace, _bhvWs); } catch (e) {} }
     setTimeout(function () { B.svgResize(_bhvWs); }, 30);
   }).catch(function () { toast('Could not load the Blockly editor (offline?)', true); close(); });
