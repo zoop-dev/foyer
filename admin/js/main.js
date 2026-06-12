@@ -4,6 +4,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('sec-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'home') loadHome();
     if (btn.dataset.tab === 'analytics') fetchAnalytics();
     if (btn.dataset.tab === 'builder')  { bldBoot(); bldLoadPages(); }
     if (btn.dataset.tab === 'images')   renderImgTabGallery();
@@ -1047,6 +1048,52 @@ async function loadCommentsAdmin(){
   }));
 }
 document.getElementById('cmtRefresh')?.addEventListener('click', loadCommentsAdmin);
+
+async function loadHome() {
+  const w = document.getElementById('homeWrap'); if (!w) return;
+  const A = () => ({ headers: authHeaders() });
+  const [pages, tuts, revs, comments, settings, an] = await Promise.all([
+    fetch('/api/nav/pages', A()).then(r => r.ok ? r.json() : []).catch(() => []),
+    fetch('/api/tutorials', A()).then(r => r.ok ? r.json() : []).catch(() => []),
+    fetch('/api/reviews', A()).then(r => r.ok ? r.json() : []).catch(() => []),
+    fetch('/api/comments/admin', A()).then(r => r.ok ? r.json() : []).catch(() => []),
+    fetch('/api/settings').then(r => r.ok ? r.json() : ({})).catch(() => ({})),
+    fetch('/api/analytics', A()).then(r => r.ok ? r.json() : null).catch(() => null),
+  ]);
+  const len = a => Array.isArray(a) ? a.length : 0;
+  const num = o => (o && typeof o === 'object') ? (o.n || 0) : (o || 0);
+  const today = an ? num(an.today) : 0, week = an ? num(an.week) : 0;
+  const isPublic = settings.site_public === '1', offline = settings.site_offline === '1';
+  const pill = (txt, col) => `<span style="font-size:.58rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;padding:.2rem .55rem;border-radius:20px;background:${col}22;color:${col};border:1px solid ${col}55;">${txt}</span>`;
+  const card = (label, val, go) => `<button type="button" ${go ? `data-go="${go}"` : ''} class="home-card" style="text-align:left;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:1.05rem 1.15rem;cursor:${go ? 'pointer' : 'default'};">
+    <div style="font-size:1.75rem;font-weight:200;color:var(--white);line-height:1;">${val}</div>
+    <div style="font-size:.6rem;font-weight:300;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:.45rem;">${label}</div></button>`;
+  const recent = (Array.isArray(comments) ? comments : []).slice(0, 5);
+  const recentHtml = recent.length ? recent.map(c => `<div style="display:flex;gap:.7rem;align-items:baseline;padding:.55rem 0;border-top:1px solid var(--border);">
+      <div style="font-size:.76rem;color:var(--white);flex-shrink:0;"><b style="font-weight:400;">${escHtml(c.name || '')}</b></div>
+      <div style="flex:1;min-width:0;font-size:.74rem;font-weight:200;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(c.body || '')}</div>
+      <div style="font-size:.6rem;color:var(--muted);opacity:.6;flex-shrink:0;">${timeAgo(c.created_at)}</div></div>`).join('')
+    : `<p style="font-size:.72rem;font-weight:200;color:var(--muted);opacity:.7;padding:.4rem 0;">No comments yet.</p>`;
+  w.innerHTML = `
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.5rem;">
+      <div><h1 style="font-weight:200;font-size:1.5rem;color:var(--white);margin:0;letter-spacing:-.01em;">${escHtml(__SITE__.name || 'Your site')}</h1>
+        <div style="display:flex;gap:.4rem;margin-top:.55rem;">${pill(isPublic ? 'Public' : 'Private', isPublic ? '#4dbd6a' : '#d6a14d')} ${pill(offline ? 'Offline' : 'Online', offline ? '#e0608a' : '#4dbd6a')}</div></div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+        <button type="button" class="btn btn-sm" data-go="builder">+ New page</button>
+        <button type="button" class="btn btn-sm" data-ext="/">View site ↗</button>
+        <button type="button" class="btn btn-sm" data-go="settings">Settings</button></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:.7rem;margin-bottom:1.6rem;">
+      ${card('Pages', len(pages), 'builder')}${card('Tutorials', len(tuts), 'tutorials')}${card('Reviews', len(revs), 'reviews')}
+      ${card('Comments', len(comments), 'settings')}${card('Views today', today, 'analytics')}${card('Visitors · 7d', week, 'analytics')}
+    </div>
+    <div style="background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:1.05rem 1.25rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.2rem;"><h2 style="font-weight:300;font-size:.88rem;color:var(--white);margin:0;">Recent comments</h2><button type="button" class="btn btn-xs" data-go="settings">Manage</button></div>
+      ${recentHtml}
+    </div>`;
+  w.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => document.querySelector(`.tab-btn[data-tab="${b.dataset.go}"]`)?.click()));
+  w.querySelectorAll('[data-ext]').forEach(b => b.addEventListener('click', () => window.open(b.dataset.ext, '_blank')));
+}
 document.getElementById('pushOwner')?.addEventListener('click', async ()=>{
   try{
     if(!('serviceWorker' in navigator)||!('PushManager' in window)){ toast('Push not supported in this browser.',true); return; }
@@ -1081,3 +1128,4 @@ document.getElementById('pushSend')?.addEventListener('click', async (e)=>{
 });
 
 init(); // called here so all scripts are loaded first
+loadHome(); // Home is the default tab — populate it on load

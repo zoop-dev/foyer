@@ -55,7 +55,7 @@ export async function handleContent(ctx) {
       if (vAuth === 'banned') return respond({ error: 'account_banned' }, 403);
       if (!authed() && vAuth !== 'ok' && !(await sitePublic())) return respond({ error: 'unauthorized' }, 401);
       const page = await env.DB.prepare(
-        'SELECT * FROM pages WHERE slug = ? AND is_published = 1'
+        'SELECT id, title, slug, page_json, pw_hash FROM pages WHERE slug = ? AND is_published = 1'
       ).bind(slug).first();
 
       if (page && page.pw_hash && !authed()) {

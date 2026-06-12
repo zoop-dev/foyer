@@ -92,7 +92,8 @@
   <nav class="app-nav">
     <img class="app-nav-logo" src="/icons/favicon.svg" alt="" />
     <span class="app-nav-title">Admin</span>
-    <button class="tab-btn active" data-tab="builder">Pages</button>
+    <button class="tab-btn active" data-tab="home">Home</button>
+    <button class="tab-btn" data-tab="builder">Pages</button>
     <button class="tab-btn" data-tab="images">Images</button>
     <button class="tab-btn" data-tab="files">Files</button>
     <button class="tab-btn" data-tab="settings">Settings</button>
@@ -106,6 +107,13 @@
     <a href="/" class="site-link" target="_blank">View site ↗</a>
     <button class="btn btn-sm" id="logoutBtn" style="margin-left:.5rem">Log out</button>
   </nav>
+
+  
+  <div class="section active" id="sec-home" style="flex-direction:column;overflow-y:auto;padding:1.6rem 1.4rem 3rem;">
+    <div id="homeWrap" style="max-width:920px;margin:0 auto;width:100%;">
+      <p style="font-weight:200;font-size:.72rem;letter-spacing:.1em;color:var(--muted);">Loading your dashboard…</p>
+    </div>
+  </div>
 
   
   
@@ -564,7 +572,7 @@
   </div>
 
   
-  <div class="section bld-sec active" id="sec-builder" style="position:relative;">
+  <div class="section bld-sec" id="sec-builder" style="position:relative;">
     <div class="m-bldbar" id="mBldBar">
       <button class="m-bld-page" id="mBldPage"><span id="mBldPageName">Page</span> <span class="m-bld-caret">▾</span></button>
       <button class="m-bld-tool" id="mBldAi" title="Foyer assistant" aria-label="AI assistant"><svg viewBox="0 0 44 50" width="15" height="17" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg></button>
