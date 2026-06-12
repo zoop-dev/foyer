@@ -42,24 +42,25 @@ function defineFoyerBlocks() {
   if (_blocksDefined) return; _blocksDefined = true;
   var B = window.Blockly;
   var EVENT_COLOUR = 40, ACTION_COLOUR = 230;
+  var EV = [{ type: 'input_dummy' }, { type: 'input_statement', name: 'DO' }];
   B.defineBlocksWithJsonArray([
 
-    { type: 'foyer_on_click', message0: 'when this block is clicked %1 %2', args0: [{ type: 'input_dummy' }, { type: 'input_statement', name: 'DO' }], colour: EVENT_COLOUR, tooltip: 'Runs when a visitor clicks this block.' },
-    { type: 'foyer_on_hover', message0: 'when this block is hovered %1 %2', args0: [{ type: 'input_dummy' }, { type: 'input_statement', name: 'DO' }], colour: EVENT_COLOUR, tooltip: 'Runs when the pointer enters this block.' },
-    { type: 'foyer_on_load', message0: 'when the page loads %1 %2', args0: [{ type: 'input_dummy' }, { type: 'input_statement', name: 'DO' }], colour: EVENT_COLOUR, tooltip: 'Runs once as soon as the page is ready.' },
-    { type: 'foyer_on_visible', message0: 'when this block scrolls into view %1 %2', args0: [{ type: 'input_dummy' }, { type: 'input_statement', name: 'DO' }], colour: EVENT_COLOUR, tooltip: 'Runs the first time this block enters the viewport.' },
+    { type: 'foyer_on_click', message0: '👆  when this block is clicked %1 %2', args0: EV, colour: EVENT_COLOUR, tooltip: 'Runs the blocks tucked inside whenever a visitor clicks this block.' },
+    { type: 'foyer_on_hover', message0: '🖱️  when the mouse moves over this block %1 %2', args0: EV, colour: EVENT_COLOUR, tooltip: 'Runs when the visitor’s pointer moves onto this block.' },
+    { type: 'foyer_on_load', message0: '🔄  when the page opens %1 %2', args0: EV, colour: EVENT_COLOUR, tooltip: 'Runs once, right after the page finishes loading.' },
+    { type: 'foyer_on_visible', message0: '👁️  when this block scrolls into view %1 %2', args0: EV, colour: EVENT_COLOUR, tooltip: 'Runs the first time this block appears on screen as the visitor scrolls down.' },
 
-    { type: 'foyer_toast', message0: 'show toast %1 style %2', args0: [{ type: 'field_input', name: 'TEXT', text: 'Hello!' }, { type: 'field_dropdown', name: 'TYPE', options: [['default', 'default'], ['success', 'success'], ['error', 'error'], ['info', 'info'], ['warning', 'warning']] }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR, tooltip: 'Pop a foyer-toast notification.' },
-    { type: 'foyer_go', message0: 'go to URL %1 new tab %2', args0: [{ type: 'field_input', name: 'URL', text: 'https://' }, { type: 'field_checkbox', name: 'NEWTAB', checked: false }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR, tooltip: 'Navigate to a link.' },
-    { type: 'foyer_scroll', message0: 'scroll to %1', args0: [{ type: 'field_input', name: 'SEL', text: '#section' }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR, tooltip: 'Smooth-scroll to an element (CSS selector or #anchor).' },
-    { type: 'foyer_show', message0: 'show %1', args0: [{ type: 'field_input', name: 'SEL', text: '#target' }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR },
-    { type: 'foyer_hide', message0: 'hide %1', args0: [{ type: 'field_input', name: 'SEL', text: '#target' }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR },
-    { type: 'foyer_toggle', message0: 'toggle visibility of %1', args0: [{ type: 'field_input', name: 'SEL', text: '#target' }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR },
-    { type: 'foyer_toggleclass', message0: 'toggle class %1 on %2', args0: [{ type: 'field_input', name: 'CLS', text: 'active' }, { type: 'field_input', name: 'SEL', text: '#target' }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR },
-    { type: 'foyer_settext', message0: 'set text of %1 to %2', args0: [{ type: 'field_input', name: 'SEL', text: '#target' }, { type: 'field_input', name: 'TEXT', text: 'New text' }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR },
-    { type: 'foyer_copy', message0: 'copy %1 to clipboard', args0: [{ type: 'field_input', name: 'TEXT', text: 'text' }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR },
-    { type: 'foyer_sound', message0: 'play sound %1', args0: [{ type: 'field_input', name: 'URL', text: 'https://' }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR },
-    { type: 'foyer_wait', message0: 'wait %1 seconds', args0: [{ type: 'field_number', name: 'N', value: 1, min: 0, precision: 0.1 }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR }
+    { type: 'foyer_toast', message0: '💬  show a pop-up message %1 coloured %2', args0: [{ type: 'field_input', name: 'TEXT', text: 'Hello!' }, { type: 'field_dropdown', name: 'TYPE', options: [['grey', 'default'], ['green ✓', 'success'], ['red ✕', 'error'], ['blue ℹ', 'info'], ['amber ⚠', 'warning']] }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR, tooltip: 'Shows a small pop-up message in the corner of the screen.' },
+    { type: 'foyer_go', message0: '🔗  go to the web page %1 open in a new tab %2', args0: [{ type: 'field_input', name: 'URL', text: 'https://' }, { type: 'field_checkbox', name: 'NEWTAB', checked: false }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR, tooltip: 'Sends the visitor to a web address. Tick the box to open it in a new tab instead.' },
+    { type: 'foyer_scroll', message0: '⬇️  smoothly scroll to the section %1', args0: [{ type: 'field_input', name: 'SEL', text: '#about' }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR, tooltip: 'Glides the page down (or up) to a section. Type the #name you gave the section in its “anchor” setting, e.g. #about.' },
+    { type: 'foyer_show', message0: '👁️  show %1', args0: [{ type: 'field_input', name: 'SEL', text: '' }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR, tooltip: 'Makes something appear. Leave the box empty to mean THIS block, or type a section’s #name.' },
+    { type: 'foyer_hide', message0: '🙈  hide %1', args0: [{ type: 'field_input', name: 'SEL', text: '' }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR, tooltip: 'Makes something disappear. Leave the box empty to mean THIS block, or type a section’s #name.' },
+    { type: 'foyer_toggle', message0: '🔁  show or hide %1', args0: [{ type: 'field_input', name: 'SEL', text: '' }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR, tooltip: 'Flips between shown and hidden each time. Leave the box empty to mean THIS block.' },
+    { type: 'foyer_settext', message0: '✏️  change the words of %1 to %2', args0: [{ type: 'field_input', name: 'SEL', text: '' }, { type: 'field_input', name: 'TEXT', text: 'New text' }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR, tooltip: 'Replaces the visible text. Leave the first box empty to mean THIS block.' },
+    { type: 'foyer_copy', message0: '📋  copy %1 to the clipboard', args0: [{ type: 'field_input', name: 'TEXT', text: 'Copied!' }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR, tooltip: 'Puts some text on the visitor’s clipboard so they can paste it.' },
+    { type: 'foyer_sound', message0: '🔊  play a sound from %1', args0: [{ type: 'field_input', name: 'URL', text: 'https://' }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR, tooltip: 'Plays an audio file (mp3/wav) from a link.' },
+    { type: 'foyer_wait', message0: '⏳  wait %1 seconds, then keep going', args0: [{ type: 'field_number', name: 'N', value: 1, min: 0, precision: 0.1 }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR, tooltip: 'Pauses before running the next block below.' },
+    { type: 'foyer_toggleclass', message0: '🎨  (advanced) switch style %1 on/off for %2', args0: [{ type: 'field_input', name: 'CLS', text: 'active' }, { type: 'field_input', name: 'SEL', text: '' }], previousStatement: null, nextStatement: null, colour: 230, tooltip: 'Advanced: adds/removes a CSS class name. Leave the target empty for THIS block.' }
   ]);
 
   var JS = B.JavaScript;
@@ -106,7 +107,7 @@ function foyerDarkTheme() {
         selectedGlowColour: '#4dbd6a',
         markerColour: '#4dbd6a'
       },
-      fontStyle: { family: 'inherit', size: 11 }
+      fontStyle: { family: 'inherit', size: 13, weight: '500' }
     });
   } catch (e) { _darkTheme = undefined; }
   return _darkTheme;
@@ -149,7 +150,7 @@ function openInteractions(sectionId) {
 
   ensureBlockly().then(function () {
     var B = window.Blockly;
-    _bhvWs = B.inject(ov.querySelector('#bhvCanvas'), { toolbox: TOOLBOX, trashcan: true, zoom: { controls: true, wheel: true, startScale: .9 }, grid: { spacing: 22, length: 2, colour: 'rgba(255,255,255,.07)', snap: true }, theme: foyerDarkTheme() });
+    _bhvWs = B.inject(ov.querySelector('#bhvCanvas'), { toolbox: TOOLBOX, renderer: 'zelos', trashcan: true, zoom: { controls: true, wheel: true, startScale: .85 }, grid: { spacing: 26, length: 2, colour: 'rgba(255,255,255,.06)', snap: true }, theme: foyerDarkTheme() });
     if (sec.behaviors && sec.behaviors.workspace) { try { B.serialization.workspaces.load(sec.behaviors.workspace, _bhvWs); } catch (e) {} }
     setTimeout(function () { B.svgResize(_bhvWs); }, 30);
   }).catch(function () { toast('Could not load the Blockly editor (offline?)', true); close(); });
