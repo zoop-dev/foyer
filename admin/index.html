@@ -326,6 +326,10 @@
         <p class="settings-group-title">Comments <span style="background:#7fa6d8;color:#070a0e;font-size:.5rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.1rem .35rem;border-radius:3px;vertical-align:middle;">Pro</span></p>
         <p style="font-weight:100;font-size:.66rem;color:var(--muted);line-height:1.8;margin-bottom:1.1rem;">Let visitors leave comments on your tutorials, reviews, and collection items. A comment box appears at the bottom of each detail page.</p>
         <div class="field"><label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;"><input type="checkbox" id="sCommentsEnabled" style="width:auto;" /> Enable comments</label></div>
+        <div class="field" style="margin-top:.5rem;">
+          <label style="display:flex;align-items:center;justify-content:space-between;">Recent comments <button class="btn btn-sm" id="cmtRefresh" type="button" style="font-weight:200;">Refresh</button></label>
+          <div id="cmtAdminList" style="margin-top:.5rem;font-size:.75rem;font-weight:200;color:var(--muted);">Loading…</div>
+        </div>
       </div>
       <div class="settings-group" id="pushGroup" style="display:none;">
         <p class="settings-group-title">Notifications <span style="background:#7fa6d8;color:#070a0e;font-size:.5rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.1rem .35rem;border-radius:3px;vertical-align:middle;">Pro</span></p>

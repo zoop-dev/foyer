@@ -13,7 +13,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'collections' && typeof fetchColls === 'function') fetchColls();
     if (btn.dataset.tab === 'backup' && typeof renderBackupTab === 'function') renderBackupTab();
     if (btn.dataset.tab === 'history' && typeof renderHistoryTab === 'function') renderHistoryTab();
-    if (btn.dataset.tab === 'settings') { fetchBlocklist(); fetchAllowlist(); loadNavEditor(); }
+    if (btn.dataset.tab === 'settings') { fetchBlocklist(); fetchAllowlist(); loadNavEditor(); loadCommentsAdmin(); }
   });
 });
 
@@ -1029,6 +1029,28 @@ async function loadPushAdmin(){
     else g.style.display='none';
   }catch{ g.style.display='none'; }
 }
+
+async function loadCommentsAdmin(){
+  const el=document.getElementById('cmtAdminList'); if(!el) return;
+  el.textContent='Loading…';
+  let rows=[];
+  try{ rows=await fetch('/api/comments/admin',{headers:authHeaders()}).then(r=>r.ok?r.json():[]); }catch{}
+  if(!Array.isArray(rows)||!rows.length){ el.innerHTML='<span style="opacity:.6">No comments yet.</span>'; return; }
+  el.innerHTML=rows.map(c=>`<div data-crow="${c.id}" style="display:flex;gap:.6rem;align-items:flex-start;padding:.5rem 0;border-top:1px solid var(--border);">
+    <div style="flex:1;min-width:0;">
+      <div style="color:rgba(220,245,225,.9);"><b style="font-weight:400;">${escHtml(c.name||'')}</b> <span style="opacity:.5;font-size:.66rem;">${escHtml(c.target||'')} · ${timeAgo(c.created_at)}</span></div>
+      <div style="white-space:pre-wrap;word-break:break-word;margin-top:.15rem;">${escHtml(c.body||'')}</div>
+    </div>
+    <button class="btn btn-sm cmtDel" data-cid="${c.id}" type="button" style="color:#e0608a;flex:0 0 auto;">Delete</button>
+  </div>`).join('');
+  el.querySelectorAll('.cmtDel').forEach(b=>b.addEventListener('click',async()=>{
+    const id=b.dataset.cid; if(!confirm('Delete this comment?')) return;
+    const r=await fetch('/api/comments/'+id,{method:'DELETE',headers:authHeaders()});
+    if(r.ok){ el.querySelector(`[data-crow="${id}"]`)?.remove(); if(!el.querySelector('[data-crow]')) el.innerHTML='<span style="opacity:.6">No comments yet.</span>'; }
+    else toast('Could not delete.',true);
+  }));
+}
+document.getElementById('cmtRefresh')?.addEventListener('click', loadCommentsAdmin);
 document.getElementById('pushOwner')?.addEventListener('click', async ()=>{
   try{
     if(!('serviceWorker' in navigator)||!('PushManager' in window)){ toast('Push not supported in this browser.',true); return; }
