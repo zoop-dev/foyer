@@ -211,7 +211,7 @@ async function cmdDeploy(target) {
 
   await sbSetMeta("latest_version", v).then((okv) => console.log("  " + (okv ? ok : c.yellow("!")) + c.dim(okv ? " global sys version → v" + v : " couldn't sync global version") + "\n")).catch(() => {});
 
-  await cmdGitea(`deploy v${v}`).catch((e) => console.log("  " + c.yellow("!") + c.dim(" gitea push skipped: " + e.message)));
+  await cmdGithub(`deploy v${v}`).catch((e) => console.log("  " + c.yellow("!") + c.dim(" github push skipped: " + e.message)));
 }
 
 async function foyerEnv(key) {
@@ -735,8 +735,8 @@ async function cmdBypass(name, kind, code) {
   console.log();
 }
 
-async function cmdGitea(msg) {
-  header("deploy → Gitea");
+async function cmdGithub(msg) {
+  header("deploy → GitHub");
   const v = await version();
   const message = (msg && msg.trim()) ? msg.trim() : `deploy v${v}`;
   const st = await run("check working tree", "git", ["status", "--porcelain"]);
@@ -746,7 +746,7 @@ async function cmdGitea(msg) {
   else console.log("    " + dot + c.dim(" nothing to commit"));
   console.log("    " + dot + c.dim(" pushing — git may ask for credentials…") + "\n");
   await passthrough("git", ["push"]);
-  console.log("\n  " + ok + c.green(c.bold("  pushed to Gitea")) + c.dim(` · ${message}`) + "\n");
+  console.log("\n  " + ok + c.green(c.bold("  pushed to GitHub")) + c.dim(` · ${message}`) + "\n");
 }
 
 function timeAgo(ts) {
@@ -907,7 +907,7 @@ function help() {
     ["sites", "list configured sites"],
     ["build <site|all>", "build to dist/"],
     ["deploy <site|all>", "build → bump reload → publish"],
-    ["deploy gitea [msg]", "commit + push to Gitea"],
+    ["deploy github [msg]", "commit + push to GitHub"],
     ["dev <site>", "build + local server"],
     ["status <site|all>", "compare live vs local version"],
     ["new [site]", "interactive onboarding → db, project, secrets, deploy"],
@@ -938,7 +938,7 @@ const [cmd, ...args] = process.argv.slice(2);
 const table = {
   sites: () => cmdSites(), list: () => cmdSites(),
   build: () => cmdBuild(args[0]),
-  deploy: () => (args[0] === "gitea" ? cmdGitea(args.slice(1).join(" ")) : cmdDeploy(args[0])),
+  deploy: () => ((args[0] === "github" || args[0] === "gitea") ? cmdGithub(args.slice(1).join(" ")) : cmdDeploy(args[0])),
   dev: () => cmdDev(args[0]),
   status: () => cmdStatus(args[0]),
   new: () => cmdNew(args[0]),
@@ -953,7 +953,8 @@ const table = {
   license: () => cmdLicense(args[0], true),
   unlicense: () => cmdLicense(args[0], false, args.slice(1).join(" ")),
   bypass: () => cmdBypass(args[0], args[1], args.slice(2).join(" ")),
-  gitea: () => cmdGitea(args.join(" ")),
+  github: () => cmdGithub(args.join(" ")),
+  gitea: () => cmdGithub(args.join(" ")),   // back-compat alias
   registry: () => cmdRegistry(),
   announce: () => cmdAnnounce(args[0], ...args.slice(1)),
   flag: () => cmdFlag(args[0], args[1], args[2]),
