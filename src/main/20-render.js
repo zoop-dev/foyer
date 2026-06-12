@@ -660,6 +660,47 @@
       layer.style.cssText = css;
     }
 
+
+
+
+    function _foyerBhvCtx(el) {
+      let _toastP = null;
+      const ensureToast = () => {
+        if (window.foyerToast) return Promise.resolve();
+        if (_toastP) return _toastP;
+        _toastP = new Promise((res) => { const s = document.createElement('script'); s.src = '/deps/foyer-toasts.js'; s.onload = res; s.onerror = res; document.head.appendChild(s); });
+        return _toastP;
+      };
+      const pick = (sel) => { try { return sel ? (el.querySelector(sel) || document.querySelector(sel)) : el; } catch (e) { return null; } };
+      return {
+        el,
+        $: pick, $$: (sel) => { try { return Array.from(document.querySelectorAll(sel)); } catch (e) { return []; } },
+        toast(msg, type) { ensureToast().then(() => { if (window.foyerToast) window.foyerToast(String(msg == null ? '' : msg), { type: type || 'default', theme: 'colored' }); }); },
+        go(url, newTab) { if (!url) return; if (newTab) window.open(url, '_blank', 'noopener'); else window.location.href = url; },
+        scrollToSel(sel) { const t = pick(sel); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
+        show(sel) { const t = pick(sel); if (t) t.style.display = ''; },
+        hide(sel) { const t = pick(sel); if (t) t.style.display = 'none'; },
+        toggle(sel) { const t = pick(sel); if (t) t.style.display = (getComputedStyle(t).display === 'none' ? '' : 'none'); },
+        toggleClass(sel, cls) { const t = pick(sel); if (t && cls) t.classList.toggle(cls); },
+        setText(sel, txt) { const t = pick(sel); if (t) t.textContent = String(txt == null ? '' : txt); },
+        copy(txt) { try { navigator.clipboard.writeText(String(txt == null ? '' : txt)); } catch (e) {} },
+        playSound(url) { try { new Audio(url).play().catch(() => {}); } catch (e) {} },
+        wait(ms) { return new Promise((r) => setTimeout(r, ms)); },
+        onVisible(fn) { try { const io = new IntersectionObserver((es) => { es.forEach((en) => { if (en.isIntersecting) { io.disconnect(); fn(); } }); }); io.observe(el); } catch (e) { fn(); } }
+      };
+    }
+    function foyerWireBehaviors(scene, sections) {
+      const map = {};
+      (function walk(arr) { (arr || []).forEach((s) => { if (s && s.behaviors && s.behaviors.code) map[s.id] = s.behaviors.code; if (s && s.sections) walk(s.sections); }); })(sections);
+      scene.querySelectorAll('[data-bid]').forEach((el) => {
+        const code = map[el.getAttribute('data-bid')];
+        if (!code || el.dataset.bhvWired) return;
+        el.dataset.bhvWired = '1';
+        try { (new Function('ctx', code))(_foyerBhvCtx(el)); }
+        catch (e) {  }
+      });
+    }
+
     function renderCustomPage(state, session) {
       dismissLoading();
       const { bg, accent, text, font, sections } = state;
@@ -678,7 +719,9 @@
         if (s.hide === 'mobile') cls += ' foyer-hide-mobile';
         if (s.hide === 'desktop') cls += ' foyer-hide-desktop';
         const rv = s.reveal === 'fade' ? 'fade' : s.reveal === 'up' ? 'fade-up' : s.reveal === 'zoom' ? 'zoom-in' : '';
-        const attr = rv ? ` data-aos="${rv}"` : '';
+        let attr = rv ? ` data-aos="${rv}"` : '';
+
+        if (s.behaviors && s.behaviors.code && window.foyerFeature && window.foyerFeature('interactions')) attr += ` data-bid="${escAttr(s.id || '')}"`;
         return { style, cls, attr };
       };
       const rows = groupRows(sections || []);
@@ -698,6 +741,7 @@
       initReveal(scene);
       initScramble(scene);
       initCollEmbeds(scene, session);
+      if (window.foyerFeature && window.foyerFeature('interactions')) foyerWireBehaviors(scene, sections || []);
       foyerLazyImg(scene);
       foyerHL(scene);
       scene.querySelectorAll('a, button').forEach(hookHover);

@@ -228,6 +228,7 @@ function bldBlockMenuItems(id){
   const ico = n => (typeof foyerIcon === 'function' ? foyerIcon('@' + n, '1em') : '');
   return [
     {label:'Edit', icon:ico('edit'), action:()=>{ bldSel=id; bldParentId=null; bldDrawCanvas(); bldDrawEditor(); }},
+    ...((typeof foyerInteractive==='function' && foyerInteractive(bldState.sections[i]?.type) && foyerInteractionsBeta())?[{label:'Interactions (beta)', icon:ico('sparkles'), action:()=>openInteractions(id)}]:[]),
     ...(bldAiOn?[{label:'Polish copy with AI', icon:ico('sparkles'), action:()=>bldPolishBlock(id)}]:[]),
     {label:'Duplicate', icon:ico('copy'), action:()=>bldDuplicateBlock(id)},
     {label:'Move up', icon:ico('arrow-up'), action:()=>bldMoveBlock(id,-1)},
