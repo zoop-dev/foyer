@@ -41,7 +41,8 @@ var _blocksDefined = false;
 function defineFoyerBlocks() {
   if (_blocksDefined) return; _blocksDefined = true;
   var B = window.Blockly;
-  var EVENT_COLOUR = 40, ACTION_COLOUR = 230;
+
+  var EVENT_COLOUR = '#f59e0b', ACTION_COLOUR = '#3b82f6', ADV_COLOUR = '#8b5cf6';
   var EV = [{ type: 'input_dummy' }, { type: 'input_statement', name: 'DO' }];
   B.defineBlocksWithJsonArray([
 
@@ -60,7 +61,7 @@ function defineFoyerBlocks() {
     { type: 'foyer_copy', message0: '📋  copy %1 to the clipboard', args0: [{ type: 'field_input', name: 'TEXT', text: 'Copied!' }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR, tooltip: 'Puts some text on the visitor’s clipboard so they can paste it.' },
     { type: 'foyer_sound', message0: '🔊  play a sound from %1', args0: [{ type: 'field_input', name: 'URL', text: 'https://' }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR, tooltip: 'Plays an audio file (mp3/wav) from a link.' },
     { type: 'foyer_wait', message0: '⏳  wait %1 seconds, then keep going', args0: [{ type: 'field_number', name: 'N', value: 1, min: 0, precision: 0.1 }], previousStatement: null, nextStatement: null, colour: ACTION_COLOUR, tooltip: 'Pauses before running the next block below.' },
-    { type: 'foyer_toggleclass', message0: '🎨  (advanced) switch style %1 on/off for %2', args0: [{ type: 'field_input', name: 'CLS', text: 'active' }, { type: 'field_input', name: 'SEL', text: '' }], previousStatement: null, nextStatement: null, colour: 230, tooltip: 'Advanced: adds/removes a CSS class name. Leave the target empty for THIS block.' }
+    { type: 'foyer_toggleclass', message0: '🎨  (advanced) switch style %1 on/off for %2', args0: [{ type: 'field_input', name: 'CLS', text: 'active' }, { type: 'field_input', name: 'SEL', text: '' }], previousStatement: null, nextStatement: null, colour: ADV_COLOUR, tooltip: 'Advanced: adds/removes a CSS class name. Leave the target empty for THIS block.' }
   ]);
 
   var JS = B.JavaScript;
@@ -107,7 +108,7 @@ function foyerDarkTheme() {
         selectedGlowColour: '#4dbd6a',
         markerColour: '#4dbd6a'
       },
-      fontStyle: { family: 'inherit', size: 13, weight: '500' }
+      fontStyle: { family: '"Helvetica Neue", Arial, sans-serif', size: 13, weight: '500' }
     });
   } catch (e) { _darkTheme = undefined; }
   return _darkTheme;
@@ -115,10 +116,10 @@ function foyerDarkTheme() {
 
 var TOOLBOX =
   '<xml>' +
-  '<category name="When…" colour="40">' +
+  '<category name="When…" colour="#f59e0b">' +
   '<block type="foyer_on_click"></block><block type="foyer_on_hover"></block><block type="foyer_on_load"></block><block type="foyer_on_visible"></block>' +
   '</category>' +
-  '<category name="Do…" colour="230">' +
+  '<category name="Do…" colour="#3b82f6">' +
   '<block type="foyer_toast"></block><block type="foyer_go"></block><block type="foyer_scroll"></block>' +
   '<block type="foyer_show"></block><block type="foyer_hide"></block><block type="foyer_toggle"></block>' +
   '<block type="foyer_toggleclass"></block><block type="foyer_settext"></block><block type="foyer_copy"></block>' +
