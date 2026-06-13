@@ -92,6 +92,15 @@ function bldBlockIco(ic, size){
 function pickCard(b){ return `<button class="bld-pick" data-type="${bA(b.t)}" title="${bA(b.l)}"><span class="bld-pick-ic">${bldBlockIco(b.i)}</span><span class="bld-pick-l">${bE(b.l)}</span></button>`; }
 function bldRenderPicker(){
   const grid=document.getElementById('bldPickerGrid'); if(!grid) return;
+  if(bldPickerCat==='__saved'){
+    const rows=bldSavedBlocks||[];
+    grid.innerHTML = rows.length
+      ? rows.map(s=>`<button class="bld-pick" data-saved="${s.id}" title="${bA(s.label)}" style="position:relative;"><span class="bld-pick-ic">✦</span><span class="bld-pick-l">${bE(s.label)}</span><span data-savdel="${s.id}" title="Remove" style="position:absolute;top:1px;right:4px;font-size:1rem;line-height:1;opacity:.5;">×</span></button>`).join('')
+      : `<p class="bld-picker-empty">No saved blocks yet. Open any block’s menu → <b>Save as reusable</b>.</p>`;
+    grid.querySelectorAll('.bld-pick').forEach(b=>b.addEventListener('click',e=>{ if(e.target.closest('[data-savdel]')) return; bldInsertSaved(+b.dataset.saved); }));
+    grid.querySelectorAll('[data-savdel]').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation(); bldDeleteSaved(+b.dataset.savdel); }));
+    return;
+  }
   let list=BLOCK_CATALOG;
   if(bldPickerCat!=='all') list=list.filter(b=>b.c===bldPickerCat);
   if(bldPickerQ) list=list.filter(b=>(b.l+' '+b.t+' '+(b.k||'')).toLowerCase().includes(bldPickerQ));
@@ -113,7 +122,8 @@ function bldBuildPicker(){
   document.body.appendChild(ov);
   ov.addEventListener('click',e=>{ if(e.target===ov) bldClosePicker(); });
   const cats=document.getElementById('bldPickerCats');
-  cats.innerHTML=`<button class="bld-picker-cat on" data-cat="all">All blocks</button>`+BLK_CATS.map(c=>`<button class="bld-picker-cat" data-cat="${bA(c)}">${bE(c)}</button>`).join('');
+  cats.innerHTML=`<button class="bld-picker-cat on" data-cat="all">All blocks</button>`+(window.foyerPlan==='ultra'?`<button class="bld-picker-cat" data-cat="__saved">✦ Saved</button>`:'')+BLK_CATS.map(c=>`<button class="bld-picker-cat" data-cat="${bA(c)}">${bE(c)}</button>`).join('');
+  if(window.foyerPlan==='ultra' && !bldSavedBlocks) bldLoadSaved().then(()=>{ if(bldPickerCat==='__saved') bldRenderPicker(); });
   cats.querySelectorAll('.bld-picker-cat').forEach(b=>b.addEventListener('click',()=>{ cats.querySelectorAll('.bld-picker-cat').forEach(x=>x.classList.remove('on')); b.classList.add('on'); bldPickerCat=b.dataset.cat; bldRenderPicker(); }));
   document.getElementById('bldPickerX').addEventListener('click',bldClosePicker);
   const search=document.getElementById('bldPickerSearch');
@@ -231,6 +241,7 @@ function bldBlockMenuItems(id){
     ...((typeof foyerInteractive==='function' && foyerInteractive(bldState.sections[i]?.type) && foyerInteractionsBeta())?[{label:'Interactions (beta)', icon:ico('bolt'), action:()=>openInteractions(id)}]:[]),
     ...(bldAiOn?[{label:'Polish copy with AI', icon:ico('sparkles'), action:()=>bldPolishBlock(id)}]:[]),
     {label:'Duplicate', icon:ico('copy'), action:()=>bldDuplicateBlock(id)},
+    ...((window.foyerPlan==='ultra')?[{label:'Save as reusable', icon:ico('copy'), action:()=>bldSaveReusable(id)}]:[]),
     {label:'Move up', icon:ico('arrow-up'), action:()=>bldMoveBlock(id,-1)},
     {label:'Move down', icon:ico('arrow-down'), action:()=>bldMoveBlock(id,1)},
     '-',
@@ -411,6 +422,31 @@ function bldAddBlock(type){
   if(col) setTimeout(()=>col.scrollTo({top:col.scrollHeight,behavior:'smooth'}),60);
 }
 
+let bldSavedBlocks = null;
+async function bldLoadSaved(){ try{ bldSavedBlocks = await fetch('/api/saved-blocks',{headers:authHeaders()}).then(r=>r.ok?r.json():[]); }catch{ bldSavedBlocks=[]; } if(!Array.isArray(bldSavedBlocks)) bldSavedBlocks=[]; }
+async function bldSaveReusable(id){
+  let sec = bldState.sections.find(s=>s.id===id);
+  if(!sec && bldParentId){ const g=bldState.sections.find(x=>x.id===bldParentId); sec=(g&&g.sections||[]).find(c=>c.id===id); }
+  if(!sec) return;
+  const label = (BLOCK_CATALOG.find(b=>b.t===sec.type)||{}).l || sec.type;
+  const { id:_omit, ...clean } = sec;
+  const r = await fetch('/api/saved-blocks',{method:'POST',headers:{...authHeaders(),'Content-Type':'application/json'},body:JSON.stringify({label, json:clean})});
+  if(r.ok){ bldSavedBlocks=null; toast('Saved to your library ✦', false, {type:'success'}); }
+  else { const d=await r.json().catch(()=>({})); toast(d.error||'Could not save', true); }
+}
+function bldInsertSaved(savedId){
+  const item=(bldSavedBlocks||[]).find(s=>s.id===savedId); if(!item) return;
+  let sec; try{ sec=JSON.parse(item.json); }catch{ return; }
+  sec.id = Math.random().toString(36).slice(2,9);
+  const slot=bldOpenSlotWidth(bldState.sections); if(slot) sec.width=slot;
+  bldState.sections.push(sec); bldSel=sec.id;
+  bldClosePicker(); bldDrawCanvas(); bldDrawEditor();
+}
+async function bldDeleteSaved(savedId){
+  await fetch(`/api/saved-blocks/${savedId}`,{method:'DELETE',headers:authHeaders()}).catch(()=>{});
+  bldSavedBlocks=(bldSavedBlocks||[]).filter(s=>s.id!==savedId); bldRenderPicker();
+}
+
 function groupRows(sections) {
   const rows = [];
   let batch = [], batchW = null;
@@ -558,17 +594,42 @@ async function bldDiscardDraft(pid) {
 }
 function bldDrawPages() {
   const list=document.getElementById('bldPageList');
-  list.innerHTML=bldPages.map(p=>`
-    <div class="bld-pi${bldPageId===p.id?' sel':''}" data-pid="${p.id}">
+  const ultra = window.foyerPlan === 'ultra';   // Trash + bulk are Ultra-only
+  const bulkBar = ultra ? `<div id="bldBulkBar" style="display:none;align-items:center;gap:.5rem;padding:.4rem .6rem;background:rgba(var(--accent-rgb),.1);border-bottom:1px solid var(--border);font-size:.7rem;color:var(--white);"><span><b id="bldBulkN">0</b> selected</span><button class="btn btn-xs" id="bldBulkTrash" style="color:#e0608a;">Move to Trash</button><button class="btn btn-xs" id="bldBulkClear">Clear</button></div>` : '';
+  list.innerHTML = bulkBar + bldPages.map(p=>{
+    const canDel = p.slug!=='/' && p.slug!=='__404__';
+    return `<div class="bld-pi${bldPageId===p.id?' sel':''}" data-pid="${p.id}">
+      ${ultra?(canDel?`<input type="checkbox" class="bld-pi-chk" data-chk="${p.id}" title="Select" style="flex-shrink:0;cursor:pointer;width:auto;margin:0 .15rem 0 0;" />`:`<span style="width:13px;flex-shrink:0;"></span>`):''}
       <div style="min-width:0;flex:1;">
         <div class="bld-pi-t">${escHtml(p.title)}</div>
         <div class="bld-pi-s">${escHtml(p.slug)}</div>
       </div>
       ${bldPageUnsaved(p)?`<span class="bld-pi-unsaved" data-discard="${p.id}" title="Discard unsaved changes">!</span>`:''}
-      ${p.slug!=='/'&&p.slug!=='__404__'?`<button class="bld-pi-del" data-pdel="${p.id}" title="Delete">✕</button>`:''}
-    </div>`).join('');
+      ${canDel?`<button class="bld-pi-del" data-pdel="${p.id}" title="${ultra?'Move to Trash':'Delete'}">✕</button>`:''}
+    </div>`;
+  }).join('')
+    + (ultra?`<button id="bldTrashBtn" type="button" style="display:flex;align-items:center;gap:.45rem;width:100%;background:none;border:none;border-top:1px solid var(--border);color:var(--muted);font:inherit;font-size:.72rem;padding:.6rem .7rem;cursor:pointer;margin-top:.2rem;">🗑 Trash</button>`:'');
+  list.querySelector('#bldTrashBtn')?.addEventListener('click', e => { e.stopPropagation(); bldOpenTrash(); });
+
+  const bar = list.querySelector('#bldBulkBar'), nEl = list.querySelector('#bldBulkN');
+  const selected = () => list.querySelectorAll('.bld-pi-chk:checked');
+  const syncBulk = () => { const n = selected().length; nEl.textContent = n; bar.style.display = n ? 'flex' : 'none'; };
+  list.querySelectorAll('.bld-pi-chk').forEach(c => c.addEventListener('click', e => { e.stopPropagation(); syncBulk(); }));
+  list.querySelector('#bldBulkClear')?.addEventListener('click', e => { e.stopPropagation(); selected().forEach(c => c.checked = false); syncBulk(); });
+  list.querySelector('#bldBulkTrash')?.addEventListener('click', async e => {
+    e.stopPropagation();
+    const ids = [...selected()].map(c => +c.dataset.chk);
+    if (!ids.length) return;
+    if (!await dlg.confirm(`Move ${ids.length} page${ids.length>1?'s':''} to Trash?`, { danger: true, confirm: 'Move to Trash' })) return;
+    await Promise.all(ids.map(id => fetch(`/api/pages/${id}`, { method: 'DELETE', headers: authHeaders() }).catch(() => {})));
+    ids.forEach(bldClearDraft);
+    bldPages = bldPages.filter(x => !ids.includes(x.id));
+    if (ids.includes(bldPageId)) { bldPageId = bldPages[0]?.id || null; if (bldPageId) bldPickPage(bldPageId); else bldDrawCanvas(); }
+    toast(`Moved ${ids.length} to Trash`, false, { type: 'info' });
+    bldDrawPages();
+  });
   list.querySelectorAll('.bld-pi').forEach(el => el.addEventListener('click', e => {
-    if (e.target.closest('.bld-pi-del') || e.target.closest('[data-discard]')) return;
+    if (e.target.closest('.bld-pi-del') || e.target.closest('[data-discard]') || e.target.closest('.bld-pi-chk')) return;
     bldPickPage(+el.dataset.pid);
   }));
   list.querySelectorAll('[data-discard]').forEach(badge => badge.addEventListener('click', e => { e.stopPropagation(); bldDiscardDraft(+badge.dataset.discard); }));
@@ -582,6 +643,49 @@ function bldDrawPages() {
     bldPages=bldPages.filter(x=>x.id!==p.id);
     if (bldPageId===p.id) { bldPageId=bldPages[0]?.id||null; if (bldPageId) bldPickPage(bldPageId); else bldDrawCanvas(); }
     bldDrawPages();
+  }));
+}
+
+async function bldOpenTrash() {
+  let rows = [];
+  try { rows = await fetch('/api/pages/trash', { headers: authHeaders() }).then(r => r.ok ? r.json() : []); } catch (e) {}
+  if (!Array.isArray(rows)) rows = [];
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(4,7,11,.72);display:flex;align-items:center;justify-content:center;padding:2rem;';
+  const rowHtml = rows.length ? rows.map(p => `<div data-trow="${p.id}" style="display:flex;align-items:center;gap:.6rem;padding:.6rem 0;border-top:1px solid var(--border);">
+      <div style="flex:1;min-width:0;"><div style="color:var(--white);font-size:.82rem;">${escHtml(p.title || '(untitled)')}</div><div style="color:var(--muted);font-size:.62rem;">${escHtml(p.slug || '')} · deleted ${timeAgo(p.deleted_at)}</div></div>
+      <button class="btn btn-sm" data-trestore="${p.id}">Restore</button>
+      <button class="btn btn-sm" data-tpurge="${p.id}" style="color:#e0608a;">Delete forever</button>
+    </div>`).join('') : `<p style="color:var(--muted);font-size:.78rem;padding:.6rem 0;">Trash is empty.</p>`;
+  ov.innerHTML = `<div style="background:var(--panel);border:1px solid var(--border);border-radius:12px;width:100%;max-width:520px;max-height:80vh;overflow:auto;padding:1.2rem 1.4rem;box-shadow:0 20px 60px rgba(0,0,0,.5);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;gap:.5rem;"><h3 style="margin:0;font-weight:300;color:var(--white);">🗑 Trash</h3><div style="display:flex;gap:.4rem;">${rows.length?`<button class="btn btn-sm" id="bldTrashRestoreAll">Restore all</button><button class="btn btn-sm" id="bldTrashEmpty" style="color:#e0608a;">Empty Trash</button>`:''}<button class="btn btn-sm" id="bldTrashX">Close</button></div></div>
+    <p style="color:var(--muted);font-size:.66rem;margin:0 0 .6rem;">Deleted pages are kept here. Restore brings them back (with history); Delete forever is permanent.</p>
+    <div id="bldTrashList">${rowHtml}</div></div>`;
+  document.body.appendChild(ov);
+  const close = () => ov.remove();
+  ov.addEventListener('mousedown', e => { if (e.target === ov) close(); });
+  ov.querySelector('#bldTrashX').addEventListener('click', close);
+  ov.querySelector('#bldTrashRestoreAll')?.addEventListener('click', async () => {
+    await Promise.all(rows.map(p => fetch(`/api/pages/${p.id}/restore`, { method: 'POST', headers: authHeaders() }).catch(() => {})));
+    toast(`Restored ${rows.length} page${rows.length>1?'s':''}`, false, { type: 'success' }); close(); bldLoadPages();
+  });
+  ov.querySelector('#bldTrashEmpty')?.addEventListener('click', async () => {
+    if (!await dlg.confirm(`Permanently delete all ${rows.length} pages in Trash? This cannot be undone.`, { danger: true, confirm: 'Empty Trash' })) return;
+    await Promise.all(rows.map(p => { bldClearDraft(p.id); return fetch(`/api/pages/${p.id}?permanent=1`, { method: 'DELETE', headers: authHeaders() }).catch(() => {}); }));
+    toast('Trash emptied', false, { type: 'info' }); close();
+  });
+  ov.querySelectorAll('[data-trestore]').forEach(b => b.addEventListener('click', async () => {
+    const id = +b.dataset.trestore;
+    const r = await fetch(`/api/pages/${id}/restore`, { method: 'POST', headers: authHeaders() });
+    if (r.ok) { toast('Page restored', false, { type: 'success' }); ov.querySelector(`[data-trow="${id}"]`)?.remove(); bldLoadPages(); }
+    else toast('Could not restore.', true);
+  }));
+  ov.querySelectorAll('[data-tpurge]').forEach(b => b.addEventListener('click', async () => {
+    const id = +b.dataset.tpurge;
+    if (!await dlg.confirm('Permanently delete this page? This cannot be undone.', { danger: true, confirm: 'Delete forever' })) return;
+    const r = await fetch(`/api/pages/${id}?permanent=1`, { method: 'DELETE', headers: authHeaders() });
+    if (r.ok) { bldClearDraft(id); toast('Permanently deleted', false, { type: 'info' }); ov.querySelector(`[data-trow="${id}"]`)?.remove(); }
+    else toast('Could not delete.', true);
   }));
 }
 
@@ -809,7 +913,7 @@ function bldDrawEditor() {
 
 
   const interactBtn=(!parentGroup && typeof foyerInteractive==='function' && foyerInteractive(s.type) && typeof foyerInteractionsBeta==='function' && foyerInteractionsBeta())
-    ? `<button class="btn btn-sm" id="bEdInteract" style="width:100%;margin:.55rem 0 .3rem;display:flex;align-items:center;justify-content:center;gap:.45rem;">${typeof foyerIcon==='function'?foyerIcon('@bolt','1em'):'⚡'} Interactions <span style="font-size:.5rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;background:#7fa6d8;color:#070a0e;padding:.08rem .3rem;border-radius:3px;">Beta</span></button>`
+    ? `<button class="btn btn-sm" id="bEdInteract" style="width:100%;margin:.55rem 0 .3rem;display:flex;align-items:center;justify-content:center;gap:.45rem;">${typeof foyerIcon==='function'?foyerIcon('@bolt','1em'):'⚡'} Interactions <span style="font-size:.5rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:linear-gradient(135deg,#f0d792,#cda63f);color:#191205;padding:.08rem .3rem;border-radius:3px;">Ultra</span></button>`
     : '';
   panel.innerHTML=`<div class="bld-ep">${backBtn}<div class="bld-ep-head">${label} <span class="bld-ep-type">${parentGroup?'in Group':'Section'}</span></div>${interactBtn}${html}</div>`;
   if (parentGroup) {

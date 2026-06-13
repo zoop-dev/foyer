@@ -3,6 +3,7 @@
 import { canonHost } from './site-config.js';
 import { isPro } from './plan.js';
 import { notifyOwner } from './routes-push.js';
+import { rateLimit, clientIp } from './rate-limit.js';
 
 
 function targetUrl(target) {
@@ -44,6 +45,7 @@ export async function handleComments(ctx) {
   if (route === 'comments' && method === 'POST') {
     if (!(await commentsOn(env))) return respond({ error: 'Comments are turned off.' }, 403);
     if (!(await isPro(env, canonHost(env, request)))) return respond({ error: 'Comments are a Pro feature.' }, 403);
+    { const rl = await rateLimit(env, `cmt:${clientIp(request)}`, 6, 60); if (!rl.ok) return respond({ error: 'You’re commenting too fast — try again in a minute.' }, 429); }
     const b = await request.json().catch(() => ({}));
     const target = String(b.target || '').slice(0, 160).trim();
     const name = String(b.name || '').slice(0, 60).trim();

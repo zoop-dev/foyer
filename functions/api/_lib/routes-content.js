@@ -1,10 +1,14 @@
 
 import { moderatePage, logModeration, getModConfig } from './moderation.js';
 import { canonHost } from './site-config.js';
-import { isPro } from './plan.js';
+import { isPro, isUltra } from './plan.js';
 
 let _pwColReady = false;
 async function _ensurePwCol(env) { if (_pwColReady) return; await env.DB.prepare('ALTER TABLE pages ADD COLUMN pw_hash TEXT').run().catch(() => {}); _pwColReady = true; }
+
+
+let _dcReady = false;
+async function _ensureDeletedCol(env) { if (_dcReady) return; await env.DB.prepare('ALTER TABLE pages ADD COLUMN deleted_at TEXT').run().catch(() => {}); _dcReady = true; }
 async function _sha(s) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, '0')).join(''); }
 async function _hashPagePw(pw) { const salt = crypto.randomUUID().slice(0, 8); return salt + '$' + (await _sha(salt + ':' + pw)); }
 async function _verifyPagePw(pw, stored) { if (!pw || !stored || stored.indexOf('$') < 0) return false; const i = stored.indexOf('$'); return (await _sha(stored.slice(0, i) + ':' + pw)) === stored.slice(i + 1); }
@@ -47,7 +51,7 @@ export async function handleContent(ctx) {
 
   if (route === 'pages' && method === 'GET') {
     await env.DB.prepare(CREATE_PAGES).run();
-    await _ensurePwCol(env);
+    await _ensurePwCol(env); await _ensureDeletedCol(env);
     const url = new URL(request.url);
     const slug = url.searchParams.get('slug');
     if (slug !== null) {
@@ -69,7 +73,7 @@ export async function handleContent(ctx) {
     }
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
     const { results } = await env.DB.prepare(
-      'SELECT id, title, slug, is_published, sort_order, created_at, page_json, pw_hash FROM pages ORDER BY sort_order ASC, id ASC'
+      'SELECT id, title, slug, is_published, sort_order, created_at, page_json, pw_hash FROM pages WHERE deleted_at IS NULL ORDER BY sort_order ASC, id ASC'
     ).all();
     const pages = await Promise.all((results || []).map(async p => { const { pw_hash, ...rest } = p; return { ...rest, has_password: !!pw_hash, page_json: await decompressJson(p.page_json) }; }));
     return respond(pages);
@@ -78,7 +82,7 @@ export async function handleContent(ctx) {
 
   if (route === 'search' && method === 'GET') {
     await env.DB.prepare(CREATE_PAGES).run();
-    await _ensurePwCol(env);
+    await _ensurePwCol(env); await _ensureDeletedCol(env);
     const vAuth = await visitorAuthed();
     if (vAuth === 'banned') return respond({ error: 'account_banned' }, 403);
     if (!authed() && vAuth !== 'ok' && !(await sitePublic())) return respond({ error: 'unauthorized' }, 401);
@@ -100,11 +104,58 @@ export async function handleContent(ctx) {
     return respond(idx);
   }
 
+  if (route === 'export' && method === 'GET') {
+    if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    if (!(await isUltra(env, canonHost(env, request)))) return respond({ error: 'Export is an Ultra feature.' }, 403);
+    await env.DB.prepare(CREATE_PAGES).run(); await _ensureDeletedCol(env);
+    const { results } = await env.DB.prepare("SELECT title, slug, page_json FROM pages WHERE deleted_at IS NULL AND slug != '__404__' ORDER BY sort_order ASC, id ASC").all().catch(() => ({ results: [] }));
+    const SKIP = new Set(['id', 'type', 'url', 'href', 'img', 'photo', 'src', 'bg_img', 'bg_image', 'image', 'avatar', 'cover_image', 'data', 'anchor', 'access_key', 'target', 'buy_url', 'btn_url', 'btn2_url', 'button_url', 'width', 'align', 'pad', 'variant', 'icon', 'scramble', 'reveal', 'sbg', 'sround', 'smargin', 'hide']);
+    const isText = (s) => typeof s === 'string' && s.trim().length > 1 && !/^(https?:|\/|#|data:|mailto:|tel:)/i.test(s) && !/^#?[0-9a-f]{3,8}$/i.test(s) && /[a-zA-Z]/.test(s);
+    const walk = (o, d) => { if (o == null || d > 8) return []; if (typeof o === 'string') return isText(o) ? [o.trim()] : []; if (Array.isArray(o)) return o.flatMap((v) => walk(v, d + 1)); if (typeof o === 'object') { let r = []; for (const k in o) if (!SKIP.has(k)) r = r.concat(walk(o[k], d + 1)); return r; } return []; };
+    let doc = '';
+    for (const p of (results || [])) {
+      let st = {}; try { st = JSON.parse((await decompressJson(p.page_json)) || '{}'); } catch (e) {}
+      doc += `\n\n# ${p.title || p.slug}\n`;
+      for (const s of (st.sections || [])) {
+        const head = s.heading || s.name || s.title || '';
+        const isHead = /^(heading|sectionhead|hero|lead)$/.test(s.type || '');
+        if (isHead && (s.text || s.name || s.heading)) { doc += `\n## ${s.text || s.name || s.heading}\n`; continue; }
+        if (head) doc += `\n### ${head}\n`;
+        const txt = walk(s, 0).filter((t) => t !== head);
+        if (txt.length) doc += '\n' + [...new Set(txt)].join('\n\n') + '\n';
+      }
+    }
+    return new Response((doc.trim() || '# (no content)') + '\n', { headers: { 'Content-Type': 'text/markdown; charset=utf-8', 'Access-Control-Allow-Origin': '*' } });
+  }
+
+  if (route === 'saved-blocks' && method === 'GET') {
+    if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    await env.DB.prepare("CREATE TABLE IF NOT EXISTS saved_blocks (id INTEGER PRIMARY KEY AUTOINCREMENT, label TEXT, json TEXT NOT NULL, created_at TEXT DEFAULT (datetime('now')))").run().catch(() => {});
+    const { results } = await env.DB.prepare('SELECT id, label, json FROM saved_blocks ORDER BY id DESC LIMIT 100').all().catch(() => ({ results: [] }));
+    return respond(results || []);
+  }
+  if (route === 'saved-blocks' && method === 'POST') {
+    if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    if (!(await isUltra(env, canonHost(env, request)))) return respond({ error: 'Reusable blocks are an Ultra feature.' }, 403);
+    await env.DB.prepare("CREATE TABLE IF NOT EXISTS saved_blocks (id INTEGER PRIMARY KEY AUTOINCREMENT, label TEXT, json TEXT NOT NULL, created_at TEXT DEFAULT (datetime('now')))").run().catch(() => {});
+    const b = await request.json().catch(() => ({}));
+    const label = String(b.label || 'Saved block').slice(0, 80).trim();
+    let json = b.json; try { if (typeof json !== 'string') json = JSON.stringify(json); JSON.parse(json); } catch (e) { return respond({ error: 'bad block' }, 400); }
+    const r = await env.DB.prepare('INSERT INTO saved_blocks (label, json) VALUES (?,?)').bind(label, String(json).slice(0, 20000)).run();
+    return respond({ id: r.meta?.last_row_id, label }, 201);
+  }
+  const savedOne = route.match(/^saved-blocks\/(\d+)$/);
+  if (savedOne && method === 'DELETE') {
+    if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    await env.DB.prepare('DELETE FROM saved_blocks WHERE id = ?').bind(parseInt(savedOne[1])).run().catch(() => {});
+    return respond({ ok: true });
+  }
+
   if (route === 'pages' && method === 'POST') {
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
     await env.DB.prepare(CREATE_PAGES).run();
     if (!(await isPro(env, canonHost(env, request)))) {
-      const c = await env.DB.prepare("SELECT COUNT(*) AS c FROM pages WHERE slug != '__404__'").first();
+      const c = await env.DB.prepare("SELECT COUNT(*) AS c FROM pages WHERE slug != '__404__' AND deleted_at IS NULL").first();
       if ((c?.c || 0) >= 10) return respond({ error: 'Free plan is limited to 10 pages — upgrade to Pro for unlimited.' }, 403);
     }
     const { title = 'Untitled', slug, page_json = '' } = await request.json().catch(() => ({}));
@@ -127,7 +178,7 @@ export async function handleContent(ctx) {
   if (pageSingle && method === 'PUT') {
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
     await env.DB.prepare(CREATE_PAGES).run();
-    await _ensurePwCol(env);
+    await _ensurePwCol(env); await _ensureDeletedCol(env);
     const body = await request.json().catch(() => ({}));
     const id = parseInt(pageSingle[1]);
     const current = await env.DB.prepare('SELECT * FROM pages WHERE id=?').bind(id).first();
@@ -174,8 +225,36 @@ export async function handleContent(ctx) {
 
   if (pageSingle && method === 'DELETE') {
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
-    await env.DB.prepare('DELETE FROM pages WHERE id=?').bind(parseInt(pageSingle[1])).run();
-    await env.DB.prepare('DELETE FROM page_versions WHERE page_id=?').bind(parseInt(pageSingle[1])).run().catch(() => {});
+    await _ensureDeletedCol(env);
+    const pid = parseInt(pageSingle[1]);
+    const permanent = new URL(request.url).searchParams.get('permanent') === '1';
+
+    const ultra = await isUltra(env, canonHost(env, request));
+    if (permanent || !ultra) {
+      await env.DB.prepare('DELETE FROM pages WHERE id=?').bind(pid).run();
+      await env.DB.prepare('DELETE FROM page_versions WHERE page_id=?').bind(pid).run().catch(() => {});
+      return respond({ ok: true, permanent: true });
+    }
+
+
+    await env.DB.prepare("UPDATE pages SET deleted_at = datetime('now'), is_published = 0 WHERE id=?").bind(pid).run();
+    return respond({ ok: true, trashed: true });
+  }
+
+  if (route === 'pages/trash' && method === 'GET') {
+    if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    if (!(await isUltra(env, canonHost(env, request)))) return respond({ error: 'Trash is an Ultra feature.' }, 403);
+    await _ensureDeletedCol(env);
+    const { results } = await env.DB.prepare('SELECT id, title, slug, deleted_at FROM pages WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC').all().catch(() => ({ results: [] }));
+    return respond(results || []);
+  }
+
+  const pageRestore = route.match(/^pages\/(\d+)\/restore$/);
+  if (pageRestore && method === 'POST') {
+    if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    if (!(await isUltra(env, canonHost(env, request)))) return respond({ error: 'Trash is an Ultra feature.' }, 403);
+    await _ensureDeletedCol(env);
+    await env.DB.prepare("UPDATE pages SET deleted_at = NULL, is_published = 1 WHERE id=?").bind(parseInt(pageRestore[1])).run();
     return respond({ ok: true });
   }
 

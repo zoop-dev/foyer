@@ -90,6 +90,7 @@ const BLOCK_CATALOG = [
 
   { t:'newsletter', l:'Newsletter', c:'Forms', i:'send', k:'email signup subscribe' },
   { t:'contactform', l:'Contact form', c:'Forms', i:'@edit', k:'message form email' },
+  { t:'guestbook', l:'Guestbook', c:'Forms', i:'@edit', k:'guestbook sign signatures visitors wall ultra' },
 
   { t:'tutorials', l:'Tutorials', c:'Dynamic', i:'@cap', k:'list' },
   { t:'reviews', l:'Reviews', c:'Dynamic', i:'@star', k:'list' },
@@ -453,6 +454,7 @@ function bDefault(type) {
     case 'booking': return { id, type, url:'', height:'lg', pad:'md' };
     case 'newsletter': return { id, type, access_key:'5a5edde2-d538-44de-9f98-70317e8de72d', heading:'Subscribe', sub:'Get new posts in your inbox.', button:'Subscribe', placeholder:'you@email.com', pad:'md' };
     case 'contactform': return { id, type, access_key:'5a5edde2-d538-44de-9f98-70317e8de72d', eyebrow:'', heading:'Get in touch', sub:'', subject:'New contact message', button:'Send message', items:[{ftype:'text',label:'Name',placeholder:'',required:'yes',options:'',width:'full'},{ftype:'email',label:'Email',placeholder:'you@email.com',required:'yes',options:'',width:'full'},{ftype:'textarea',label:'Message',placeholder:'',required:'yes',options:'',width:'full'}], pad:'md' };
+    case 'guestbook': return { id, type, heading:'Sign the guestbook', sub:'Leave a note before you go ✍️', button:'Sign', pad:'md' };
   }
 }
 
@@ -950,6 +952,11 @@ function bEditorFields(s) {
        <div class="bld-ef"><label>Heading</label><input type="text" data-f="heading" value="${bA(s.heading||'')}" /></div>
        <div class="bld-ef"><label>Subtext</label><input type="text" data-f="sub" value="${bA(s.sub||'')}" /></div>
        <div class="bld-ef"><label>Email placeholder</label><input type="text" data-f="placeholder" value="${bA(s.placeholder||'')}" /></div>
+       <div class="bld-ef"><label>Button label</label><input type="text" data-f="button" value="${bA(s.button||'')}" /></div>${bPadRow(s.pad)}`;
+  } else if (s.type==='guestbook') {
+    f=`<div class="bld-ef" style="font-size:.62rem;color:var(--muted);line-height:1.6;border:1px solid var(--border);padding:.6rem .7rem;border-radius:6px;">A visitor-signable guestbook — entries are stored in Foyer and shown right on the page. <b style="color:#e8c66a;">Ultra</b> feature.</div>
+       <div class="bld-ef"><label>Heading</label><input type="text" data-f="heading" value="${bA(s.heading||'')}" /></div>
+       <div class="bld-ef"><label>Subtext</label><input type="text" data-f="sub" value="${bA(s.sub||'')}" /></div>
        <div class="bld-ef"><label>Button label</label><input type="text" data-f="button" value="${bA(s.button||'')}" /></div>${bPadRow(s.pad)}`;
   } else if (s.type==='contactform') {
     const items=s.items||[];

@@ -20,7 +20,8 @@ function foyerInteractive(type) { return FOYER_INTERACTIVE.has(type); }
   } catch (e) {}
 })();
 function foyerInteractionsBeta() {
-  try { return localStorage.getItem('foyer_beta') === '1' || (window.foyerFlags && window.foyerFlags.interactions === '1'); } catch (e) { return false; }
+
+  try { return window.foyerPlan === 'ultra' || localStorage.getItem('foyer_beta') === '1' || (window.foyerFlags && window.foyerFlags.interactions === '1'); } catch (e) { return false; }
 }
 
 var BLOCKLY_VER = '10.4.3';
@@ -230,7 +231,7 @@ function openInteractions(sectionId) {
   ov.innerHTML =
     '<div style="background:var(--panel,#0d1117);border:1px solid var(--border,#222);border-radius:12px;width:100%;max-width:1000px;height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5);">' +
     '<div style="display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.1rem;border-bottom:1px solid var(--border,#222);">' +
-    '<div style="font-weight:300;letter-spacing:.02em;color:var(--white,#e8eef5);">⚡ Interactions <span style="opacity:.5;font-size:.7rem;">· ' + (sec.type || '') + ' <span style="background:#7fa6d8;color:#070a0e;font-size:.5rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.1rem .35rem;border-radius:3px;">Beta</span></span></div>' +
+    '<div style="font-weight:300;letter-spacing:.02em;color:var(--white,#e8eef5);">⚡ Interactions <span style="opacity:.5;font-size:.7rem;">· ' + (sec.type || '') + ' <span style="background:linear-gradient(135deg,#f0d792,#cda63f);color:#191205;font-size:.5rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:.1rem .35rem;border-radius:3px;">Ultra</span></span></div>' +
     '<div style="display:flex;gap:.5rem;"><button id="bhvClear" class="btn btn-sm" type="button" style="opacity:.8;">Clear</button><button id="bhvCancel" class="btn btn-sm" type="button">Cancel</button><button id="bhvSave" class="btn btn-sm" type="button" style="background:var(--accent,#4dbd6a);color:#06120a;">Save</button></div>' +
     '</div>' +
     '<div id="bhvCanvas" style="flex:1;min-height:0;"></div>' +

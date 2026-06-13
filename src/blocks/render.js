@@ -322,7 +322,8 @@ function bXtra(s, h) {
       </div>`, '520px'));
     }
     case 'contactform': {
-      if (!s.access_key) return wrap(cont(`<div style="text-align:center;border:1px dashed ${rgb(accent, .25)};border-radius:12px;padding:1.4rem;font-size:.82rem;color:${rgb(text, .45)};">Add your Web3Forms access key in this block’s settings to enable the form.</div>`, '560px'));
+
+
       const inp = `width:100%;background:${rgb(text, .05)};border:1px solid ${rgb(accent, .2)};color:${text};font-family:inherit;font-size:.9rem;padding:.7rem .9rem;border-radius:8px;outline:none;`;
       const lbl = (fl) => `<label style="display:block;font-size:.7rem;letter-spacing:.05em;color:${rgb(text, .6)};margin-bottom:.35rem;">${E(fl.label || 'Field')}${fl.required === 'yes' ? ' <span style="color:' + accent + '">*</span>' : ''}</label>`;
       const fields = (items.length ? items : [{ ftype: 'text', label: 'Name', required: 'yes' }, { ftype: 'email', label: 'Email', required: 'yes' }, { ftype: 'textarea', label: 'Message', required: 'yes' }]).map(fl => {
@@ -341,14 +342,25 @@ function bXtra(s, h) {
         return `<div style="flex:${w};min-width:0;margin-bottom:.9rem;">${inner}</div>`;
       }).join('');
       return wrap(cont(`<div style="max-width:520px;margin:0 auto;">${secHead('center')}
-        <form data-w3 data-done="Thanks — I’ll be in touch soon." onsubmit="return false">
-          <input type="hidden" name="access_key" value="${A(s.access_key)}" />
+        <form ${s.access_key ? 'data-w3' : 'data-foyer-inbox'} data-done="Thanks — I’ll be in touch soon." onsubmit="return false">
+          ${s.access_key ? `<input type="hidden" name="access_key" value="${A(s.access_key)}" />` : ''}
           <input type="hidden" name="subject" value="${A(s.subject || 'New contact message')}" />
           <input type="checkbox" name="botcheck" style="display:none;" tabindex="-1" autocomplete="off" />
           <div style="display:flex;flex-wrap:wrap;gap:0 .8rem;">${fields}</div>
           <button type="submit" style="width:100%;margin-top:.4rem;background:${accent};color:${bg};border:none;font-family:inherit;font-weight:400;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;padding:.8rem;border-radius:8px;cursor:pointer;">${E(s.button || 'Send message')}</button>
         </form>
       </div>`, '560px'));
+    }
+    case 'guestbook': {
+      const inp = `width:100%;box-sizing:border-box;background:${rgb(text, .05)};border:1px solid ${rgb(accent, .2)};color:${text};font-family:inherit;font-size:.9rem;padding:.6rem .8rem;border-radius:8px;outline:none;`;
+      return wrap(cont(`<div style="max-width:560px;margin:0 auto;" data-foyer-guestbook>${secHead('center')}
+        <form data-gb-form style="display:flex;flex-direction:column;gap:.6rem;margin:1.1rem 0 1.6rem;" onsubmit="return false">
+          <input name="name" required maxlength="60" placeholder="Your name" style="${inp}" />
+          <textarea name="message" required maxlength="500" rows="3" placeholder="Leave a note…" style="${inp}resize:vertical;"></textarea>
+          <button type="submit" style="background:${accent};color:${bg};border:none;font-family:inherit;font-weight:400;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;padding:.7rem;border-radius:8px;cursor:pointer;">${E(s.button || 'Sign')}</button>
+        </form>
+        <div data-gb-list style="display:flex;flex-direction:column;"></div>
+      </div>`, '600px'));
     }
     default: return '';
   }

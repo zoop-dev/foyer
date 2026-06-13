@@ -1,0 +1,43 @@
+
+
+
+import { canonHost } from './site-config.js';
+import { isUltra } from './plan.js';
+import { rateLimit, clientIp } from './rate-limit.js';
+
+const CREATE_GB = "CREATE TABLE IF NOT EXISTS guestbook (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, message TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')), ip TEXT)";
+let _ready = false;
+async function ensureGB(env) { if (_ready) return; await env.DB.prepare(CREATE_GB).run().catch(() => {}); _ready = true; }
+
+export async function handleGuestbook(ctx) {
+  const { route, method, request, env, respond, authed } = ctx;
+  if (route !== 'guestbook' && !route.startsWith('guestbook/')) return null;
+
+  if (route === 'guestbook' && method === 'GET') {
+    await ensureGB(env);
+    const { results } = await env.DB.prepare('SELECT id, name, message, created_at FROM guestbook ORDER BY id DESC LIMIT 200').all().catch(() => ({ results: [] }));
+    return respond(results || []);
+  }
+
+  if (route === 'guestbook' && method === 'POST') {
+    if (!(await isUltra(env, canonHost(env, request)))) return respond({ error: 'The guestbook is an Ultra feature.' }, 403);
+    const rl = await rateLimit(env, `gb:${clientIp(request)}`, 4, 120);
+    if (!rl.ok) return respond({ error: 'You just signed — give it a moment.' }, 429);
+    const b = await request.json().catch(() => ({}));
+    const name = String(b.name || '').slice(0, 60).trim();
+    const message = String(b.message || '').slice(0, 500).trim();
+    if (!name || !message) return respond({ error: 'Name and a message are required.' }, 400);
+    await ensureGB(env);
+    const r = await env.DB.prepare('INSERT INTO guestbook (name, message, ip) VALUES (?,?,?)').bind(name, message, clientIp(request)).run();
+    return respond({ id: r.meta?.last_row_id, name, message, created_at: new Date().toISOString() }, 201);
+  }
+
+  const one = route.match(/^guestbook\/(\d+)$/);
+  if (one && method === 'DELETE') {
+    if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    await ensureGB(env);
+    await env.DB.prepare('DELETE FROM guestbook WHERE id = ?').bind(parseInt(one[1])).run().catch(() => {});
+    return respond({ ok: true });
+  }
+  return null;
+}

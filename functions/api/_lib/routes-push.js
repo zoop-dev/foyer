@@ -2,7 +2,7 @@
 
 import { sendWebPush } from './webpush.js';
 import { canonHost } from './site-config.js';
-import { isPro } from './plan.js';
+import { isUltra } from './plan.js';
 
 const CREATE_PUSH = "CREATE TABLE IF NOT EXISTS push_subs (endpoint TEXT PRIMARY KEY, p256dh TEXT NOT NULL, auth TEXT NOT NULL, kind TEXT NOT NULL DEFAULT 'visitor', created_at TEXT NOT NULL DEFAULT (datetime('now')))";
 let _pushReady = false;
@@ -40,7 +40,7 @@ export async function handlePush(ctx) {
   const { route, method, request, env, respond, authed } = ctx;
   if (!route.startsWith('push/')) return null;
 
-  const configured = !!(env.VAPID_PUBLIC && env.VAPID_PRIVATE) && await isPro(env, canonHost(env, request));
+  const configured = !!(env.VAPID_PUBLIC && env.VAPID_PRIVATE) && await isUltra(env, canonHost(env, request));
 
   if (route === 'push/config' && method === 'GET') {
     return respond({ vapid_public: configured ? (env.VAPID_PUBLIC || '') : '', enabled: configured });

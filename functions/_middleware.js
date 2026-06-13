@@ -101,7 +101,7 @@ export async function onRequest(ctx) {
 
 
     if (request.method !== 'GET' || hasExt ||
-        p.startsWith('/api') || p.startsWith('/foyer') ||
+        p.startsWith('/api') || p.startsWith('/foyer') || p === '/status' ||
         !accept.includes('text/html')) {
       return next();
     }

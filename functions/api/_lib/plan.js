@@ -15,4 +15,6 @@ export async function sitePlan(env, host) {
   _planCache.set(k, { plan, at: Date.now() });
   return plan;
 }
-export async function isPro(env, host) { return (await sitePlan(env, host)) === 'pro'; }
+
+export async function isPro(env, host) { const p = await sitePlan(env, host); return p === 'pro' || p === 'ultra'; }
+export async function isUltra(env, host) { return (await sitePlan(env, host)) === 'ultra'; }

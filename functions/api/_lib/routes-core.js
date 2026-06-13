@@ -1,8 +1,9 @@
 
 import { canonHost } from './site-config.js';
-import { isPro } from './plan.js';
+import { isPro, sitePlan } from './plan.js';
 import { ragEnabled, ragSearch, ragUpsertPage, ragStats, extractPageText } from './rag.js';
 import { sb } from './supabase.js';
+import { rateLimit, clientIp } from './rate-limit.js';
 
 
 async function aiEnabledForHost(env, host) {
@@ -21,7 +22,7 @@ export async function handleCore(ctx) {
   const { route, method, request, env, headers, respond, compressJson, decompressJson, CREATE_SESSIONS, CREATE_BANNED_EMAILS, CREATE_PAGES, authed, visitorAuthed, _adminRole } = ctx;
 
   if (route === 'config' && method === 'GET') {
-    return respond({ google_client_id: env.GOOGLE_CLIENT_ID || '', github_client_id: env.GITHUB_CLIENT_ID || '', discord_client_id: env.DISCORD_CLIENT_ID || '', magic_enabled: !!env.RESEND_API_KEY, turnstile_site_key: env.TURNSTILE_SITE_KEY || '', recaptcha_site_key: env.RECAPTCHA_SITE_KEY || '' });
+    return respond({ google_client_id: env.GOOGLE_CLIENT_ID || '', github_client_id: env.GITHUB_CLIENT_ID || '', discord_client_id: env.DISCORD_CLIENT_ID || '', magic_enabled: !!env.RESEND_API_KEY, turnstile_site_key: env.TURNSTILE_SITE_KEY || '', recaptcha_site_key: env.RECAPTCHA_SITE_KEY || '', plan: await sitePlan(env, canonHost(env, request)) });
   }
 
 
@@ -79,6 +80,7 @@ export async function handleCore(ctx) {
     if (!env.AI) return respond({ error: 'This assistant isn’t available right now.' }, 503);
     const host = canonHost(env, request);
     if (!(await isPro(env, host))) return respond({ error: '“Ask this site” is a Pro feature.' }, 403);
+    { const rl = await rateLimit(env, `aiask:${host}:${clientIp(request)}`, 15, 60); if (!rl.ok) return respond({ error: 'You’re asking very fast — give it a moment.' }, 429); }
     const enRow = await env.DB.prepare("SELECT value FROM site_settings WHERE key='ask_enabled'").first().catch(() => null);
     if (!(enRow && enRow.value === '1')) return respond({ error: 'The site assistant is turned off.' }, 403);
 
@@ -165,6 +167,7 @@ ${corpus}`;
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
     if (!env.AI) return respond({ error: 'Workers AI isn’t enabled for this site.' }, 503);
     if (!(await aiEnabledForHost(env, new URL(request.url).hostname))) return respond({ error: 'The AI assistant is disabled for this site.' }, 403);
+    { const rl = await rateLimit(env, `aipage:${clientIp(request)}`, 30, 60); if (!rl.ok) return respond({ error: 'Too many generations in a row — give it a moment.' }, 429); }
     const body = await request.json().catch(() => ({}));
 
     let history = Array.isArray(body.messages) ? body.messages : (body.prompt ? [{ role: 'user', content: String(body.prompt) }] : []);

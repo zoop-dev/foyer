@@ -159,6 +159,7 @@
       let discordId = settings.auth_discord !== '0' ? (cfg.discord_client_id || '') : '';
       let magicOn   = settings.auth_magic   !== '0' && !!cfg.magic_enabled;
       let foyerOn   = settings.auth_foyer   === '1';   // Foyer Auth (opt-in)
+      window.foyerPlan = cfg.plan || 'free';   // free|pro|ultra — gates Ultra-only runtime features
       window.__foyerComments = settings.comments_enabled === '1';   // comments on tutorials/reviews/items (Pro)
       const publicMode = settings.site_public === '1' || __SITE__.publicAccess === true;
 

@@ -389,6 +389,48 @@
             .catch(() => { if (btn) { btn.disabled = false; btn.textContent = orig || 'Try again'; } showErr(f, 'Network error — try again.'); });
         });
       });
+
+      root.querySelectorAll('form[data-foyer-inbox]').forEach(f => {
+        if (window.foyerPlan !== 'ultra') { f.innerHTML = `<div style="text-align:center;font-size:.78rem;font-weight:200;opacity:.6;padding:1.2rem;">This form isn’t set up yet.</div>`; return; }
+        f.addEventListener('submit', e => {
+          e.preventDefault();
+          const btn = f.querySelector('[type=submit]'); const orig = btn ? btn.textContent : '';
+          if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+          const fd = new FormData(f); fd.set('page', location.pathname);
+          fetch('/api/inbox', { method: 'POST', body: fd })
+            .then(r => r.json().then(d => ({ ok: r.ok, d })))
+            .then(({ ok, d }) => {
+              if (ok && d && d.ok) { f.innerHTML = `<p style="font-size:.92rem;font-weight:300;padding:.8rem 0;">${f.dataset.done || 'Thanks!'}</p>`; }
+              else { if (btn) { btn.disabled = false; btn.textContent = orig || 'Try again'; } showErr(f, (d && d.error) || 'Could not send.'); }
+            })
+            .catch(() => { if (btn) { btn.disabled = false; btn.textContent = orig || 'Try again'; } showErr(f, 'Network error — try again.'); });
+        });
+      });
+    }
+
+    function initGuestbook(root) {
+      root.querySelectorAll('[data-foyer-guestbook]:not([data-gb-init])').forEach((el) => {
+        el.setAttribute('data-gb-init', '1');
+        const listEl = el.querySelector('[data-gb-list]'), form = el.querySelector('[data-gb-form]');
+        const paint = (rows) => {
+          listEl.innerHTML = (rows && rows.length)
+            ? rows.map((r) => `<div style="border-top:1px solid ${pgRgb('#ffffff', .08)};padding:.7rem 0;"><div style="font-size:.8rem;"><b style="font-weight:400;">${pgE(r.name || '')}</b> <span style="opacity:.45;font-size:.62rem;">${F.fmt.ago(r.created_at)}</span></div><div style="font-weight:200;font-size:.85rem;line-height:1.6;opacity:.85;white-space:pre-wrap;word-break:break-word;margin-top:.15rem;">${pgE(r.message || '')}</div></div>`).join('')
+            : `<p style="opacity:.4;font-size:.8rem;text-align:center;padding:.6rem;">Be the first to sign ✍️</p>`;
+        };
+        fetch('/api/guestbook').then((r) => r.ok ? r.json() : []).then((rows) => paint(Array.isArray(rows) ? rows : [])).catch(() => {});
+        if (window.foyerPlan !== 'ultra') { if (form) form.innerHTML = `<div style="opacity:.45;font-size:.78rem;text-align:center;padding:.6rem;">Signing isn’t available.</div>`; return; }
+        if (form) form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const name = form.querySelector('[name=name]').value.trim(), message = form.querySelector('[name=message]').value.trim();
+          if (!name || !message) return;
+          const btn = form.querySelector('[type=submit]'), orig = btn.textContent;
+          btn.disabled = true; btn.textContent = 'Signing…';
+          fetch('/api/guestbook', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, message }) })
+            .then((r) => r.json().then((d) => ({ ok: r.ok, d })))
+            .then(({ ok, d }) => { btn.disabled = false; btn.textContent = orig; if (ok && d && d.id) { form.reset(); fetch('/api/guestbook').then((r) => r.json()).then((rows) => paint(rows)).catch(() => {}); } })
+            .catch(() => { btn.disabled = false; btn.textContent = orig; });
+        });
+      });
     }
 
 
@@ -747,7 +789,7 @@
         const rv = s.reveal === 'fade' ? 'fade' : s.reveal === 'up' ? 'fade-up' : s.reveal === 'zoom' ? 'zoom-in' : '';
         let attr = rv ? ` data-aos="${rv}"` : '';
 
-        if (s.behaviors && s.behaviors.code && window.foyerFeature && window.foyerFeature('interactions')) attr += ` data-bid="${escAttr(s.id || '')}"`;
+        if (s.behaviors && s.behaviors.code && ((window.foyerFeature && window.foyerFeature('interactions')) || window.foyerPlan === 'ultra')) attr += ` data-bid="${escAttr(s.id || '')}"`;
         return { style, cls, attr };
       };
       const rows = groupRows(sections || []);
@@ -763,11 +805,12 @@
       initCollGalleries(scene);
       initCountdowns(scene);
       initForms(scene);
+      initGuestbook(scene);
       initStats(scene);
       initReveal(scene);
       initScramble(scene);
       initCollEmbeds(scene, session);
-      if (window.foyerFeature && window.foyerFeature('interactions')) foyerWireBehaviors(scene, sections || []);
+      if (((window.foyerFeature && window.foyerFeature('interactions')) || window.foyerPlan === 'ultra')) foyerWireBehaviors(scene, sections || []);
       foyerLazyImg(scene);
       foyerHL(scene);
       scene.querySelectorAll('a, button').forEach(hookHover);

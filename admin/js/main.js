@@ -5,6 +5,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.add('active');
     document.getElementById('sec-' + btn.dataset.tab).classList.add('active');
     if (btn.dataset.tab === 'home') loadHome();
+    if (btn.dataset.tab === 'inbox') loadInbox();
     if (btn.dataset.tab === 'analytics') fetchAnalytics();
     if (btn.dataset.tab === 'builder')  { bldBoot(); bldLoadPages(); }
     if (btn.dataset.tab === 'images')   renderImgTabGallery();
@@ -1049,17 +1050,48 @@ async function loadCommentsAdmin(){
 }
 document.getElementById('cmtRefresh')?.addEventListener('click', loadCommentsAdmin);
 
+async function loadInbox() {
+  const w = document.getElementById('inboxWrap'); if (!w) return;
+  let data = { messages: [], unread: 0 };
+  try { data = await fetch('/api/inbox', { headers: authHeaders() }).then(r => r.ok ? r.json() : { messages: [], unread: 0 }); } catch (e) {}
+  const msgs = data.messages || [];
+  const badge = document.getElementById('inboxBadge'); if (badge) badge.textContent = data.unread ? data.unread : '';
+  if (!msgs.length) { w.innerHTML = `<h1 style="font-weight:200;font-size:1.3rem;color:var(--white);">Inbox</h1><p style="font-weight:200;font-size:.8rem;color:var(--muted);margin-top:.6rem;">No messages yet. Contact-form submissions land here.</p>`; return; }
+  w.innerHTML = `<h1 style="font-weight:200;font-size:1.3rem;color:var(--white);margin:0 0 1rem;">Inbox <span style="font-size:.8rem;color:var(--muted);">· ${msgs.length}</span></h1>` + msgs.map(m => `
+    <div data-msg="${m.id}" style="background:var(--panel);border:1px solid ${m.read_at ? 'var(--border)' : 'rgba(var(--accent-rgb),.4)'};border-radius:10px;padding:.9rem 1.1rem;margin-bottom:.7rem;">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:.6rem;">
+        <div style="min-width:0;"><span style="color:var(--white);font-weight:400;font-size:.86rem;">${escHtml(m.subject || 'Message')}</span> ${m.read_at ? '' : '<span style="color:var(--accent);font-size:.6rem;">●</span>'}<div style="font-size:.66rem;color:var(--muted);">${escHtml(m.name || '')}${m.email ? ` · <a href="mailto:${escAttr(m.email)}" style="color:var(--muted);">${escHtml(m.email)}</a>` : ''} · ${timeAgo(m.created_at)}${m.page ? ' · ' + escHtml(m.page) : ''}</div></div>
+        <button class="btn btn-xs" data-mdel="${m.id}" style="color:#e0608a;flex-shrink:0;">Delete</button>
+      </div>
+      <div style="font-size:.8rem;font-weight:200;color:rgba(220,245,225,.85);white-space:pre-wrap;word-break:break-word;margin-top:.5rem;">${escHtml(m.body || '')}</div>
+    </div>`).join('');
+
+  msgs.filter(m => !m.read_at).forEach(m => fetch(`/api/inbox/${m.id}/read`, { method: 'POST', headers: authHeaders() }).catch(() => {}));
+  if (badge) badge.textContent = '';
+  w.querySelectorAll('[data-mdel]').forEach(b => b.addEventListener('click', async () => {
+    if (!await dlg.confirm('Delete this message?', { danger: true, confirm: 'Delete' })) return;
+    const r = await fetch(`/api/inbox/${b.dataset.mdel}`, { method: 'DELETE', headers: authHeaders() });
+    if (r.ok) { w.querySelector(`[data-msg="${b.dataset.mdel}"]`)?.remove(); }
+  }));
+}
+async function refreshInboxBadge() {
+  if (window.foyerPlan !== 'ultra') return;
+  try { const d = await fetch('/api/inbox', { headers: authHeaders() }).then(r => r.ok ? r.json() : null); const b = document.getElementById('inboxBadge'); if (b && d) b.textContent = d.unread ? d.unread : ''; } catch (e) {}
+}
+
 async function loadHome() {
   const w = document.getElementById('homeWrap'); if (!w) return;
   const A = () => ({ headers: authHeaders() });
-  const [pages, tuts, revs, comments, settings, an] = await Promise.all([
+  const [pages, tuts, revs, comments, settings, an, cfg] = await Promise.all([
     fetch('/api/nav/pages', A()).then(r => r.ok ? r.json() : []).catch(() => []),
     fetch('/api/tutorials', A()).then(r => r.ok ? r.json() : []).catch(() => []),
     fetch('/api/reviews', A()).then(r => r.ok ? r.json() : []).catch(() => []),
     fetch('/api/comments/admin', A()).then(r => r.ok ? r.json() : []).catch(() => []),
     fetch('/api/settings').then(r => r.ok ? r.json() : ({})).catch(() => ({})),
     fetch('/api/analytics', A()).then(r => r.ok ? r.json() : null).catch(() => null),
+    fetch('/api/config').then(r => r.ok ? r.json() : ({})).catch(() => ({})),
   ]);
+  const plan = (cfg && cfg.plan) || 'free'; window.foyerPlan = plan; const ultra = plan === 'ultra';
   const len = a => Array.isArray(a) ? a.length : 0;
   const num = o => (o && typeof o === 'object') ? (o.n || 0) : (o || 0);
   const today = an ? num(an.today) : 0, week = an ? num(an.week) : 0;
@@ -1081,6 +1113,7 @@ async function loadHome() {
       <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
         <button type="button" class="btn btn-sm" data-go="builder">+ New page</button>
         <button type="button" class="btn btn-sm" data-ext="/">View site ↗</button>
+        ${ultra ? `<button type="button" class="btn btn-sm" id="homeExport">Export ↓</button>` : ''}
         <button type="button" class="btn btn-sm" data-go="settings">Settings</button></div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:.7rem;margin-bottom:1.6rem;">
@@ -1093,6 +1126,18 @@ async function loadHome() {
     </div>`;
   w.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => document.querySelector(`.tab-btn[data-tab="${b.dataset.go}"]`)?.click()));
   w.querySelectorAll('[data-ext]').forEach(b => b.addEventListener('click', () => window.open(b.dataset.ext, '_blank')));
+  document.getElementById('homeExport')?.addEventListener('click', async () => {
+    try {
+      const r = await fetch('/api/export', { headers: authHeaders() });
+      if (!r.ok) { toast('Export failed', true); return; }
+      const txt = await r.text();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([txt], { type: 'text/markdown' }));
+      a.download = (__SITE__.name || 'site').replace(/\s+/g, '-').toLowerCase() + '.md';
+      a.click(); URL.revokeObjectURL(a.href);
+      toast('Exported as Markdown', false, { type: 'success' });
+    } catch (e) { toast('Export failed', true); }
+  });
 }
 document.getElementById('pushOwner')?.addEventListener('click', async ()=>{
   try{
@@ -1126,6 +1171,13 @@ document.getElementById('pushSend')?.addEventListener('click', async (e)=>{
     ? { type:'success', message:`Sent to ${d.sent||0} subscriber${(d.sent===1)?'':'s'}.`, autoClose:4000 }
     : { type:'error', message:d.error||'Failed to send.', autoClose:4000 });
 });
+
+window.foyerPlan = 'free';
+fetch('/api/config').then(r => r.ok ? r.json() : {}).then(c => {
+  window.foyerPlan = c.plan || 'free';
+  if (typeof bldDrawPages === 'function' && document.getElementById('bldPageList')?.children.length) bldDrawPages();
+  if (window.foyerPlan === 'ultra') { const t = document.getElementById('inboxTab'); if (t) t.style.display = ''; if (typeof refreshInboxBadge === 'function') refreshInboxBadge(); }
+}).catch(() => {});
 
 init(); // called here so all scripts are loaded first
 loadHome(); // Home is the default tab — populate it on load
