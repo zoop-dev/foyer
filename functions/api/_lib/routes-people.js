@@ -1,6 +1,8 @@
 
 import { canonHost } from './site-config.js';
-import { isPro } from './plan.js';
+import { isPro, sitePlan } from './plan.js';
+
+const ADMIN_LIMIT = { free: 5, pro: 10, ultra: Infinity };
 
 export async function handlePeople(ctx) {
   const { route, method, request, env, headers, respond, compressJson, decompressJson, CREATE_SESSIONS, CREATE_BANNED_EMAILS, CREATE_PAGES, authed, visitorAuthed, _adminRole } = ctx;
@@ -22,6 +24,13 @@ export async function handlePeople(ctx) {
 
     const target = await env.DB.prepare('SELECT role FROM visitors WHERE id = ?').bind(id).first();
     if (target?.role === 'owner') return respond({ error: 'cannot_modify_owner' }, 403);
+
+    if (newRole === 'admin') {
+      const plan = await sitePlan(env, canonHost(env, request));
+      const limit = ADMIN_LIMIT[plan] != null ? ADMIN_LIMIT[plan] : ADMIN_LIMIT.free;
+      const c = await env.DB.prepare("SELECT COUNT(*) AS n FROM visitors WHERE role IN ('owner','admin')").first().catch(() => ({ n: 0 }));
+      if ((c?.n || 0) >= limit) return respond({ error: `Your plan allows up to ${limit} admins. Upgrade for more.`, limit }, 403);
+    }
     await env.DB.prepare('UPDATE visitors SET role = ? WHERE id = ?').bind(newRole, id).run();
     return respond({ ok: true, role: newRole });
   }
