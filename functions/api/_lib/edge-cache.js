@@ -12,7 +12,9 @@
 
 import { canonHost } from './site-config.js';
 
-const CACHEABLE = /^(config|settings|search|nav|pages|tutorials|reviews|collections)(\/|$)/;
+
+
+const CACHEABLE = /^(settings|search|nav|pages|tutorials|reviews|collections)(\/|$)/;
 
 function isAnon(request) {
   if (request.headers.get('Authorization')) return false;
