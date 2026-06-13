@@ -112,10 +112,11 @@ async function fetchAnalytics() {
 
   window._anVisitors = d.visitors;
   const isOwner = d.caller_role === 'owner';
+  const _rolesBtn = (isOwner && window.foyerPlan === 'ultra') ? `<button class="btn btn-sm" id="anRolesBtn" style="margin-bottom:.7rem;">⚙ Roles &amp; access</button>` : '';
   const roleBadge = r => r === 'owner'
     ? '<span class="v-role-badge owner">OWNER</span>'
     : r === 'admin' ? '<span class="v-role-badge admin">ADMIN</span>' : '';
-  vList.innerHTML = d.visitors.map((v, i) => `
+  vList.innerHTML = _rolesBtn + d.visitors.map((v, i) => `
     <div class="v-item${v.is_banned ? ' v-item-banned' : ''}" data-vi="${i}">
       ${v.picture ? `<img class="v-avatar" src="${escHtml(v.picture)}" alt="" referrerpolicy="no-referrer" />` : `<div class="v-avatar-ph">${escHtml((v.name||v.email||'?').charAt(0).toUpperCase())}</div>`}
       <div class="v-info">
@@ -153,6 +154,56 @@ async function fetchAnalytics() {
   vList.querySelectorAll('.v-demote-btn').forEach(btn => {
     btn.addEventListener('click', e => { e.stopPropagation(); changeRole(+btn.dataset.id, 'demote'); });
   });
+  document.getElementById('anRolesBtn')?.addEventListener('click', openRolesModal);
+}
+
+const ROLE_PERMS = [['pages','Page builder'],['content','Tutorials / Reviews / Collections'],['media','Images & files'],['analytics','Analytics'],['inbox','Inbox'],['comments','Comments'],['settings','Settings'],['team','Team & roles']];
+async function openRolesModal() {
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(4,7,11,.72);display:flex;align-items:flex-start;justify-content:center;padding:5vh 1.2rem;overflow:auto;';
+  ov.innerHTML = `<div style="background:var(--panel);border:1px solid var(--border);border-radius:12px;width:100%;max-width:600px;padding:1.3rem 1.5rem;box-shadow:0 20px 60px rgba(0,0,0,.5);"><div id="rolesBody">Loading…</div></div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('mousedown', e => { if (e.target === ov) ov.remove(); });
+  let editId = null;
+  async function refresh() {
+    const [roles, vis] = await Promise.all([
+      fetch('/api/roles', { headers: authHeaders() }).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch('/api/visitors', { headers: authHeaders() }).then(r => r.ok ? r.json() : { visitors: [] }).catch(() => ({ visitors: [] })),
+    ]);
+    const admins = (vis.visitors || []).filter(v => v.role === 'admin');
+    const ed = editId ? (roles.find(r => r.id === editId) || {}) : {};
+    const body = ov.querySelector('#rolesBody');
+    body.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem;"><h3 style="margin:0;font-weight:300;color:var(--white);">⚙ Roles &amp; access</h3><button class="btn btn-sm" id="rmX">Close</button></div>
+      <p style="font-size:.66rem;color:var(--muted);margin:0 0 1rem;">Create named roles with specific permissions, then assign them to your admins. Admins with no role keep full access.</p>
+      <div style="font-size:.7rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem;">Roles</div>
+      <div style="display:flex;flex-direction:column;gap:.35rem;margin-bottom:.8rem;">${roles.length ? roles.map(r => `<div style="display:flex;align-items:center;gap:.5rem;background:var(--bg,#0c1116);border:1px solid var(--border);border-radius:8px;padding:.45rem .7rem;"><b style="font-weight:400;color:var(--white);font-size:.82rem;flex-shrink:0;">${escHtml(r.name)}</b><span style="flex:1;font-size:.64rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.perms.length ? r.perms.join(', ') : 'no permissions'}</span><button class="btn btn-xs" data-redit="${r.id}">Edit</button><button class="btn btn-xs" data-rdel="${r.id}" style="color:#e0608a;">Delete</button></div>`).join('') : '<p style="font-size:.74rem;color:var(--muted);opacity:.7;">No roles yet.</p>'}</div>
+      <div style="border:1px solid var(--border);border-radius:9px;padding:.8rem .9rem;margin-bottom:1.1rem;">
+        <input id="rmName" maxlength="40" placeholder="Role name (e.g. Editor)" value="${escAttr(ed.name || '')}" style="width:100%;box-sizing:border-box;background:var(--panel);border:1px solid var(--border);color:var(--white);font:inherit;font-size:.82rem;padding:.5rem .7rem;border-radius:7px;margin-bottom:.6rem;" />
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.3rem .8rem;margin-bottom:.7rem;">${ROLE_PERMS.map(([k, l]) => `<label style="display:flex;align-items:center;gap:.45rem;font-size:.74rem;color:rgba(220,245,225,.85);cursor:pointer;"><input type="checkbox" data-perm="${k}" ${(ed.perms || []).includes(k) ? 'checked' : ''} style="width:auto;" /> ${l}</label>`).join('')}</div>
+        <button class="btn btn-sm" id="rmSave" style="background:var(--accent,#4dbd6a);color:#06120a;">${editId ? 'Save role' : 'Create role'}</button>${editId ? '<button class="btn btn-sm" id="rmCancel" style="margin-left:.4rem;">Cancel</button>' : ''}
+      </div>
+      <div style="font-size:.7rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem;">Admins</div>
+      <div style="display:flex;flex-direction:column;gap:.4rem;">${admins.length ? admins.map(a => `<div style="display:flex;align-items:center;gap:.5rem;"><span style="flex:1;font-size:.8rem;color:var(--white);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(a.name || a.email || '—')}</span><select data-assign="${a.id}" class="btn btn-sm" style="cursor:pointer;"><option value="">Full access</option>${roles.map(r => `<option value="${r.id}" ${a.role_id === r.id ? 'selected' : ''}>${escHtml(r.name)}</option>`).join('')}</select></div>`).join('') : '<p style="font-size:.74rem;color:var(--muted);opacity:.7;">No other admins yet. Promote a visitor to admin first.</p>'}</div>`;
+    body.querySelector('#rmX').addEventListener('click', () => ov.remove());
+    body.querySelector('#rmCancel')?.addEventListener('click', () => { editId = null; refresh(); });
+    body.querySelectorAll('[data-redit]').forEach(b => b.addEventListener('click', () => { editId = +b.dataset.redit; refresh(); }));
+    body.querySelectorAll('[data-rdel]').forEach(b => b.addEventListener('click', async () => { if (!await dlg.confirm('Delete this role? Admins using it revert to full access.', { danger: true, confirm: 'Delete' })) return; await fetch(`/api/roles/${b.dataset.rdel}`, { method: 'DELETE', headers: authHeaders() }); editId = null; refresh(); }));
+    body.querySelector('#rmSave').addEventListener('click', async () => {
+      const name = body.querySelector('#rmName').value.trim();
+      if (!name) { toast('Name the role first.', true); return; }
+      const perms = [...body.querySelectorAll('[data-perm]:checked')].map(c => c.dataset.perm);
+      const url = editId ? `/api/roles/${editId}` : '/api/roles';
+      const r = await fetch(url, { method: editId ? 'PUT' : 'POST', headers: { ...authHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ name, perms }) });
+      if (r.ok) { toast(editId ? 'Role saved' : 'Role created', false, { type: 'success' }); editId = null; refresh(); }
+      else { const d = await r.json().catch(() => ({})); toast(d.error || 'Failed', true); }
+    });
+    body.querySelectorAll('[data-assign]').forEach(sel => sel.addEventListener('change', async () => {
+      const r = await fetch(`/api/visitors/${sel.dataset.assign}/role`, { method: 'POST', headers: { ...authHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ role_id: sel.value || null }) });
+      toast(r.ok ? 'Role assigned' : 'Failed', !r.ok);
+    }));
+  }
+  refresh();
 }
 
 async function changeRole(id, action) {
@@ -162,7 +213,7 @@ async function changeRole(id, action) {
     : `Demote ${v?.name || v?.email || 'this admin'} back to a regular user?`;
   if (!await dlg.confirm(label, { confirm: action === 'promote' ? 'Promote' : 'Demote', danger: action === 'demote' })) return;
   const res = await fetch(`/api/visitors/${id}/${action}`, { method: 'POST', headers: authHeaders() });
-  if (!res.ok) { await dlg.alert('Action failed — owner only.'); return; }
+  if (!res.ok) { const e = await res.json().catch(() => ({})); await dlg.alert(e.error || 'Action failed — owner only.'); return; }
   toast(action === 'promote' ? 'Promoted to admin' : 'Demoted to user');
   fetchAnalytics();
 }

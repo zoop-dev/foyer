@@ -182,7 +182,26 @@ export async function buildCtx({ request, env, params, waitUntil }) {
 
   _adminRole = await resolveAdminRole();
 
+
+
+
+  let _perms = null;   // null = all permissions
+  if (_adminRole === 'admin') {
+    try {
+      const st = request.headers.get('X-Session-Token') || '';
+      if (st) {
+        const vr = await env.DB.prepare("SELECT v.role_id FROM sessions s JOIN visitors v ON v.id = s.visitor_id WHERE s.token = ? AND s.expires_at > datetime('now')").bind(st).first();
+        if (vr && vr.role_id) {
+          const rr = await env.DB.prepare('SELECT perms FROM roles WHERE id = ?').bind(vr.role_id).first();
+          if (rr) _perms = new Set(String(rr.perms || '').split(',').map((x) => x.trim()).filter(Boolean));
+        }
+      }
+    } catch (e) { _perms = null; }
+  }
+  const can = (perm) => _perms === null ? true : _perms.has(perm);
+  const adminPerms = _perms === null ? 'all' : [..._perms];
+
   return { route, method, request, env, headers, respond, compressJson, decompressJson, waitUntil,
-           CREATE_SESSIONS, CREATE_BANNED_EMAILS, CREATE_PAGES, authed, visitorAuthed, _adminRole,
+           CREATE_SESSIONS, CREATE_BANNED_EMAILS, CREATE_PAGES, authed, visitorAuthed, _adminRole, can, adminPerms,
            ensureSessionCols, newSession, currentVisitor, sitePublic, canView };
 }

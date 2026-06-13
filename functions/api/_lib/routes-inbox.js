@@ -12,7 +12,7 @@ let _ready = false;
 async function ensureInbox(env) { if (_ready) return; await env.DB.prepare(CREATE_INBOX).run().catch(() => {}); _ready = true; }
 
 export async function handleInbox(ctx) {
-  const { route, method, request, env, respond, authed } = ctx;
+  const { route, method, request, env, respond, authed, can } = ctx;
   if (route !== 'inbox' && !route.startsWith('inbox/')) return null;
   const host = canonHost(env, request);
 
@@ -45,6 +45,7 @@ export async function handleInbox(ctx) {
 
   if (route === 'inbox' && method === 'GET') {
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    if (!can('inbox')) return respond({ error: 'no_permission' }, 403);
     if (!(await isUltra(env, host))) return respond({ error: 'The native inbox is an Ultra feature.' }, 403);
     await ensureInbox(env);
     const { results } = await env.DB.prepare('SELECT id, name, email, subject, body, page, created_at, read_at FROM inbox ORDER BY id DESC LIMIT 300').all().catch(() => ({ results: [] }));

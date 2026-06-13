@@ -25,7 +25,7 @@ async function _snapshotPage(env, page) {
 }
 
 export async function handleContent(ctx) {
-  const { route, method, request, env, headers, respond, compressJson, decompressJson, CREATE_SESSIONS, CREATE_BANNED_EMAILS, CREATE_PAGES, authed, visitorAuthed, _adminRole, sitePublic, canView } = ctx;
+  const { route, method, request, env, headers, respond, compressJson, decompressJson, CREATE_SESSIONS, CREATE_BANNED_EMAILS, CREATE_PAGES, authed, visitorAuthed, _adminRole, sitePublic, canView, can } = ctx;
 
   if (route === 'whoami' && method === 'GET') {
     return respond({ raw_host: new URL(request.url).hostname, canon_host: canonHost(env, request), site_domain: env.FOYER_DOMAIN || null });
@@ -40,6 +40,7 @@ export async function handleContent(ctx) {
 
   if (route === 'settings' && method === 'PUT') {
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    if (!can('settings')) return respond({ error: 'Your role can’t change settings.' }, 403);
     const body = await request.json().catch(() => ({}));
     for (const [key, value] of Object.entries(body)) {
       await env.DB.prepare(

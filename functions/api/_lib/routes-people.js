@@ -1,16 +1,22 @@
 
 import { canonHost } from './site-config.js';
-import { isPro, sitePlan } from './plan.js';
+import { isPro, isUltra, sitePlan } from './plan.js';
 
 const ADMIN_LIMIT = { free: 5, pro: 10, ultra: Infinity };
+const PERM_KEYS = ['pages', 'content', 'media', 'analytics', 'inbox', 'comments', 'settings', 'team'];
+async function ensureRoles(env) {
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS roles (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, perms TEXT, created_at TEXT DEFAULT (datetime('now')))").run().catch(() => {});
+  await env.DB.prepare('ALTER TABLE visitors ADD COLUMN role_id INTEGER').run().catch(() => {});
+}
 
 export async function handlePeople(ctx) {
-  const { route, method, request, env, headers, respond, compressJson, decompressJson, CREATE_SESSIONS, CREATE_BANNED_EMAILS, CREATE_PAGES, authed, visitorAuthed, _adminRole } = ctx;
+  const { route, method, request, env, headers, respond, compressJson, decompressJson, CREATE_SESSIONS, CREATE_BANNED_EMAILS, CREATE_PAGES, authed, visitorAuthed, _adminRole, adminPerms, can } = ctx;
 
   if (route === 'visitors' && method === 'GET') {
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    await ensureRoles(env);
     const { results } = await env.DB.prepare(
-      'SELECT id, email, name, picture, visit_count, is_banned, role, first_seen, last_seen FROM visitors ORDER BY last_seen DESC'
+      'SELECT id, email, name, picture, visit_count, is_banned, role, role_id, first_seen, last_seen FROM visitors ORDER BY last_seen DESC'
     ).all();
 
     return respond({ visitors: results, caller_role: _adminRole || '' });
@@ -33,6 +39,57 @@ export async function handlePeople(ctx) {
     }
     await env.DB.prepare('UPDATE visitors SET role = ? WHERE id = ?').bind(newRole, id).run();
     return respond({ ok: true, role: newRole });
+  }
+
+  if (route === 'me' && method === 'GET') {
+    if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    return respond({ role: _adminRole || '', perms: adminPerms, keys: PERM_KEYS });
+  }
+
+  if (route === 'roles' && method === 'GET') {
+    if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    await ensureRoles(env);
+    const { results } = await env.DB.prepare('SELECT id, name, perms FROM roles ORDER BY name').all().catch(() => ({ results: [] }));
+    return respond((results || []).map((r) => ({ id: r.id, name: r.name, perms: String(r.perms || '').split(',').filter(Boolean) })));
+  }
+  if (route === 'roles' && method === 'POST') {
+    if (_adminRole !== 'owner') return respond({ error: 'owner_only' }, 403);
+    if (!(await isUltra(env, canonHost(env, request)))) return respond({ error: 'Custom roles are an Ultra feature.' }, 403);
+    await ensureRoles(env);
+    const b = await request.json().catch(() => ({}));
+    const name = String(b.name || '').slice(0, 40).trim();
+    const perms = (Array.isArray(b.perms) ? b.perms : []).filter((p) => PERM_KEYS.includes(p)).join(',');
+    if (!name) return respond({ error: 'A role name is required.' }, 400);
+    const r = await env.DB.prepare('INSERT INTO roles (name, perms) VALUES (?,?)').bind(name, perms).run();
+    return respond({ id: r.meta?.last_row_id, name, perms: perms.split(',').filter(Boolean) }, 201);
+  }
+  const roleOne = route.match(/^roles\/(\d+)$/);
+  if (roleOne && method === 'PUT') {
+    if (_adminRole !== 'owner') return respond({ error: 'owner_only' }, 403);
+    await ensureRoles(env);
+    const b = await request.json().catch(() => ({}));
+    const name = String(b.name || '').slice(0, 40).trim();
+    const perms = (Array.isArray(b.perms) ? b.perms : []).filter((p) => PERM_KEYS.includes(p)).join(',');
+    await env.DB.prepare('UPDATE roles SET name = ?, perms = ? WHERE id = ?').bind(name, perms, parseInt(roleOne[1])).run().catch(() => {});
+    return respond({ ok: true });
+  }
+  if (roleOne && method === 'DELETE') {
+    if (_adminRole !== 'owner') return respond({ error: 'owner_only' }, 403);
+    await ensureRoles(env);
+    const rid = parseInt(roleOne[1]);
+    await env.DB.prepare('DELETE FROM roles WHERE id = ?').bind(rid).run().catch(() => {});
+    await env.DB.prepare('UPDATE visitors SET role_id = NULL WHERE role_id = ?').bind(rid).run().catch(() => {});
+    return respond({ ok: true });
+  }
+
+  const assign = route.match(/^visitors\/(\d+)\/role$/);
+  if (assign && method === 'POST') {
+    if (_adminRole !== 'owner') return respond({ error: 'owner_only' }, 403);
+    await ensureRoles(env);
+    const b = await request.json().catch(() => ({}));
+    const roleId = b.role_id ? parseInt(b.role_id) : null;
+    await env.DB.prepare('UPDATE visitors SET role_id = ? WHERE id = ? AND role = ?').bind(roleId, parseInt(assign[1]), 'admin').run().catch(() => {});
+    return respond({ ok: true });
   }
 
   if (route === 'banned-emails' && method === 'GET') {
@@ -246,6 +303,7 @@ export async function handlePeople(ctx) {
 
   if (route === 'analytics' && method === 'GET') {
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    if (!can('analytics')) return respond({ error: 'no_permission' }, 403);
     await env.DB.prepare(CREATE_PAGE_VIEWS).run();
     const pro = await isPro(env, canonHost(env, request));
 

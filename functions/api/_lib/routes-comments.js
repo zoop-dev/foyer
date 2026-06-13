@@ -24,11 +24,12 @@ async function commentsOn(env) {
 }
 
 export async function handleComments(ctx) {
-  const { route, method, request, env, respond, authed } = ctx;
+  const { route, method, request, env, respond, authed, can } = ctx;
 
 
   if (route === 'comments/admin' && method === 'GET') {
     if (!authed()) return respond({ error: 'unauthorized' }, 401);
+    if (!can('comments')) return respond({ error: 'no_permission' }, 403);
     await ensureComments(env);
     const { results } = await env.DB.prepare('SELECT id, target, name, body, avatar, created_at FROM comments ORDER BY id DESC LIMIT 500').all().catch(() => ({ results: [] }));
     return respond(results || []);

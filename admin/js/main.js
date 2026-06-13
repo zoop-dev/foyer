@@ -1173,11 +1173,26 @@ document.getElementById('pushSend')?.addEventListener('click', async (e)=>{
 });
 
 window.foyerPlan = 'free';
+window.foyerPerms = 'all';   // 'all' or an array of permission keys
+function foyerCan(p) { return window.foyerPerms === 'all' || (Array.isArray(window.foyerPerms) && window.foyerPerms.includes(p)); }
+const TAB_PERM = { builder: 'pages', images: 'media', files: 'media', tutorials: 'content', reviews: 'content', collections: 'content', analytics: 'analytics', inbox: 'inbox', settings: 'settings', backup: 'settings', history: 'pages' };
+function applyTabVisibility() {
+  const ultra = window.foyerPlan === 'ultra';
+  Object.keys(TAB_PERM).forEach(t => {
+    const b = document.querySelector(`.tab-btn[data-tab="${t}"]`); if (!b) return;
+    if (t === 'inbox') { b.style.display = (ultra && foyerCan('inbox')) ? '' : 'none'; return; }
+    b.style.display = foyerCan(TAB_PERM[t]) ? '' : 'none';
+  });
+  const active = document.querySelector('.tab-btn.active');
+  if (active && active.style.display === 'none') document.querySelector('.tab-btn[data-tab="home"]')?.click();
+}
 fetch('/api/config').then(r => r.ok ? r.json() : {}).then(c => {
   window.foyerPlan = c.plan || 'free';
   if (typeof bldDrawPages === 'function' && document.getElementById('bldPageList')?.children.length) bldDrawPages();
-  if (window.foyerPlan === 'ultra') { const t = document.getElementById('inboxTab'); if (t) t.style.display = ''; if (typeof refreshInboxBadge === 'function') refreshInboxBadge(); }
+  if (window.foyerPlan === 'ultra' && typeof refreshInboxBadge === 'function') refreshInboxBadge();
+  applyTabVisibility();
 }).catch(() => {});
+fetch('/api/me', { headers: authHeaders() }).then(r => r.ok ? r.json() : null).then(m => { if (m && m.perms) { window.foyerPerms = m.perms; applyTabVisibility(); } }).catch(() => {});
 
 init(); // called here so all scripts are loaded first
 loadHome(); // Home is the default tab — populate it on load
