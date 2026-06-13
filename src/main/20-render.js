@@ -618,7 +618,7 @@
       const apply = (s) => {
         s = s || {};
         if (!rm && s.smooth_scroll !== '0') loadLenis();
-        if (!rm && s.scramble_title === '1') {
+        if (!rm && s.scramble_title === '1' && window.foyerPlan === 'ultra') {   // Ultra-only effect
           let strings = String(s.scramble_strings || '').split('\n').map(x => x.trim()).filter(Boolean);
           if (!window.__FOYER_NOBRAND) strings.push('built by foyer');
           const secs = parseFloat(s.scramble_interval);
