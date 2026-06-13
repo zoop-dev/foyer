@@ -1109,7 +1109,7 @@ async function loadHome() {
   w.innerHTML = `
     <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.5rem;">
       <div><h1 style="font-weight:200;font-size:1.5rem;color:var(--white);margin:0;letter-spacing:-.01em;">${escHtml(__SITE__.name || 'Your site')}</h1>
-        <div style="display:flex;gap:.4rem;margin-top:.55rem;">${pill(isPublic ? 'Public' : 'Private', isPublic ? '#4dbd6a' : '#d6a14d')} ${pill(offline ? 'Offline' : 'Online', offline ? '#e0608a' : '#4dbd6a')}</div></div>
+        <div style="display:flex;gap:.4rem;margin-top:.55rem;">${pill(isPublic ? 'Public' : 'Private', isPublic ? '#4dbd6a' : '#d6a14d')} ${pill(offline ? 'Offline' : 'Online', offline ? '#e0608a' : '#4dbd6a')} ${pill(plan === 'ultra' ? 'Ultra' : plan === 'pro' ? 'Pro' : 'Free', plan === 'ultra' ? '#e8c66a' : plan === 'pro' ? '#7fa6d8' : '#7c8a99')}</div></div>
       <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
         <button type="button" class="btn btn-sm" data-go="builder">+ New page</button>
         <button type="button" class="btn btn-sm" data-ext="/">View site ↗</button>
