@@ -1,1 +1,1 @@
-Line icons (Feather, MIT — https://feathericons.com). Drop a new <name>.svg here (24x24, stroke-based) and rebuild; it auto-appears in the icon picker. Rendered via CSS mask so they take each site accent color.
+Line icons (Material Symbols Outlined, Google, Apache 2.0 — https://fonts.google.com/icons). Drop a new <name>.svg here (24x24) and rebuild; it auto-appears in the icon picker. Rendered via CSS mask so they take each site accent color.

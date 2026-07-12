@@ -102,16 +102,7 @@ async function assertRenderersInSync() {
 await assertRenderersInSync();
 await rm(dist, { recursive: true, force: true });
 await mkdir(dist, { recursive: true });
-const MAIN_CHUNKS = [
-  "10-core",
-  "20-render",
-  "30-net",
-  "40-pages",
-  "50-account",
-  "60-gate",
-  "70-magic",
-  "80-boot"
-];
+const MAIN_CHUNKS = ["10-core", "20-render", "30-net", "40-pages", "60-gate", "80-boot"];
 const sharedRender = await readFile(SHARED_RENDER, "utf8");
 const sharedLib = await readFile(path.join(root, "src/shared/lib.js"), "utf8");
 const mainChunks = await Promise.all(
@@ -123,6 +114,20 @@ await esbuild.build({
   outfile: path.join(dist, "app.js"),
   bundle: true,
   format: "iife",
+  minify: true,
+  sourcemap: true,
+  target: "es2020",
+  define,
+  legalComments: "none"
+});
+await esbuild.build({
+  entryPoints: {
+    magic: path.join(root, "src/main/70-magic.js"),
+    account: path.join(root, "src/main/50-account.js")
+  },
+  outdir: path.join(dist, "chunks"),
+  bundle: true,
+  format: "esm",
   minify: true,
   sourcemap: true,
   target: "es2020",
