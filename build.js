@@ -8,25 +8,44 @@
 
 
 const FOYER_MARK = "Built with Foyer";
+
+
 const stripJs = async (code) => {
-  try { return (await esbuild.transform(code, { loader: "js", minifyWhitespace: true, legalComments: "none" })).code; }
-  catch { return code; }   // leave non-JS (e.g. JSON-LD) untouched if it can't parse
-};
-async function stripHtml(s) {
-
-  s = s.replace(/<!--[\s\S]*?-->/g, (m) => (m.includes(FOYER_MARK) ? m : ""));
-
-  s = s.replace(/(<style[^>]*>)([\s\S]*?)(<\/style>)/gi, (m, o, body, cl) => o + body.replace(/\/\*[\s\S]*?\*\//g, "") + cl);
-
-
-  const re = /<script>([\s\S]*?)<\/script>/g;
-  const parts = []; let last = 0, m;
-  while ((m = re.exec(s))) {
-    parts.push(s.slice(last, m.index), "<script>" + (await stripJs(m[1])) + "</script>");
-    last = re.lastIndex;
+  try {
+    const result = await terserMinify(code, {
+      compress: { passes: 2, unsafe: false },
+      mangle: { toplevel: false },
+      keep_fnames: true,
+      output: { comments: false },
+      module: false,
+    });
+    return result.code || code;
+  } catch {
+    try { return (await esbuild.transform(code, { loader: "js", minifyWhitespace: true, legalComments: "none" })).code; }
+    catch { return code; }
   }
-  parts.push(s.slice(last));
-  return parts.join("");
+};
+
+
+async function stripHtml(s) {
+  try {
+    return await htmlMinify(s, {
+      collapseWhitespace: true,
+      removeComments: true,
+      ignoreCustomComments: [/Built with Foyer/],
+      minifyCSS: true,
+      minifyJS: true,
+      collapseBooleanAttributes: true,
+      removeRedundantAttributes: true,
+      sortAttributes: true,
+      sortClassName: false,
+    });
+  } catch {
+
+    s = s.replace(/<!--[\s\S]*?-->/g, (m) => (m.includes(FOYER_MARK) ? m : ""));
+    s = s.replace(/(<style[^>]*>)([\s\S]*?)(<\/style>)/gi, (m, o, body, cl) => o + body.replace(/\/\*[\s\S]*?\*\//g, "") + cl);
+    return s;
+  }
 }
 async function stripComments() {
   const entries = await readdir(dist, { recursive: true, withFileTypes: true });
@@ -38,7 +57,13 @@ async function stripComments() {
       await writeFile(fp, await stripHtml(await readFile(fp, "utf8")));
     } else if (d.name.endsWith(".css")) {
       const s = await readFile(fp, "utf8");
-      await writeFile(fp, s.replace(/\/\*[\s\S]*?\*\//g, ""));
+      try {
+        const result = await esbuild.transform(s, { loader: "css", minify: true });
+        await writeFile(fp, result.code);
+      } catch {
+
+        await writeFile(fp, s.replace(/\/\*[\s\S]*?\*\//g, ""));
+      }
     } else if (d.name.endsWith(".js") && (fp.includes(`${path.sep}functions${path.sep}`) || d.name === "sw.js")) {
       await writeFile(fp, await stripJs(await readFile(fp, "utf8")));
     }

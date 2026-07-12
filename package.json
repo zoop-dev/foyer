@@ -11,7 +11,9 @@
     "foyer": "node cli.js"
   },
   "devDependencies": {
-    "esbuild": "^0.24.0"
+    "esbuild": "^0.24.0",
+    "html-minifier-terser": "^7.2.0",
+    "terser": "^5.49.0"
   },
   "bin": {
     "foyer": "cli.js"
