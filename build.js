@@ -16,7 +16,9 @@ try {
   console.log("    \u2728 Running Prettier and ESLint...");
   execSync("npm run format && npm run lint", { stdio: "inherit" });
 } catch (e) {
-  console.error("\n\u274C Linting or formatting failed. Please fix the errors above before building.");
+  console.error(
+    "\n\u274C Linting or formatting failed. Please fix the errors above before building."
+  );
   process.exit(1);
 }
 const cfg = JSON.parse(await readFile(path.join(siteDir, "config.json"), "utf8"));
