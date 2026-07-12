@@ -1,718 +1,1500 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Admin — {{SHORT_NAME}}</title>
-  <link rel="icon" href="/icons/favicon.ico" sizes="48x48 32x32 16x16">
-  <link rel="icon" type="image/png" sizes="96x96" href="/icons/favicon-96.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
-  <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg">
-  <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
-  <meta name="theme-color" content="#4dbd6a">
-  <meta name="apple-mobile-web-app-title" content="{{SHORT_NAME}}">
-  <meta name="author" content="zo0p.dev">
-  <meta name="generator" content="Foyer">
-  <link rel="stylesheet" href="/assets/fonts/fonts.css?v={{VERSION}}">
-  <script src="/deps/marked.js?v={{VERSION}}"></script>
-  <link rel="stylesheet" href="admin.css?v={{VERSION}}">
-  <link rel="stylesheet" href="admin-mobile.css?v={{VERSION}}">
-  
-  <link rel="stylesheet" href="/deps/flatpickr.css?v={{VERSION}}">
-  <link rel="stylesheet" href="/deps/flatpickr-dark.css?v={{VERSION}}">
-  <script src="/deps/flatpickr.js?v={{VERSION}}" defer="defer"></script>
-  <link rel="stylesheet" href="/deps/coloris.css?v={{VERSION}}">
-  <script src="/deps/coloris.js?v={{VERSION}}" defer="defer"></script>
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Admin — {{SHORT_NAME}}</title>
+    <link rel="icon" href="/icons/favicon.ico" sizes="48x48 32x32 16x16">
+    <link rel="icon" type="image/png" sizes="96x96" href="/icons/favicon-96.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg">
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+    <meta name="theme-color" content="#4dbd6a">
+    <meta name="apple-mobile-web-app-title" content="{{SHORT_NAME}}">
+    <meta name="author" content="zo0p.dev">
+    <meta name="generator" content="Foyer">
+    <link rel="stylesheet" href="/assets/fonts/fonts.css?v={{VERSION}}">
+    <script src="/deps/marked.js?v={{VERSION}}"></script>
+    <link rel="stylesheet" href="admin.css?v={{VERSION}}">
+    <link rel="stylesheet" href="admin-mobile.css?v={{VERSION}}">
 
-<div id="toast-shelf"></div>
-<div id="update-notice" style="pointer-events:none;"></div>
+    <link rel="stylesheet" href="/deps/flatpickr.css?v={{VERSION}}">
+    <link rel="stylesheet" href="/deps/flatpickr-dark.css?v={{VERSION}}">
+    <script src="/deps/flatpickr.js?v={{VERSION}}" defer="defer"></script>
+    <link rel="stylesheet" href="/deps/coloris.css?v={{VERSION}}">
+    <script src="/deps/coloris.js?v={{VERSION}}" defer="defer"></script>
+  </head>
+  <body>
+    <div id="toast-shelf"></div>
+    <div id="update-notice" style="pointer-events: none"></div>
 
-<div id="admin-loading">
-  <img src="/icons/favicon.svg" width="36" height="36" style="border-radius:8px;" alt="">
-  <div class="adm-load-bar"></div>
-</div>
-<script>
-  // Safety net: if scripts error out, never leave the user stuck on the loader.
-  setTimeout(function () {
-    var ld = document.getElementById('admin-loading');
-    var appUp = document.querySelector('.app.visible');
-    var loginUp = document.querySelector('.login-screen.show');
-    if (ld && !appUp && !loginUp) {
-      ld.remove();
-      var ls = document.getElementById('loginScreen');
-      if (ls) ls.classList.add('show');
-    }
-  }, 6000);
-</script>
-
-<div class="login-screen" id="loginScreen">
-  <div class="login-glow"></div>
-  <div class="login-box">
-    <div class="login-logo">
-      <img src="/icons/favicon.svg" width="40" height="40" style="border-radius:9px;" alt="">
+    <div id="admin-loading">
+      <img src="/icons/favicon.svg" width="36" height="36" style="border-radius: 8px" alt="">
+      <div class="adm-load-bar"></div>
     </div>
-    <p class="login-title">Admin</p>
-    <p class="login-sub">{{NAME}}</p>
+    <script>
+      // Safety net: if scripts error out, never leave the user stuck on the loader.
+      setTimeout(function () {
+        var ld = document.getElementById("admin-loading");
+        var appUp = document.querySelector(".app.visible");
+        var loginUp = document.querySelector(".login-screen.show");
+        if (ld && !appUp && !loginUp) {
+          ld.remove();
+          var ls = document.getElementById("loginScreen");
+          if (ls) ls.classList.add("show");
+        }
+      }, 6000);
+    </script>
 
-    <div class="login-oauth-note">
-      <p>Admins &amp; owners — sign in with your account.</p>
-      <button type="button" id="oauthSignInBtn" class="btn btn-primary btn-sm" style="width:100%;box-sizing:border-box;">Sign in with OAuth</button>
-      <p class="err" id="oauthErr" style="display:none;margin-top:.6rem;">Your account doesn't have admin access.</p>
+    <div class="login-screen" id="loginScreen">
+      <div class="login-glow"></div>
+      <div class="login-box">
+        <div class="login-logo">
+          <img src="/icons/favicon.svg" width="40" height="40" style="border-radius: 9px" alt="">
+        </div>
+        <p class="login-title">Admin</p>
+        <p class="login-sub">{{NAME}}</p>
+
+        <div class="login-oauth-note">
+          <p>Admins &amp; owners — sign in with your account.</p>
+          <button type="button" id="oauthSignInBtn" class="btn btn-primary btn-sm" style="width: 100%; box-sizing: border-box">
+            Sign in with OAuth
+          </button>
+          <p class="err" id="oauthErr" style="display: none; margin-top: 0.6rem">
+            Your account doesn't have admin access.
+          </p>
+        </div>
+
+        <div id="loginMagicWrap" style="display: none">
+          <div class="login-divider"><span>or email a link</span></div>
+          <form id="loginMagicForm">
+            <div class="field">
+              <input type="email" id="loginMagicEmail" autocomplete="email" inputmode="email" placeholder="admin@email.com" required>
+            </div>
+            <p class="err" id="loginMagicErr" style="display: none"></p>
+            <p id="loginMagicSent" style="display: none;
+                font-size: 0.62rem;
+                font-weight: 200;
+                letter-spacing: 0.06em;
+                line-height: 1.7;
+                color: rgba(77, 189, 106, 0.75);
+                margin: 0.2rem 0 0.4rem;">
+              Check your inbox — we sent a sign-in link. Open it on this device.
+            </p>
+            <button type="submit" id="loginMagicBtn" class="btn btn-sm" style="width: 100%; box-sizing: border-box">
+              Email me a link
+            </button>
+          </form>
+        </div>
+
+        <div class="login-divider"><span>or use password</span></div>
+
+        <form id="loginForm">
+          <div class="field">
+            <label for="pw">Admin Password</label>
+            <input type="password" id="pw" autocomplete="current-password" required>
+          </div>
+          <p class="err" id="loginErr" style="display: none">Incorrect password.</p>
+          <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.4rem">
+            Enter
+          </button>
+        </form>
+        <a href="/foyer" style="display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-top: 1.6rem;
+            font-size: 0.54rem;
+            font-weight: 200;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: rgba(var(--muted-rgb), 0.5);
+            text-decoration: none;">made with
+          <svg viewBox="0 0 44 50" width="11" height="13" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.85">
+            <path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/>
+            <path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg><span style="font-weight: 300; letter-spacing: 0.14em; color: var(--white)">Foyer</span></a>
+      </div>
     </div>
 
-    <div id="loginMagicWrap" style="display:none;">
-      <div class="login-divider"><span>or email a link</span></div>
-      <form id="loginMagicForm">
-        <div class="field">
-          <input type="email" id="loginMagicEmail" autocomplete="email" inputmode="email" placeholder="admin@email.com" required>
-        </div>
-        <p class="err" id="loginMagicErr" style="display:none;"></p>
-        <p id="loginMagicSent" style="display:none;font-size:.62rem;font-weight:200;letter-spacing:.06em;line-height:1.7;color:rgba(77,189,106,.75);margin:.2rem 0 .4rem;">Check your inbox — we sent a sign-in link. Open it on this device.</p>
-        <button type="submit" id="loginMagicBtn" class="btn btn-sm" style="width:100%;box-sizing:border-box;">Email me a link</button>
-      </form>
-    </div>
+    <div class="app" id="app">
+      <nav class="app-nav">
+        <img class="app-nav-logo" src="/icons/favicon.svg" alt="">
+        <span class="app-nav-title">Admin</span>
+        <button class="tab-btn active" data-tab="home">Home</button>
+        <button class="tab-btn" data-tab="builder">Pages</button>
+        <button class="tab-btn" data-tab="images">Images</button>
+        <button class="tab-btn" data-tab="files">Files</button>
+        <button class="tab-btn" data-tab="settings">Settings</button>
+        <button class="tab-btn" data-tab="tutorials">Tutorials</button>
+        <button class="tab-btn" data-tab="reviews">Reviews</button>
+        <button class="tab-btn" data-tab="collections">Collections</button>
+        <button class="tab-btn" data-tab="inbox" id="inboxTab" style="display: none">
+          Inbox <span class="vis-badge" id="inboxBadge"></span>
+        </button>
+        <button class="tab-btn" data-tab="analytics">
+          Analytics <span class="vis-badge" id="visBadge"></span>
+        </button>
+        <button class="tab-btn" data-tab="backup">Backups</button>
+        <button class="tab-btn" data-tab="history">History</button>
+        <div class="nav-spacer"></div>
+        <a href="/" class="site-link" target="_blank">View site ↗</a>
+        <button class="btn btn-sm" id="logoutBtn" style="margin-left: 0.5rem">Log out</button>
+      </nav>
 
-    <div class="login-divider"><span>or use password</span></div>
-
-    <form id="loginForm">
-      <div class="field">
-        <label for="pw">Admin Password</label>
-        <input type="password" id="pw" autocomplete="current-password" required>
-      </div>
-      <p class="err" id="loginErr" style="display:none">Incorrect password.</p>
-      <button type="submit" class="btn btn-primary" style="width:100%;margin-top:.4rem">Enter</button>
-    </form>
-    <a href="/foyer" style="display:inline-flex;align-items:center;gap:.4rem;margin-top:1.6rem;font-size:.54rem;font-weight:200;letter-spacing:.22em;text-transform:uppercase;color:rgba(var(--muted-rgb),.5);text-decoration:none;">made with <svg viewBox="0 0 44 50" width="11" height="13" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.85;"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg><span style="font-weight:300;letter-spacing:.14em;color:var(--white);">Foyer</span></a>
-  </div>
-</div>
-
-<div class="app" id="app">
-  <nav class="app-nav">
-    <img class="app-nav-logo" src="/icons/favicon.svg" alt="">
-    <span class="app-nav-title">Admin</span>
-    <button class="tab-btn active" data-tab="home">Home</button>
-    <button class="tab-btn" data-tab="builder">Pages</button>
-    <button class="tab-btn" data-tab="images">Images</button>
-    <button class="tab-btn" data-tab="files">Files</button>
-    <button class="tab-btn" data-tab="settings">Settings</button>
-    <button class="tab-btn" data-tab="tutorials">Tutorials</button>
-    <button class="tab-btn" data-tab="reviews">Reviews</button>
-    <button class="tab-btn" data-tab="collections">Collections</button>
-    <button class="tab-btn" data-tab="inbox" id="inboxTab" style="display:none;">Inbox <span class="vis-badge" id="inboxBadge"></span></button>
-    <button class="tab-btn" data-tab="analytics">Analytics <span class="vis-badge" id="visBadge"></span></button>
-    <button class="tab-btn" data-tab="backup">Backups</button>
-    <button class="tab-btn" data-tab="history">History</button>
-    <div class="nav-spacer"></div>
-    <a href="/" class="site-link" target="_blank">View site ↗</a>
-    <button class="btn btn-sm" id="logoutBtn" style="margin-left:.5rem">Log out</button>
-  </nav>
-
-  
-  <div class="section active" id="sec-home" style="flex-direction:column;overflow-y:auto;padding:1.6rem 1.4rem 3rem;">
-    <div id="homeWrap" style="max-width:920px;margin:0 auto;width:100%;">
-      <p style="font-weight:200;font-size:.72rem;letter-spacing:.1em;color:var(--muted);">Loading your dashboard…</p>
-    </div>
-  </div>
-
-  
-  <div class="section" id="sec-inbox" style="flex-direction:column;overflow-y:auto;padding:1.5rem 1.4rem 3rem;">
-    <div id="inboxWrap" style="max-width:760px;margin:0 auto;width:100%;"><p style="font-weight:200;font-size:.72rem;color:var(--muted);">Loading…</p></div>
-  </div>
-
-  
-  
-  <div class="section" id="sec-images">
-    <div class="img-wrap">
-      <p class="img-heading">Images</p>
-      <p class="img-sub">Upload, name, and manage images — reference them in the page builder</p>
-      <div class="img-upload-area">
-        <div class="img-upload-zone">
-          <input type="file" id="imgTabFileInput" accept="image/*" multiple="multiple">
-          <p class="img-upload-label">Click or drag to upload<br><span style="opacity:.5;font-size:.9em;">Auto-compressed · JPEG · Max 1200px</span></p>
-        </div>
-        <button type="button" class="img-cam-btn" id="imgCamBtn"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Take a photo</button>
-        <div class="img-name-col">
-          <label>Name for next upload</label>
-          <input type="text" id="imgUploadName" placeholder="e.g. profile-photo">
-          <p style="font-size:.58rem;color:var(--muted);line-height:1.6;">Used as a friendly reference. You can also rename images after uploading.</p>
+      <div class="section active" id="sec-home" style="flex-direction: column; overflow-y: auto; padding: 1.6rem 1.4rem 3rem">
+        <div id="homeWrap" style="max-width: 920px; margin: 0 auto; width: 100%">
+          <p style="font-weight: 200; font-size: 0.72rem; letter-spacing: 0.1em; color: var(--muted)">
+            Loading your dashboard…
+          </p>
         </div>
       </div>
-      <div id="imgTabGallery" class="img-gallery"></div>
-    </div>
-  </div>
 
-  
-  <div class="section" id="sec-files">
-    <div class="img-wrap">
-      <p class="img-heading">Files</p>
-      <p class="img-sub">Upload files to share — use the copied URL in any CTA or Links section</p>
-      <div class="img-upload-area">
-        <div class="img-upload-zone">
-          <input type="file" id="fileTabInput" multiple="multiple">
-          <p class="img-upload-label">Click or drag to upload<br><span style="opacity:.5;font-size:.9em;">PDF, zip, doc — max ~1.5 MB per file</span></p>
+      <div class="section" id="sec-inbox" style="flex-direction: column; overflow-y: auto; padding: 1.5rem 1.4rem 3rem">
+        <div id="inboxWrap" style="max-width: 760px; margin: 0 auto; width: 100%">
+          <p style="font-weight: 200; font-size: 0.72rem; color: var(--muted)">Loading…</p>
         </div>
       </div>
-      <div id="fileList" class="file-list"></div>
-    </div>
-  </div>
 
-  <div class="section" id="sec-settings">
-   <div class="set-shell">
-    <nav class="set-rail">
-      <button class="set-cat active" data-cat="general">General</button>
-      <button class="set-cat" data-cat="gate">Gate</button>
-      <button class="set-cat" data-cat="nav">Navigation</button>
-      <button class="set-cat" data-cat="features">Features</button>
-      <button class="set-cat" data-cat="access">Sign-in &amp; Access</button>
-      <button class="set-cat" data-cat="theme">Theme</button>
-    </nav>
-    <div class="set-body">
-     <div class="set-scroll">
-
-      <div class="set-panel active" data-panel="general">
-      <div class="settings-group">
-        <p class="settings-group-title">Identity</p>
-        <div class="field"><label>Site Name <span style="opacity:.5">(used as gate logo)</span></label><input type="text" id="sName" placeholder="{{NAME}}"></div>
-      </div>
-      <div class="settings-group">
-        <p class="settings-group-title">Site Status</p>
-        <div class="field"><label style="display:flex;align-items:center;gap:.75rem;cursor:pointer;"><input type="checkbox" id="sSiteOffline"> Take site offline</label></div>
-        <p style="font-weight:100;font-size:.66rem;color:var(--muted);line-height:1.8;margin-top:.5rem;">When checked, visitors see an offline message instead of the sign-in gate. The admin panel is unaffected.</p>
-        <div class="field" style="margin-top:1rem;"><label style="display:flex;align-items:center;gap:.75rem;cursor:pointer;"><input type="checkbox" id="sSitePublic"> Public site (no sign-in required)</label></div>
-        <p style="font-weight:100;font-size:.66rem;color:var(--muted);line-height:1.8;margin-top:.5rem;">When checked, the sign-in gate is removed and anyone can view the site. Visitors can still sign in to get an account.</p>
-        <div class="field" style="margin-top:1rem;"><label style="display:flex;align-items:center;gap:.75rem;cursor:pointer;"><input type="checkbox" id="sSiteLockdown"> Lockdown (invite-only)</label></div>
-        <p style="font-weight:100;font-size:.66rem;color:var(--muted);line-height:1.8;margin-top:.5rem;">When checked, only emails on the allowlist (in Sign-in &amp; Access) can sign in or view the site. Admins &amp; owners are always allowed.</p>
-      </div>
-      <div class="settings-group">
-        <p class="settings-group-title">Workspace tabs <span style="opacity:.5">(this device)</span></p>
-        <p style="font-weight:100;font-size:.66rem;color:var(--muted);line-height:1.8;margin-bottom:1rem;">Hide tabs you don't use — saved on this device only; re-check to bring them back. Page Builder and Settings are always shown.</p>
-        <div id="tabToggleList" style="display:flex;flex-direction:column;gap:.1rem;"></div>
-      </div>
-      </div>
-
-      <div class="set-panel" data-panel="gate">
-      <div class="settings-group">
-        <p class="settings-group-title">Gate</p>
-        <p style="font-weight:100;font-size:.66rem;color:var(--muted);line-height:1.8;margin-bottom:1.2rem;">Set <code style="font-size:.8em;background:var(--panel);padding:.1em .35em;border:1px solid var(--border)">GOOGLE_CLIENT_ID</code> in <code style="font-size:.8em;background:var(--panel);padding:.1em .35em;border:1px solid var(--border)">wrangler.toml</code> to enable Google sign-in.</p>
-        <div class="field"><label>Bot check (captcha)</label>
-          <select id="sCaptchaProvider" style="background:var(--panel);border:1px solid var(--border);color:var(--white);font-size:.82rem;padding:.6rem .75rem;outline:none;width:100%;">
-            <option value="">Auto (use site config)</option>
-            <option value="none">None</option>
-            <option value="turnstile">Cloudflare Turnstile</option>
-            <option value="recaptcha">Google reCAPTCHA</option>
-          </select>
-          <p style="font-weight:100;font-size:.6rem;color:var(--muted);margin-top:.4rem;line-height:1.7;">Needs the matching site key secret (TURNSTILE_SITE_KEY / RECAPTCHA_SITE_KEY). "None" disables the bot check; "Auto" uses the site config.</p>
-        </div>
-        <div class="field"><label>Title <span style="opacity:.5">(inside card — defaults to site name)</span></label><input type="text" id="sGateTitle" placeholder="{{NAME}}"></div>
-        <div class="field"><label>Title Font</label>
-          <select id="sGateTitleFont" style="background:var(--panel);border:1px solid var(--border);color:var(--white);font-size:.82rem;padding:.6rem .75rem;outline:none;width:100%;">
-            <option value="">Josefin Sans (default)</option>
-            <option value="Unbounded">Unbounded</option>
-            <option value="Playfair Display">Playfair Display</option>
-            <option value="Space Grotesk">Space Grotesk</option>
-            <option value="Raleway">Raleway</option>
-            <option value="Poppins">Poppins</option>
-            <option value="DM Sans">DM Sans</option>
-            <option value="Lato">Lato</option>
-            <option value="Montserrat">Montserrat</option>
-            <option value="Inter">Inter</option>
-            <option value="Fraunces">Fraunces</option>
-            <option value="Outfit">Outfit</option>
-          </select>
-        </div>
-        <div class="field"><label>Subtitle — while verifi is showing</label><input type="text" id="sGateSub" placeholder="Sign in to continue"></div>
-        <div class="field"><label>Subtitle — after passing verifi <span style="opacity:.5">(shown when sign-in buttons appear)</span></label><input type="text" id="sGateSubUnlocked" placeholder="Choose how to sign in"></div>
-        <div class="field"><label>Subtitle Font</label>
-          <select id="sGateSubFont" style="background:var(--panel);border:1px solid var(--border);color:var(--white);font-size:.82rem;padding:.6rem .75rem;outline:none;width:100%;">
-            <option value="">Josefin Sans (default)</option>
-            <option value="Unbounded">Unbounded</option>
-            <option value="Playfair Display">Playfair Display</option>
-            <option value="Space Grotesk">Space Grotesk</option>
-            <option value="Raleway">Raleway</option>
-            <option value="Poppins">Poppins</option>
-            <option value="DM Sans">DM Sans</option>
-            <option value="Lato">Lato</option>
-            <option value="Montserrat">Montserrat</option>
-            <option value="Inter">Inter</option>
-            <option value="Fraunces">Fraunces</option>
-            <option value="Outfit">Outfit</option>
-          </select>
-        </div>
-        <div class="field"><label>Button Text</label><input type="text" id="sGateBtn" placeholder="Continue with Google"></div>
-        <div class="field-row">
-          <div class="field"><label>Background Color</label><input type="text" id="sGateBg" placeholder="#020a03"></div>
-          <div class="field"><label>Accent Color</label><input type="text" id="sGateAccent" placeholder="#4dbd6a"></div>
+      <div class="section" id="sec-images">
+        <div class="img-wrap">
+          <p class="img-heading">Images</p>
+          <p class="img-sub">
+            Upload, name, and manage images — reference them in the page builder
+          </p>
+          <div class="img-upload-area">
+            <div class="img-upload-zone">
+              <input type="file" id="imgTabFileInput" accept="image/*" multiple="multiple">
+              <p class="img-upload-label">
+                Click or drag to upload<br><span style="opacity: 0.5; font-size: 0.9em">Auto-compressed · JPEG · Max 1200px</span>
+              </p>
+            </div>
+            <button type="button" class="img-cam-btn" id="imgCamBtn">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+              Take a photo
+            </button>
+            <div class="img-name-col">
+              <label>Name for next upload</label>
+              <input type="text" id="imgUploadName" placeholder="e.g. profile-photo">
+              <p style="font-size: 0.58rem; color: var(--muted); line-height: 1.6">
+                Used as a friendly reference. You can also rename images after uploading.
+              </p>
+            </div>
+          </div>
+          <div id="imgTabGallery" class="img-gallery"></div>
         </div>
       </div>
+
+      <div class="section" id="sec-files">
+        <div class="img-wrap">
+          <p class="img-heading">Files</p>
+          <p class="img-sub">
+            Upload files to share — use the copied URL in any CTA or Links section
+          </p>
+          <div class="img-upload-area">
+            <div class="img-upload-zone">
+              <input type="file" id="fileTabInput" multiple="multiple">
+              <p class="img-upload-label">
+                Click or drag to upload<br><span style="opacity: 0.5; font-size: 0.9em">PDF, zip, doc — max ~1.5 MB per file</span>
+              </p>
+            </div>
+          </div>
+          <div id="fileList" class="file-list"></div>
+        </div>
       </div>
 
-      <div class="set-panel" data-panel="nav">
-      <div class="settings-group">
-        <p class="settings-group-title">Navigation</p>
-        <div class="field"><label>Brand / Logo Text <span style="opacity:.5">(left side)</span></label><input type="text" id="sNavTitle" placeholder="{{NAME}}"></div>
-        <div class="field"><label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;"><input type="checkbox" id="sSearchEnabled" style="width:auto;"> Show search bar <span style="opacity:.5;font-size:.7rem;">(site-wide search in the nav + ⌘K)</span></label></div>
-        <div class="field-row">
-          <div class="field"><label>Style</label>
-            <select id="sNavStyle" style="background:var(--panel);border:1px solid var(--border);color:var(--white);font-size:.82rem;padding:.6rem .75rem;outline:none;width:100%;">
-              <option value="blurred">Blurred glass</option>
-              <option value="solid">Solid dark</option>
-              <option value="transparent">Transparent</option>
+      <div class="section" id="sec-settings">
+        <div class="set-shell">
+          <nav class="set-rail">
+            <button class="set-cat active" data-cat="general">General</button>
+            <button class="set-cat" data-cat="gate">Gate</button>
+            <button class="set-cat" data-cat="nav">Navigation</button>
+            <button class="set-cat" data-cat="features">Features</button>
+            <button class="set-cat" data-cat="access">Sign-in &amp; Access</button>
+            <button class="set-cat" data-cat="theme">Theme</button>
+          </nav>
+          <div class="set-body">
+            <div class="set-scroll">
+              <div class="set-panel active" data-panel="general">
+                <div class="settings-group">
+                  <p class="settings-group-title">Identity</p>
+                  <div class="field">
+                    <label>Site Name <span style="opacity: 0.5">(used as gate logo)</span></label><input type="text" id="sName" placeholder="{{NAME}}">
+                  </div>
+                </div>
+                <div class="settings-group">
+                  <p class="settings-group-title">Site Status</p>
+                  <div class="field">
+                    <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer"><input type="checkbox" id="sSiteOffline"> Take site offline</label>
+                  </div>
+                  <p style="font-weight: 100;
+                      font-size: 0.66rem;
+                      color: var(--muted);
+                      line-height: 1.8;
+                      margin-top: 0.5rem;">
+                    When checked, visitors see an offline message instead of the sign-in gate. The
+                    admin panel is unaffected.
+                  </p>
+                  <div class="field" style="margin-top: 1rem">
+                    <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer"><input type="checkbox" id="sSitePublic"> Public site (no sign-in
+                      required)</label>
+                  </div>
+                  <p style="font-weight: 100;
+                      font-size: 0.66rem;
+                      color: var(--muted);
+                      line-height: 1.8;
+                      margin-top: 0.5rem;">
+                    When checked, the sign-in gate is removed and anyone can view the site. Visitors
+                    can still sign in to get an account.
+                  </p>
+                  <div class="field" style="margin-top: 1rem">
+                    <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer"><input type="checkbox" id="sSiteLockdown"> Lockdown (invite-only)</label>
+                  </div>
+                  <p style="font-weight: 100;
+                      font-size: 0.66rem;
+                      color: var(--muted);
+                      line-height: 1.8;
+                      margin-top: 0.5rem;">
+                    When checked, only emails on the allowlist (in Sign-in &amp; Access) can sign in
+                    or view the site. Admins &amp; owners are always allowed.
+                  </p>
+                </div>
+                <div class="settings-group">
+                  <p class="settings-group-title">
+                    Workspace tabs <span style="opacity: 0.5">(this device)</span>
+                  </p>
+                  <p style="font-weight: 100;
+                      font-size: 0.66rem;
+                      color: var(--muted);
+                      line-height: 1.8;
+                      margin-bottom: 1rem;">
+                    Hide tabs you don't use — saved on this device only; re-check to bring them
+                    back. Page Builder and Settings are always shown.
+                  </p>
+                  <div id="tabToggleList" style="display: flex; flex-direction: column; gap: 0.1rem"></div>
+                </div>
+              </div>
+
+              <div class="set-panel" data-panel="gate">
+                <div class="settings-group">
+                  <p class="settings-group-title">Gate</p>
+                  <p style="font-weight: 100;
+                      font-size: 0.66rem;
+                      color: var(--muted);
+                      line-height: 1.8;
+                      margin-bottom: 1.2rem;">
+                    Set
+                    <code style="font-size: 0.8em;
+                        background: var(--panel);
+                        padding: 0.1em 0.35em;
+                        border: 1px solid var(--border);">GOOGLE_CLIENT_ID</code>
+                    in
+                    <code style="font-size: 0.8em;
+                        background: var(--panel);
+                        padding: 0.1em 0.35em;
+                        border: 1px solid var(--border);">wrangler.toml</code>
+                    to enable Google sign-in.
+                  </p>
+                  <div class="field">
+                    <label>Bot check (captcha)</label>
+                    <select id="sCaptchaProvider" style="background: var(--panel);
+                        border: 1px solid var(--border);
+                        color: var(--white);
+                        font-size: 0.82rem;
+                        padding: 0.6rem 0.75rem;
+                        outline: none;
+                        width: 100%;">
+                      <option value="">Auto (use site config)</option>
+                      <option value="none">None</option>
+                      <option value="turnstile">Cloudflare Turnstile</option>
+                      <option value="recaptcha">Google reCAPTCHA</option>
+                    </select>
+                    <p style="font-weight: 100;
+                        font-size: 0.6rem;
+                        color: var(--muted);
+                        margin-top: 0.4rem;
+                        line-height: 1.7;">
+                      Needs the matching site key secret (TURNSTILE_SITE_KEY / RECAPTCHA_SITE_KEY).
+                      "None" disables the bot check; "Auto" uses the site config.
+                    </p>
+                  </div>
+                  <div class="field">
+                    <label>Title
+                      <span style="opacity: 0.5">(inside card — defaults to site name)</span></label><input type="text" id="sGateTitle" placeholder="{{NAME}}">
+                  </div>
+                  <div class="field">
+                    <label>Title Font</label>
+                    <select id="sGateTitleFont" style="background: var(--panel);
+                        border: 1px solid var(--border);
+                        color: var(--white);
+                        font-size: 0.82rem;
+                        padding: 0.6rem 0.75rem;
+                        outline: none;
+                        width: 100%;">
+                      <option value="">Josefin Sans (default)</option>
+                      <option value="Unbounded">Unbounded</option>
+                      <option value="Playfair Display">Playfair Display</option>
+                      <option value="Space Grotesk">Space Grotesk</option>
+                      <option value="Raleway">Raleway</option>
+                      <option value="Poppins">Poppins</option>
+                      <option value="DM Sans">DM Sans</option>
+                      <option value="Lato">Lato</option>
+                      <option value="Montserrat">Montserrat</option>
+                      <option value="Inter">Inter</option>
+                      <option value="Fraunces">Fraunces</option>
+                      <option value="Outfit">Outfit</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Subtitle — while verifi is showing</label><input type="text" id="sGateSub" placeholder="Sign in to continue">
+                  </div>
+                  <div class="field">
+                    <label>Subtitle — after passing verifi
+                      <span style="opacity: 0.5">(shown when sign-in buttons appear)</span></label><input type="text" id="sGateSubUnlocked" placeholder="Choose how to sign in">
+                  </div>
+                  <div class="field">
+                    <label>Subtitle Font</label>
+                    <select id="sGateSubFont" style="background: var(--panel);
+                        border: 1px solid var(--border);
+                        color: var(--white);
+                        font-size: 0.82rem;
+                        padding: 0.6rem 0.75rem;
+                        outline: none;
+                        width: 100%;">
+                      <option value="">Josefin Sans (default)</option>
+                      <option value="Unbounded">Unbounded</option>
+                      <option value="Playfair Display">Playfair Display</option>
+                      <option value="Space Grotesk">Space Grotesk</option>
+                      <option value="Raleway">Raleway</option>
+                      <option value="Poppins">Poppins</option>
+                      <option value="DM Sans">DM Sans</option>
+                      <option value="Lato">Lato</option>
+                      <option value="Montserrat">Montserrat</option>
+                      <option value="Inter">Inter</option>
+                      <option value="Fraunces">Fraunces</option>
+                      <option value="Outfit">Outfit</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Button Text</label><input type="text" id="sGateBtn" placeholder="Continue with Google">
+                  </div>
+                  <div class="field-row">
+                    <div class="field">
+                      <label>Background Color</label><input type="text" id="sGateBg" placeholder="#020a03">
+                    </div>
+                    <div class="field">
+                      <label>Accent Color</label><input type="text" id="sGateAccent" placeholder="#4dbd6a">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="set-panel" data-panel="nav">
+                <div class="settings-group">
+                  <p class="settings-group-title">Navigation</p>
+                  <div class="field">
+                    <label>Brand / Logo Text <span style="opacity: 0.5">(left side)</span></label><input type="text" id="sNavTitle" placeholder="{{NAME}}">
+                  </div>
+                  <div class="field">
+                    <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer"><input type="checkbox" id="sSearchEnabled" style="width: auto"> Show search
+                      bar
+                      <span style="opacity: 0.5; font-size: 0.7rem">(site-wide search in the nav + ⌘K)</span></label>
+                  </div>
+                  <div class="field-row">
+                    <div class="field">
+                      <label>Style</label>
+                      <select id="sNavStyle" style="background: var(--panel);
+                          border: 1px solid var(--border);
+                          color: var(--white);
+                          font-size: 0.82rem;
+                          padding: 0.6rem 0.75rem;
+                          outline: none;
+                          width: 100%;">
+                        <option value="blurred">Blurred glass</option>
+                        <option value="solid">Solid dark</option>
+                        <option value="transparent">Transparent</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label>Alignment</label>
+                      <select id="sNavAlign" style="background: var(--panel);
+                          border: 1px solid var(--border);
+                          color: var(--white);
+                          font-size: 0.82rem;
+                          padding: 0.6rem 0.75rem;
+                          outline: none;
+                          width: 100%;">
+                        <option value="left">Left</option>
+                        <option value="center">Center</option>
+                        <option value="right">Right</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label>Position</label>
+                      <select id="sNavPosition" style="background: var(--panel);
+                          border: 1px solid var(--border);
+                          color: var(--white);
+                          font-size: 0.82rem;
+                          padding: 0.6rem 0.75rem;
+                          outline: none;
+                          width: 100%;">
+                        <option value="top">Top</option>
+                        <option value="bottom">Bottom</option>
+                        <option value="left">Left side</option>
+                        <option value="right">Right side</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div style="margin-top: 1.2rem">
+                    <p style="font-size: 0.54rem;
+                        letter-spacing: 0.28em;
+                        text-transform: uppercase;
+                        color: rgba(77, 189, 106, 0.4);
+                        font-weight: 100;
+                        margin-bottom: 0.8rem;">
+                      Page Visibility &amp; Order
+                    </p>
+                    <p style="font-size: 0.62rem;
+                        font-weight: 100;
+                        color: var(--muted);
+                        line-height: 1.7;
+                        margin-bottom: 0.75rem;">
+                      Drag to reorder. Toggle to show/hide from nav.
+                    </p>
+                    <div id="navPageList" style="display: flex; flex-direction: column; gap: 0.3rem"></div>
+                  </div>
+                  <div style="margin-top: 1.4rem">
+                    <p style="font-size: 0.54rem;
+                        letter-spacing: 0.28em;
+                        text-transform: uppercase;
+                        color: rgba(77, 189, 106, 0.4);
+                        font-weight: 100;
+                        margin-bottom: 0.8rem;">
+                      Custom External Links
+                    </p>
+                    <div id="navCustomLinks" style="display: flex;
+                        flex-direction: column;
+                        gap: 0.35rem;
+                        margin-bottom: 0.6rem;"></div>
+                    <button class="btn btn-xs" id="navAddCustomLink">+ Add Link</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="set-panel" data-panel="features">
+                <div class="settings-group">
+                  <p class="settings-group-title">Motion &amp; Effects</p>
+                  <div class="field">
+                    <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer"><input type="checkbox" id="sSmoothScroll" style="width: auto"> Smooth
+                      scrolling</label>
+                    <p style="font-size: 0.62rem;
+                        font-weight: 100;
+                        color: var(--muted);
+                        line-height: 1.6;
+                        margin: 0.4rem 0 0;">
+                      Momentum scrolling on the live site.
+                    </p>
+                  </div>
+                  <div class="field">
+                    <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer"><input type="checkbox" id="sScrambleTitle" style="width: auto"> Scramble
+                      browser-tab title
+                      <span style="font-size: 0.5rem;
+                          font-weight: 700;
+                          letter-spacing: 0.1em;
+                          text-transform: uppercase;
+                          background: linear-gradient(135deg, #f0d792, #cda63f);
+                          color: #191205;
+                          padding: 0.1rem 0.35rem;
+                          border-radius: 3px;
+                          vertical-align: middle;">Ultra</span></label>
+                    <p style="font-size: 0.62rem;
+                        font-weight: 100;
+                        color: var(--muted);
+                        line-height: 1.6;
+                        margin: 0.4rem 0 0;">
+                      Cycles the browser tab title through the strings below with a decode effect.
+                    </p>
+                  </div>
+                  <div class="field">
+                    <label>Tab-title strings <span style="opacity: 0.5">(one per line)</span></label><textarea id="sScrambleStrings" rows="3" placeholder="Your Name&#10;Designer · Builder&#10;Say hello"></textarea>
+                  </div>
+                  <div class="field">
+                    <label>Cycle interval
+                      <span style="opacity: 0.5">(seconds each string is shown)</span></label><input type="number" id="sScrambleInterval" min="0.5" step="0.5" placeholder="2.6">
+                  </div>
+                </div>
+                <div class="settings-group">
+                  <p class="settings-group-title">
+                    Ask this site
+                    <span style="background: #7fa6d8;
+                        color: #070a0e;
+                        font-size: 0.5rem;
+                        font-weight: 600;
+                        letter-spacing: 0.1em;
+                        text-transform: uppercase;
+                        padding: 0.1rem 0.35rem;
+                        border-radius: 3px;
+                        vertical-align: middle;">Pro</span>
+                  </p>
+                  <p style="font-weight: 100;
+                      font-size: 0.66rem;
+                      color: var(--muted);
+                      line-height: 1.8;
+                      margin-bottom: 1.1rem;">
+                    A small AI chatbot for your visitors — a floating bubble that answers questions
+                    using your published page content. It only knows what's on your site.
+                  </p>
+                  <div class="field">
+                    <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer"><input type="checkbox" id="sAskEnabled" style="width: auto"> Enable the
+                      site assistant</label>
+                  </div>
+                  <div class="field">
+                    <label>Bubble corner</label>
+                    <select id="sAskCorner" style="background: var(--panel);
+                        border: 1px solid var(--border);
+                        color: var(--white);
+                        font-size: 0.82rem;
+                        padding: 0.6rem 0.75rem;
+                        outline: none;
+                        width: 100%;">
+                      <option value="br">Bottom right</option>
+                      <option value="bl">Bottom left</option>
+                      <option value="tr">Top right</option>
+                      <option value="tl">Top left</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Bubble color</label>
+                    <div style="display: flex; gap: 0.5rem; align-items: center">
+                      <input type="color" id="sAskColor" value="#4dbd6a" style="width: 48px;
+                          height: 36px;
+                          padding: 2px;
+                          background: var(--panel);
+                          border: 1px solid var(--border);
+                          border-radius: 6px;
+                          cursor: pointer;">
+                      <span style="font-size: 0.62rem; font-weight: 100; color: var(--muted)">The background circle behind your site mark. Defaults to your accent
+                        color.</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label>Instructions for the assistant
+                      <span style="opacity: 0.5">(optional)</span></label><textarea id="sAskPrompt" rows="4" placeholder="e.g. You are the assistant for Acme Studio. Be warm and concise. If asked about pricing, point visitors to the Pricing page. Encourage booking a call." style="background: var(--panel);
+                        border: 1px solid var(--border);
+                        color: var(--white);
+                        font-weight: 300;
+                        font-size: 0.78rem;
+                        padding: 0.6rem 0.85rem;
+                        outline: none;
+                        font-family: inherit;
+                        width: 100%;
+                        resize: vertical;"></textarea>
+                    <p style="font-size: 0.62rem;
+                        font-weight: 100;
+                        color: var(--muted);
+                        line-height: 1.6;
+                        margin: 0.4rem 0 0;">
+                      Sets the assistant's tone and rules. Your page content is always supplied as
+                      context automatically.
+                    </p>
+                  </div>
+                  <div class="field" id="askIndexRow" style="display: none">
+                    <label>Semantic search index <span style="opacity: 0.5">(self-hosted)</span></label>
+                    <div style="display: flex; gap: 0.5rem; align-items: center">
+                      <button class="btn btn-sm" id="askReindex" type="button">
+                        Rebuild index
+                      </button>
+                      <span id="askIndexStat" style="font-size: 0.62rem; font-weight: 100; color: var(--muted)"></span>
+                    </div>
+                    <p style="font-size: 0.62rem;
+                        font-weight: 100;
+                        color: var(--muted);
+                        line-height: 1.6;
+                        margin: 0.4rem 0 0;">
+                      When connected, the assistant retrieves only the most relevant page chunks
+                      (better answers) instead of all page text. Rebuild after big content changes.
+                    </p>
+                  </div>
+                </div>
+                <div class="settings-group">
+                  <p class="settings-group-title">
+                    Languages
+                    <span style="background: #7fa6d8;
+                        color: #070a0e;
+                        font-size: 0.5rem;
+                        font-weight: 600;
+                        letter-spacing: 0.1em;
+                        text-transform: uppercase;
+                        padding: 0.1rem 0.35rem;
+                        border-radius: 3px;
+                        vertical-align: middle;">Pro</span>
+                  </p>
+                  <p style="font-weight: 100;
+                      font-size: 0.66rem;
+                      color: var(--muted);
+                      line-height: 1.8;
+                      margin-bottom: 1.1rem;">
+                    Offer your site in multiple languages. Visitors get a language picker; your
+                    pages are AI-translated. The <b>first</b> code is your original language.
+                  </p>
+                  <div class="field">
+                    <label>Original language</label>
+                    <select id="sLangBase" style="background: var(--panel);
+                        border: 1px solid var(--border);
+                        color: var(--white);
+                        font-size: 0.82rem;
+                        padding: 0.6rem 0.75rem;
+                        outline: none;
+                        width: 100%;"></select>
+                  </div>
+                  <div class="field">
+                    <label>Also offer
+                      <span style="opacity: 0.5">(visitors get a picker; pages translate automatically)</span></label>
+                    <div id="sLangOptions" style="display: flex;
+                        flex-wrap: wrap;
+                        gap: 0.45rem 0.9rem;
+                        margin-top: 0.2rem;"></div>
+                    <p style="font-size: 0.62rem;
+                        font-weight: 100;
+                        color: var(--muted);
+                        line-height: 1.6;
+                        margin: 0.5rem 0 0;">
+                      Pages are translated live in the visitor's browser when they pick a language —
+                      no extra step.
+                    </p>
+                  </div>
+                </div>
+                <div class="settings-group">
+                  <p class="settings-group-title">
+                    Comments
+                    <span style="background: #7fa6d8;
+                        color: #070a0e;
+                        font-size: 0.5rem;
+                        font-weight: 600;
+                        letter-spacing: 0.1em;
+                        text-transform: uppercase;
+                        padding: 0.1rem 0.35rem;
+                        border-radius: 3px;
+                        vertical-align: middle;">Pro</span>
+                  </p>
+                  <p style="font-weight: 100;
+                      font-size: 0.66rem;
+                      color: var(--muted);
+                      line-height: 1.8;
+                      margin-bottom: 1.1rem;">
+                    Let visitors leave comments on your tutorials, reviews, and collection items. A
+                    comment box appears at the bottom of each detail page.
+                  </p>
+                  <div class="field">
+                    <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer"><input type="checkbox" id="sCommentsEnabled" style="width: auto"> Enable
+                      comments</label>
+                  </div>
+                  <div class="field" style="margin-top: 0.5rem">
+                    <label style="display: flex; align-items: center; justify-content: space-between">Recent comments
+                      <button class="btn btn-sm" id="cmtRefresh" type="button" style="font-weight: 200">
+                        Refresh
+                      </button></label>
+                    <div id="cmtAdminList" style="margin-top: 0.5rem;
+                        font-size: 0.75rem;
+                        font-weight: 200;
+                        color: var(--muted);">
+                      Loading…
+                    </div>
+                  </div>
+                </div>
+                <div class="settings-group" id="pushGroup" style="display: none">
+                  <p class="settings-group-title">
+                    Notifications
+                    <span style="background: #7fa6d8;
+                        color: #070a0e;
+                        font-size: 0.5rem;
+                        font-weight: 600;
+                        letter-spacing: 0.1em;
+                        text-transform: uppercase;
+                        padding: 0.1rem 0.35rem;
+                        border-radius: 3px;
+                        vertical-align: middle;">Pro</span>
+                  </p>
+                  <p style="font-weight: 100;
+                      font-size: 0.66rem;
+                      color: var(--muted);
+                      line-height: 1.8;
+                      margin-bottom: 1rem;">
+                    Send push notifications to visitors who subscribe (the bell on your site), and
+                    get alerts on your own devices.
+                    <span id="pushStat" style="color: rgba(127, 166, 216, 0.85)"></span>
+                  </p>
+                  <div class="field">
+                    <label>Owner alerts (this device)</label>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap">
+                      <button class="btn btn-sm" id="pushOwner" type="button">
+                        Enable on this device
+                      </button>
+                      <button class="btn btn-sm" id="pushTest" type="button">Send test</button>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label>Broadcast to subscribers</label>
+                    <input type="text" id="pushTitle" placeholder="Title" style="background: var(--panel);
+                        border: 1px solid var(--border);
+                        color: var(--white);
+                        font-weight: 300;
+                        font-size: 0.82rem;
+                        padding: 0.55rem 0.85rem;
+                        outline: none;
+                        font-family: inherit;
+                        width: 100%;
+                        margin-bottom: 0.4rem;">
+                    <input type="text" id="pushBody" placeholder="Message (optional)" style="background: var(--panel);
+                        border: 1px solid var(--border);
+                        color: var(--white);
+                        font-weight: 300;
+                        font-size: 0.82rem;
+                        padding: 0.55rem 0.85rem;
+                        outline: none;
+                        font-family: inherit;
+                        width: 100%;
+                        margin-bottom: 0.4rem;">
+                    <input type="text" id="pushUrl" placeholder="Link (optional, e.g. /tutorials/all)" style="background: var(--panel);
+                        border: 1px solid var(--border);
+                        color: var(--white);
+                        font-weight: 300;
+                        font-size: 0.82rem;
+                        padding: 0.55rem 0.85rem;
+                        outline: none;
+                        font-family: inherit;
+                        width: 100%;
+                        margin-bottom: 0.55rem;">
+                    <div style="display: flex; gap: 0.5rem; align-items: center">
+                      <button class="btn" id="pushSend" type="button">
+                        Send to all subscribers</button><span id="pushSendStat" style="font-size: 0.62rem; font-weight: 100; color: var(--muted)"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="set-panel" data-panel="access">
+                <div class="settings-group">
+                  <p class="settings-group-title">Sign-in Methods</p>
+                  <p style="font-weight: 100;
+                      font-size: 0.66rem;
+                      color: var(--muted);
+                      line-height: 1.8;
+                      margin-bottom: 1.2rem;">
+                    Toggle which providers visitors can use to sign in. Unchecking a provider hides
+                    its button and blocks the API endpoint.
+                  </p>
+                  <div class="field">
+                    <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer"><input type="checkbox" id="sAuthFoyer"> Foyer
+                      <span style="background: #7fa6d8;
+                          color: #070a0e;
+                          font-size: 0.5rem;
+                          font-weight: 600;
+                          letter-spacing: 0.1em;
+                          text-transform: uppercase;
+                          padding: 0.1rem 0.35rem;
+                          border-radius: 3px;">new</span></label>
+                    <p style="font-weight: 100;
+                        font-size: 0.6rem;
+                        color: var(--muted);
+                        margin: 0.3rem 0 0 1.85rem;">
+                      One Foyer account across every Foyer site (foyer.zo0p.dev) — no setup needed.
+                    </p>
+                  </div>
+                  <div class="field">
+                    <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer"><input type="checkbox" id="sAuthGoogle" checked="checked"> Google</label>
+                  </div>
+                  <div class="field">
+                    <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer"><input type="checkbox" id="sAuthGithub" checked="checked"> GitHub</label>
+                  </div>
+                  <div class="field">
+                    <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer"><input type="checkbox" id="sAuthDiscord" checked="checked"> Discord</label>
+                  </div>
+                  <div class="field">
+                    <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer"><input type="checkbox" id="sAuthMagic" checked="checked"> Email (magic
+                      link)</label>
+                    <p style="font-weight: 100;
+                        font-size: 0.6rem;
+                        color: var(--muted);
+                        margin: 0.3rem 0 0 1.85rem;">
+                      Requires a RESEND_API_KEY secret. If unset, the button stays hidden regardless
+                      of this toggle.
+                    </p>
+                  </div>
+                </div>
+                <div class="settings-group">
+                  <p class="settings-group-title">Sign-up Protection</p>
+                  <div class="field">
+                    <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer"><input type="checkbox" id="sSignupBlockVpn"> Block VPN / proxy
+                      sign-ups</label>
+                  </div>
+                  <p style="font-weight: 100;
+                      font-size: 0.6rem;
+                      color: var(--muted);
+                      line-height: 1.7;
+                      margin: 0.3rem 0 1.1rem 1.85rem;">
+                    New accounts created over a detected VPN or proxy are blocked; existing users
+                    are unaffected. (Uses proxycheck.io — set a PROXYCHECK_KEY secret for higher
+                    limits.)
+                  </p>
+                  <div class="field">
+                    <label>Max sign-ups per email domain
+                      <span style="opacity: 0.5">(0 = off)</span></label><input type="number" id="sSignupDomainLimit" min="0" placeholder="0" style="background: var(--panel);
+                        border: 1px solid var(--border);
+                        color: var(--white);
+                        font-weight: 300;
+                        font-size: 0.82rem;
+                        padding: 0.6rem 0.85rem;
+                        outline: none;
+                        font-family: inherit;
+                        width: 130px;">
+                  </div>
+                  <div class="field">
+                    <label>…within this many hours</label><input type="number" id="sSignupDomainWindow" min="1" placeholder="24" style="background: var(--panel);
+                        border: 1px solid var(--border);
+                        color: var(--white);
+                        font-weight: 300;
+                        font-size: 0.82rem;
+                        padding: 0.6rem 0.85rem;
+                        outline: none;
+                        font-family: inherit;
+                        width: 130px;">
+                  </div>
+                  <p style="font-weight: 100;
+                      font-size: 0.6rem;
+                      color: var(--muted);
+                      line-height: 1.7;
+                      margin: 0.3rem 0 0;">
+                    e.g. once 5 accounts on the same domain (like @zo0p.dev) sign up within 24h,
+                    further sign-ups from that domain are blocked.
+                  </p>
+                  <div class="field" style="margin-top: 1.1rem">
+                    <label>Exempt domains <span style="opacity: 0.5">(comma-separated)</span></label><textarea id="sSignupDomainExempt" rows="2" placeholder="gmail.com, yahoo.com, outlook.com" style="background: var(--panel);
+                        border: 1px solid var(--border);
+                        color: var(--white);
+                        font-weight: 300;
+                        font-size: 0.78rem;
+                        padding: 0.6rem 0.85rem;
+                        outline: none;
+                        font-family: inherit;
+                        width: 100%;
+                        resize: vertical;"></textarea>
+                  </div>
+                  <p style="font-weight: 100;
+                      font-size: 0.6rem;
+                      color: var(--muted);
+                      line-height: 1.7;
+                      margin: 0.3rem 0 0;">
+                    These domains skip the limit. Leave as-is to exempt the common providers (gmail,
+                    yahoo, outlook, icloud, proton…); clear it to rate-limit every domain.
+                  </p>
+                </div>
+                <div class="settings-group">
+                  <p class="settings-group-title">Email Blocklist</p>
+                  <p style="font-weight: 100;
+                      font-size: 0.66rem;
+                      color: var(--muted);
+                      line-height: 1.8;
+                      margin-bottom: 1.2rem;">
+                    Blocked emails cannot sign in via any provider. Banning a user with "Block email
+                    permanently" adds them here automatically.
+                  </p>
+                  <div style="display: flex; gap: 0.5rem; margin-bottom: 1.2rem">
+                    <input type="email" id="blocklistEmailInput" placeholder="email@example.com" style="flex: 1;
+                        background: var(--panel);
+                        border: 1px solid var(--border);
+                        color: var(--white);
+                        font-weight: 300;
+                        font-size: 0.82rem;
+                        padding: 0.6rem 0.85rem;
+                        outline: none;
+                        font-family: inherit;">
+                    <button class="btn btn-sm" id="blocklistAddBtn">Block</button>
+                  </div>
+                  <div id="blocklistItems" style="display: flex; flex-direction: column; gap: 0.4rem"></div>
+                </div>
+                <div class="settings-group" style="margin-top: 2rem">
+                  <p class="settings-group-title">
+                    Email Allowlist <span style="opacity: 0.5">(lockdown)</span>
+                  </p>
+                  <p style="font-weight: 100;
+                      font-size: 0.66rem;
+                      color: var(--muted);
+                      line-height: 1.8;
+                      margin-bottom: 1.2rem;">
+                    When Lockdown is on, only these emails (plus admins &amp; owners) can sign in or
+                    view the site. Has no effect when Lockdown is off.
+                  </p>
+                  <div style="display: flex; gap: 0.5rem; margin-bottom: 1.2rem">
+                    <input type="email" id="allowlistEmailInput" placeholder="email@example.com" style="flex: 1;
+                        background: var(--panel);
+                        border: 1px solid var(--border);
+                        color: var(--white);
+                        font-weight: 300;
+                        font-size: 0.82rem;
+                        padding: 0.6rem 0.85rem;
+                        outline: none;
+                        font-family: inherit;">
+                    <button class="btn btn-sm" id="allowlistAddBtn">Allow</button>
+                  </div>
+                  <div id="allowlistItems" style="display: flex; flex-direction: column; gap: 0.4rem"></div>
+                </div>
+              </div>
+
+              <div class="set-panel" data-panel="theme">
+                <div class="settings-group">
+                  <p class="settings-group-title">Site Color Theme</p>
+                  <p style="font-weight: 100;
+                      font-size: 0.66rem;
+                      color: var(--muted);
+                      line-height: 1.8;
+                      margin-bottom: 1.2rem;">
+                    Applies to the gate, nav bar, and auth wall. Page-level colors are set in the
+                    Page Builder.
+                  </p>
+                  <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.2rem" id="themePresets">
+                    <button class="btn btn-sm" data-theme='{"theme_bg":"#020a03","theme_accent":"#4dbd6a","theme_text":"#c8e6aa"}'>
+                      Deep Ocean
+                    </button>
+                    <button class="btn btn-sm" data-theme='{"theme_bg":"#080510","theme_accent":"#9b5de5","theme_text":"#d4c0f5"}'>
+                      Midnight Purple
+                    </button>
+                    <button class="btn btn-sm" data-theme='{"theme_bg":"#040c06","theme_accent":"#4caf70","theme_text":"#b8e6c4"}'>
+                      Forest Dark
+                    </button>
+                    <button class="btn btn-sm" data-theme='{"theme_bg":"#0d0805","theme_accent":"#e07b4d","theme_text":"#f5d0b8"}'>
+                      Ember
+                    </button>
+                    <button class="btn btn-sm" data-theme='{"theme_bg":"#080808","theme_accent":"#aaaaaa","theme_text":"#e0e0e0"}'>
+                      Monochrome
+                    </button>
+                    <button class="btn btn-sm" data-theme='{"theme_bg":"#05050d","theme_accent":"#e05d85","theme_text":"#f5c0d0"}'>
+                      Rose Night
+                    </button>
+                  </div>
+                  <div class="field-row">
+                    <div class="field">
+                      <label>Background</label><input type="text" class="coloris" id="sThemeBg" value="#020a03" style="height: 38px; padding: 0.2rem">
+                    </div>
+                    <div class="field">
+                      <label>Accent</label><input type="text" class="coloris" id="sThemeAccent" value="#4dbd6a" style="height: 38px; padding: 0.2rem">
+                    </div>
+                    <div class="field">
+                      <label>Text</label><input type="text" class="coloris" id="sThemeText" value="#c8e6aa" style="height: 38px; padding: 0.2rem">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="set-savebar">
+              <button class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
+              <div class="spinner" id="settingsSpinner"></div>
+              <span class="save-status" id="settingsStatus"></span>
+              <div style="flex: 1"></div>
+              <button class="btn btn-sm" id="pushUiUpdateBtn" title="Forces all visitors to reload and pick up new content">
+                Push UI Update ↑
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="img-picker-overlay" id="imgPickerOverlay">
+        <div class="img-picker-box">
+          <div class="img-picker-head">
+            <span class="img-picker-title">Pick an image</span>
+            <label style="display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                font-weight: 200;
+                font-size: 0.62rem;
+                letter-spacing: 0.18em;
+                text-transform: uppercase;
+                color: var(--green);
+                cursor: pointer;
+                border: 1px solid rgba(77, 189, 106, 0.25);
+                padding: 0.3rem 0.75rem;">
+              <input type="file" id="imgFileInput" accept="image/*" multiple="multiple" style="display: none">
+              + Upload
+            </label>
+            <button class="img-picker-close" id="imgPickerClose">✕</button>
+          </div>
+          <div class="img-picker-grid" id="imgPickerGrid"></div>
+        </div>
+      </div>
+
+      <div class="file-picker-overlay" id="filePickerOverlay">
+        <div class="file-picker-box">
+          <div class="file-picker-head">
+            <span class="img-picker-title">Pick a file</span>
+            <button class="img-picker-close" id="filePickerClose">✕</button>
+          </div>
+          <div class="file-picker-list" id="filePickerList"></div>
+        </div>
+      </div>
+
+      <div class="section" id="sec-tutorials" style="flex-direction: column; overflow: hidden">
+        <div style="display: flex; height: 100%; overflow: hidden">
+          <div id="tutList" style="width: 260px;
+              flex-shrink: 0;
+              border-right: 1px solid var(--border);
+              background: var(--surface);
+              display: flex;
+              flex-direction: column;
+              overflow: hidden;">
+            <div style="padding: 0.8rem 0.9rem;
+                border-bottom: 1px solid var(--border);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                flex-shrink: 0;">
+              <span style="font-size: 0.52rem;
+                  letter-spacing: 0.3em;
+                  text-transform: uppercase;
+                  color: var(--muted);
+                  font-weight: 100;">Tutorials</span>
+              <button class="btn btn-xs" id="tutNewBtn">+ New</button>
+            </div>
+            <div id="tutListItems" style="flex: 1; overflow-y: auto; padding: 0.4rem"></div>
+          </div>
+
+          <div id="tutEditor" style="flex: 1;
+              overflow-y: auto;
+              padding: 2rem;
+              display: flex;
+              flex-direction: column;
+              gap: 1.2rem;">
+            <p style="font-weight: 100;
+                font-size: 0.68rem;
+                color: var(--muted);
+                margin: auto;
+                text-align: center;">
+              Select a tutorial or create a new one.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="sec-collections" style="flex-direction: column; overflow: hidden">
+        <div style="display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.7rem 0.9rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface);
+            flex-wrap: wrap;
+            flex-shrink: 0;">
+          <span style="font-size: 0.52rem;
+              letter-spacing: 0.3em;
+              text-transform: uppercase;
+              color: var(--muted);
+              font-weight: 100;">Collection</span>
+          <select id="collSelect" style="background: var(--panel);
+              border: 1px solid var(--border);
+              color: var(--white);
+              font-size: 0.78rem;
+              padding: 0.4rem 0.55rem;
+              outline: none;
+              border-radius: 6px;
+              max-width: 220px;"></select>
+          <button class="btn btn-xs" id="collNewBtn">+ Collection</button>
+          <button class="btn btn-xs" id="collEditBtn">Rename</button>
+          <button class="btn btn-xs btn-danger" id="collDelBtn">Delete</button>
+          <span style="flex: 1"></span>
+          <button class="btn btn-primary btn-xs" id="collNewItemBtn">+ Entry</button>
+        </div>
+        <div style="display: flex; flex: 1; min-height: 0; overflow: hidden">
+          <div id="collItemList" style="width: 260px;
+              flex-shrink: 0;
+              border-right: 1px solid var(--border);
+              background: var(--surface);
+              overflow-y: auto;
+              padding: 0.4rem;"></div>
+          <div id="collItemEditor" style="flex: 1; overflow-y: auto; padding: 2rem; display: flex; justify-content: center"></div>
+        </div>
+      </div>
+
+      <div class="section" id="sec-reviews" style="flex-direction: column; overflow: hidden">
+        <div style="display: flex; height: 100%; overflow: hidden">
+          <div id="revList" style="width: 260px;
+              flex-shrink: 0;
+              border-right: 1px solid var(--border);
+              background: var(--surface);
+              display: flex;
+              flex-direction: column;
+              overflow: hidden;">
+            <div style="padding: 0.8rem 0.9rem;
+                border-bottom: 1px solid var(--border);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                flex-shrink: 0;">
+              <span style="font-size: 0.52rem;
+                  letter-spacing: 0.3em;
+                  text-transform: uppercase;
+                  color: var(--muted);
+                  font-weight: 100;">Reviews</span>
+              <button class="btn btn-xs" id="revNewBtn">+ New</button>
+            </div>
+            <div id="revListItems" style="flex: 1; overflow-y: auto; padding: 0.4rem"></div>
+          </div>
+          <div id="revEditor" style="flex: 1;
+              overflow-y: auto;
+              padding: 2rem;
+              display: flex;
+              flex-direction: column;
+              gap: 1.2rem;">
+            <p style="font-weight: 100;
+                font-size: 0.68rem;
+                color: var(--muted);
+                margin: auto;
+                text-align: center;">
+              Select a review or create a new one.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="sec-analytics">
+        <div class="an-wrap">
+          <p class="an-heading">Analytics</p>
+          <p class="an-sub">Page views &amp; visitor intelligence</p>
+
+          <div class="stat-cards">
+            <div class="stat-card">
+              <div class="stat-n" id="anTotal">—</div>
+              <div class="stat-l">Total Views</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-n" id="anToday">—</div>
+              <div class="stat-l">Today</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-n" id="anWeek">—</div>
+              <div class="stat-l">This Week</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-n" id="anIPs">—</div>
+              <div class="stat-l">Unique IPs</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-n" id="anCountriesN">—</div>
+              <div class="stat-l">Countries</div>
+            </div>
+          </div>
+
+          <p class="an-section-label">Recent Activity</p>
+          <div class="an-feed" id="anFeed"></div>
+
+          <p class="an-section-label">Breakdowns</p>
+          <div class="an-breakdowns" id="anBreakdowns"></div>
+
+          <p class="an-section-label">Signed-in Visitors</p>
+          <div id="vList"></div>
+        </div>
+      </div>
+
+      <div class="section" id="sec-backup" style="flex-direction: column; overflow-y: auto">
+        <div style="max-width: 620px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 1.5rem 1.2rem 4rem;
+            font-family: &quot;Josefin Sans&quot;, sans-serif;">
+          <p style="font-family: &quot;Unbounded&quot;, sans-serif;
+              font-weight: 200;
+              font-size: 1.1rem;
+              color: rgba(220, 245, 225, 0.92);
+              margin: 0 0 0.3rem;">
+            Backups
+          </p>
+          <p style="font-size: 0.78rem;
+              font-weight: 200;
+              color: rgba(220, 245, 225, 0.5);
+              line-height: 1.7;
+              margin: 0 0 1.8rem;">
+            Download a portable <code style="color: var(--green)">.foyer</code> snapshot, or restore
+            one. Restores <b>merge</b> — items with the same slug are overwritten, everything else
+            is left alone.
+          </p>
+
+          <div style="border: 1px solid var(--border);
+              border-radius: 12px;
+              padding: 1.2rem 1.3rem;
+              margin-bottom: 1.3rem;
+              background: rgba(var(--accent-rgb), 0.03);">
+            <p style="font-size: 0.62rem;
+                letter-spacing: 0.2em;
+                text-transform: uppercase;
+                color: rgba(var(--accent-rgb), 0.6);
+                margin: 0 0 0.9rem;">
+              Create a backup
+            </p>
+            <select id="bkScope" class="bld-input" style="width: 100%; margin-bottom: 0.7rem">
+              <option value="site">
+                Whole site — pages, collections, settings, images &amp; files
+              </option>
+              <option value="all-pages">All pages (+ images they use)</option>
+              <option value="page">A single page…</option>
+            </select>
+            <div id="bkPageWrap" style="display: none; margin-bottom: 0.7rem">
+              <select id="bkPage" class="bld-input" style="width: 100%"></select>
+            </div>
+            <button class="btn" id="bkDownload">Download .foyer</button>
+          </div>
+
+          <div style="border: 1px solid var(--border);
+              border-radius: 12px;
+              padding: 1.2rem 1.3rem;
+              background: rgba(var(--accent-rgb), 0.03);">
+            <p style="font-size: 0.62rem;
+                letter-spacing: 0.2em;
+                text-transform: uppercase;
+                color: rgba(var(--accent-rgb), 0.6);
+                margin: 0 0 0.9rem;">
+              Restore from a backup
+            </p>
+            <input type="file" id="bkFile" accept=".foyer,application/json" style="font-size: 0.75rem;
+                color: rgba(220, 245, 225, 0.7);
+                margin-bottom: 0.8rem;
+                display: block;">
+            <div id="bkSummary" style="margin-bottom: 0.9rem"></div>
+            <button class="btn" id="bkRestore" disabled="disabled">Restore</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="sec-history" style="flex-direction: column; overflow-y: auto">
+        <div style="max-width: 640px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 1.5rem 1.2rem 4rem;
+            font-family: &quot;Josefin Sans&quot;, sans-serif;">
+          <p style="font-family: &quot;Unbounded&quot;, sans-serif;
+              font-weight: 200;
+              font-size: 1.1rem;
+              color: rgba(220, 245, 225, 0.92);
+              margin: 0 0 0.3rem;">
+            Version history
+            <span style="background: #7fa6d8;
+                color: #070a0e;
+                font-size: 0.5rem;
+                font-weight: 600;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+                padding: 0.1rem 0.35rem;
+                border-radius: 3px;
+                vertical-align: middle;">Pro</span>
+          </p>
+          <p style="font-size: 0.78rem;
+              font-weight: 200;
+              color: rgba(220, 245, 225, 0.5);
+              line-height: 1.7;
+              margin: 0 0 1.6rem;">
+            Every time a page's content changes, the previous version is saved automatically (last
+            30 kept). Pick a page to see its history and restore an earlier version.
+          </p>
+          <div class="field" style="margin-bottom: 1.2rem">
+            <label>Page</label>
+            <select id="hxPage" class="bld-input" style="width: 100%"></select>
+          </div>
+          <div id="hxList"></div>
+        </div>
+      </div>
+
+      <div class="section bld-sec" id="sec-builder" style="position: relative">
+        <div class="m-bldbar" id="mBldBar">
+          <button class="m-bld-page" id="mBldPage">
+            <span id="mBldPageName">Page</span> <span class="m-bld-caret">▾</span>
+          </button>
+          <button class="m-bld-tool" id="mBldAi" title="Foyer assistant" aria-label="AI assistant">
+            <svg viewBox="0 0 44 50" width="15" height="17" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/>
+              <path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/>
+            </svg>
+          </button>
+          <button class="m-bld-tool" id="mBldTheme" title="Theme &amp; background" aria-label="Theme">
+            ✦
+          </button>
+          <button class="m-bld-add" id="mBldAdd">＋ Section</button>
+        </div>
+        <div class="bld-loading" id="bldLoading">
+          <div class="bld-loading-inner">
+            <div class="bld-loading-spin"></div>
+            <p class="bld-loading-label">Loading pages</p>
+          </div>
+        </div>
+        <div class="bld-topbar">
+          <div class="bld-tc">
+            BG <input type="text" class="coloris" id="bldBg" value="#020a03">
+          </div>
+          <div class="bld-tc">
+            Accent <input type="text" class="coloris" id="bldAccent" value="#4dbd6a">
+          </div>
+          <div class="bld-tc">
+            Text <input type="text" class="coloris" id="bldText" value="#f0f7f1">
+          </div>
+          <div class="bld-tc">
+            Font
+            <select id="bldFont">
+              <option value="Josefin Sans">Josefin Sans</option>
+              <option value="Unbounded">Unbounded</option>
+              <option value="Inter">Inter</option>
+              <option value="Playfair Display">Playfair Display</option>
+              <option value="Space Grotesk">Space Grotesk</option>
+              <option value="Raleway">Raleway</option>
+              <option value="Poppins">Poppins</option>
+              <option value="DM Sans">DM Sans</option>
+              <option value="Lato">Lato</option>
+              <option value="Montserrat">Montserrat</option>
+              <option value="Fraunces">Fraunces</option>
+              <option value="Outfit">Outfit</option>
+              <option value="Georgia">Georgia</option>
+              <option value="Courier New">Courier New</option>
             </select>
           </div>
-          <div class="field"><label>Alignment</label>
-            <select id="sNavAlign" style="background:var(--panel);border:1px solid var(--border);color:var(--white);font-size:.82rem;padding:.6rem .75rem;outline:none;width:100%;">
-              <option value="left">Left</option>
-              <option value="center">Center</option>
-              <option value="right">Right</option>
+          <div class="bld-tc">
+            Background
+            <select id="bldBgStyle">
+              <option value="solid">Solid</option>
+              <option value="gradient">Gradient</option>
+              <option value="aurora">Aurora glow</option>
+              <option value="image">Image</option>
             </select>
           </div>
-          <div class="field"><label>Position</label>
-            <select id="sNavPosition" style="background:var(--panel);border:1px solid var(--border);color:var(--white);font-size:.82rem;padding:.6rem .75rem;outline:none;width:100%;">
-              <option value="top">Top</option>
-              <option value="bottom">Bottom</option>
-              <option value="left">Left side</option>
-              <option value="right">Right side</option>
-            </select>
+          <div class="bld-tc" id="bldBgColor2Wrap" style="display: none">
+            BG 2 <input type="text" class="coloris" id="bldBgColor2" value="#0a1f12">
           </div>
-        </div>
-        <div style="margin-top:1.2rem;">
-          <p style="font-size:.54rem;letter-spacing:.28em;text-transform:uppercase;color:rgba(77,189,106,.4);font-weight:100;margin-bottom:.8rem;">Page Visibility &amp; Order</p>
-          <p style="font-size:.62rem;font-weight:100;color:var(--muted);line-height:1.7;margin-bottom:.75rem;">Drag to reorder. Toggle to show/hide from nav.</p>
-          <div id="navPageList" style="display:flex;flex-direction:column;gap:.3rem;"></div>
-        </div>
-        <div style="margin-top:1.4rem;">
-          <p style="font-size:.54rem;letter-spacing:.28em;text-transform:uppercase;color:rgba(77,189,106,.4);font-weight:100;margin-bottom:.8rem;">Custom External Links</p>
-          <div id="navCustomLinks" style="display:flex;flex-direction:column;gap:.35rem;margin-bottom:.6rem;"></div>
-          <button class="btn btn-xs" id="navAddCustomLink">+ Add Link</button>
-        </div>
-      </div>
-      </div>
-
-      <div class="set-panel" data-panel="features">
-      <div class="settings-group">
-        <p class="settings-group-title">Motion &amp; Effects</p>
-        <div class="field"><label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;"><input type="checkbox" id="sSmoothScroll" style="width:auto;"> Smooth scrolling</label><p style="font-size:.62rem;font-weight:100;color:var(--muted);line-height:1.6;margin:.4rem 0 0;">Momentum scrolling on the live site.</p></div>
-        <div class="field"><label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;"><input type="checkbox" id="sScrambleTitle" style="width:auto;"> Scramble browser-tab title <span style="font-size:.5rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:linear-gradient(135deg,#f0d792,#cda63f);color:#191205;padding:.1rem .35rem;border-radius:3px;vertical-align:middle;">Ultra</span></label><p style="font-size:.62rem;font-weight:100;color:var(--muted);line-height:1.6;margin:.4rem 0 0;">Cycles the browser tab title through the strings below with a decode effect.</p></div>
-        <div class="field"><label>Tab-title strings <span style="opacity:.5">(one per line)</span></label><textarea id="sScrambleStrings" rows="3" placeholder="Your Name&#10;Designer · Builder&#10;Say hello"></textarea></div>
-        <div class="field"><label>Cycle interval <span style="opacity:.5">(seconds each string is shown)</span></label><input type="number" id="sScrambleInterval" min="0.5" step="0.5" placeholder="2.6"></div>
-      </div>
-      <div class="settings-group">
-        <p class="settings-group-title">Ask this site <span style="background:#7fa6d8;color:#070a0e;font-size:.5rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.1rem .35rem;border-radius:3px;vertical-align:middle;">Pro</span></p>
-        <p style="font-weight:100;font-size:.66rem;color:var(--muted);line-height:1.8;margin-bottom:1.1rem;">A small AI chatbot for your visitors — a floating bubble that answers questions using your published page content. It only knows what's on your site.</p>
-        <div class="field"><label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;"><input type="checkbox" id="sAskEnabled" style="width:auto;"> Enable the site assistant</label></div>
-        <div class="field"><label>Bubble corner</label>
-          <select id="sAskCorner" style="background:var(--panel);border:1px solid var(--border);color:var(--white);font-size:.82rem;padding:.6rem .75rem;outline:none;width:100%;">
-            <option value="br">Bottom right</option>
-            <option value="bl">Bottom left</option>
-            <option value="tr">Top right</option>
-            <option value="tl">Top left</option>
-          </select>
-        </div>
-        <div class="field"><label>Bubble color</label>
-          <div style="display:flex;gap:.5rem;align-items:center;">
-            <input type="color" id="sAskColor" value="#4dbd6a" style="width:48px;height:36px;padding:2px;background:var(--panel);border:1px solid var(--border);border-radius:6px;cursor:pointer;">
-            <span style="font-size:.62rem;font-weight:100;color:var(--muted);">The background circle behind your site mark. Defaults to your accent color.</span>
+          <div class="bld-tc" id="bldBgAngleWrap" style="display: none">
+            Angle
+            <input type="number" id="bldBgAngle" value="135" min="0" max="360" style="width: 52px">
           </div>
-        </div>
-        <div class="field"><label>Instructions for the assistant <span style="opacity:.5">(optional)</span></label><textarea id="sAskPrompt" rows="4" placeholder="e.g. You are the assistant for Acme Studio. Be warm and concise. If asked about pricing, point visitors to the Pricing page. Encourage booking a call." style="background:var(--panel);border:1px solid var(--border);color:var(--white);font-weight:300;font-size:.78rem;padding:.6rem .85rem;outline:none;font-family:inherit;width:100%;resize:vertical;"></textarea><p style="font-size:.62rem;font-weight:100;color:var(--muted);line-height:1.6;margin:.4rem 0 0;">Sets the assistant's tone and rules. Your page content is always supplied as context automatically.</p></div>
-        <div class="field" id="askIndexRow" style="display:none;"><label>Semantic search index <span style="opacity:.5">(self-hosted)</span></label>
-          <div style="display:flex;gap:.5rem;align-items:center;">
-            <button class="btn btn-sm" id="askReindex" type="button">Rebuild index</button>
-            <span id="askIndexStat" style="font-size:.62rem;font-weight:100;color:var(--muted);"></span>
+          <div class="bld-tc" id="bldBgImageWrap" style="display: none">
+            Image URL
+            <input type="url" id="bldBgImage" placeholder="https://…" style="width: 130px">
           </div>
-          <p style="font-size:.62rem;font-weight:100;color:var(--muted);line-height:1.6;margin:.4rem 0 0;">When connected, the assistant retrieves only the most relevant page chunks (better answers) instead of all page text. Rebuild after big content changes.</p>
-        </div>
-      </div>
-      <div class="settings-group">
-        <p class="settings-group-title">Languages <span style="background:#7fa6d8;color:#070a0e;font-size:.5rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.1rem .35rem;border-radius:3px;vertical-align:middle;">Pro</span></p>
-        <p style="font-weight:100;font-size:.66rem;color:var(--muted);line-height:1.8;margin-bottom:1.1rem;">Offer your site in multiple languages. Visitors get a language picker; your pages are AI-translated. The <b>first</b> code is your original language.</p>
-        <div class="field"><label>Original language</label>
-          <select id="sLangBase" style="background:var(--panel);border:1px solid var(--border);color:var(--white);font-size:.82rem;padding:.6rem .75rem;outline:none;width:100%;"></select>
-        </div>
-        <div class="field"><label>Also offer <span style="opacity:.5">(visitors get a picker; pages translate automatically)</span></label>
-          <div id="sLangOptions" style="display:flex;flex-wrap:wrap;gap:.45rem .9rem;margin-top:.2rem;"></div>
-          <p style="font-size:.62rem;font-weight:100;color:var(--muted);line-height:1.6;margin:.5rem 0 0;">Pages are translated live in the visitor's browser when they pick a language — no extra step.</p>
-        </div>
-      </div>
-      <div class="settings-group">
-        <p class="settings-group-title">Comments <span style="background:#7fa6d8;color:#070a0e;font-size:.5rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.1rem .35rem;border-radius:3px;vertical-align:middle;">Pro</span></p>
-        <p style="font-weight:100;font-size:.66rem;color:var(--muted);line-height:1.8;margin-bottom:1.1rem;">Let visitors leave comments on your tutorials, reviews, and collection items. A comment box appears at the bottom of each detail page.</p>
-        <div class="field"><label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;"><input type="checkbox" id="sCommentsEnabled" style="width:auto;"> Enable comments</label></div>
-        <div class="field" style="margin-top:.5rem;">
-          <label style="display:flex;align-items:center;justify-content:space-between;">Recent comments <button class="btn btn-sm" id="cmtRefresh" type="button" style="font-weight:200;">Refresh</button></label>
-          <div id="cmtAdminList" style="margin-top:.5rem;font-size:.75rem;font-weight:200;color:var(--muted);">Loading…</div>
-        </div>
-      </div>
-      <div class="settings-group" id="pushGroup" style="display:none;">
-        <p class="settings-group-title">Notifications <span style="background:#7fa6d8;color:#070a0e;font-size:.5rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.1rem .35rem;border-radius:3px;vertical-align:middle;">Pro</span></p>
-        <p style="font-weight:100;font-size:.66rem;color:var(--muted);line-height:1.8;margin-bottom:1rem;">Send push notifications to visitors who subscribe (the bell on your site), and get alerts on your own devices. <span id="pushStat" style="color:rgba(127,166,216,.85);"></span></p>
-        <div class="field"><label>Owner alerts (this device)</label>
-          <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
-            <button class="btn btn-sm" id="pushOwner" type="button">Enable on this device</button>
-            <button class="btn btn-sm" id="pushTest" type="button">Send test</button>
+          <div class="bld-tc" id="bldBgOverlayWrap" style="display: none">
+            Dim
+            <input type="range" id="bldBgOverlay" min="0" max="0.85" step="0.05" value="0.4" style="width: 64px">
           </div>
+          <div class="bld-tc" id="bldBgAnimWrap" style="display: none">
+            <label style="display: flex; align-items: center; gap: 0.3rem; cursor: pointer"><input type="checkbox" id="bldBgAnim"> Animate</label>
+          </div>
+          <span class="bld-autosave" id="bldAutosave"><span class="bld-autosave-dot"></span><span id="bldAutosaveText">Saved</span></span>
+          <div class="bld-vsep"></div>
+          <button class="btn btn-xs" id="bldDiscardBtn" title="Discard unsaved changes for this page">
+            Discard
+          </button>
+          <button class="btn btn-xs" id="bldPreview">Preview ↗</button>
+          <button class="btn btn-primary btn-xs" id="bldPublish">Publish</button>
+          <div class="spinner" id="bldSpinner"></div>
+          <span class="save-status" id="bldStatus"></span>
         </div>
-        <div class="field"><label>Broadcast to subscribers</label>
-          <input type="text" id="pushTitle" placeholder="Title" style="background:var(--panel);border:1px solid var(--border);color:var(--white);font-weight:300;font-size:.82rem;padding:.55rem .85rem;outline:none;font-family:inherit;width:100%;margin-bottom:.4rem;">
-          <input type="text" id="pushBody" placeholder="Message (optional)" style="background:var(--panel);border:1px solid var(--border);color:var(--white);font-weight:300;font-size:.82rem;padding:.55rem .85rem;outline:none;font-family:inherit;width:100%;margin-bottom:.4rem;">
-          <input type="text" id="pushUrl" placeholder="Link (optional, e.g. /tutorials/all)" style="background:var(--panel);border:1px solid var(--border);color:var(--white);font-weight:300;font-size:.82rem;padding:.55rem .85rem;outline:none;font-family:inherit;width:100%;margin-bottom:.55rem;">
-          <div style="display:flex;gap:.5rem;align-items:center;"><button class="btn" id="pushSend" type="button">Send to all subscribers</button><span id="pushSendStat" style="font-size:.62rem;font-weight:100;color:var(--muted);"></span></div>
-        </div>
-      </div>
-      </div>
+        <div class="bld-workspace">
+          <div class="bld-pages">
+            <div class="bld-pages-hd">
+              <span class="bld-pages-label">Pages</span>
+              <button class="bld-ai-trigger" id="bldAiBtn" title="Foyer assistant — generate or edit this page">
+                <svg viewBox="0 0 44 50" width="12" height="14" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/>
+                  <path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/>
+                </svg>
+              </button>
+              <button class="btn btn-xs" id="bldAddPageBtn">+ Page</button>
+            </div>
+            <div class="bld-page-list" id="bldPageList"></div>
+            <div class="bld-new-page-form" id="bldNewPageForm" style="display: none">
+              <input type="text" id="bldNPTitle" placeholder="Page title">
+              <input type="text" id="bldNPSlug" placeholder="/slug">
+              <p class="bld-npf-hint">Slug = URL path e.g. /about</p>
+              <div style="display: flex; gap: 0.35rem">
+                <button class="btn btn-primary btn-xs" style="flex: 1" id="bldNPCreate">
+                  Create
+                </button>
+                <button class="btn btn-xs" id="bldNPCancel">Cancel</button>
+              </div>
+            </div>
+          </div>
 
-      <div class="set-panel" data-panel="access">
-      <div class="settings-group">
-        <p class="settings-group-title">Sign-in Methods</p>
-        <p style="font-weight:100;font-size:.66rem;color:var(--muted);line-height:1.8;margin-bottom:1.2rem;">Toggle which providers visitors can use to sign in. Unchecking a provider hides its button and blocks the API endpoint.</p>
-        <div class="field"><label style="display:flex;align-items:center;gap:.75rem;cursor:pointer;"><input type="checkbox" id="sAuthFoyer"> Foyer <span style="background:#7fa6d8;color:#070a0e;font-size:.5rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.1rem .35rem;border-radius:3px;">new</span></label><p style="font-weight:100;font-size:.6rem;color:var(--muted);margin:.3rem 0 0 1.85rem;">One Foyer account across every Foyer site (foyer.zo0p.dev) — no setup needed.</p></div>
-        <div class="field"><label style="display:flex;align-items:center;gap:.75rem;cursor:pointer;"><input type="checkbox" id="sAuthGoogle" checked="checked"> Google</label></div>
-        <div class="field"><label style="display:flex;align-items:center;gap:.75rem;cursor:pointer;"><input type="checkbox" id="sAuthGithub" checked="checked"> GitHub</label></div>
-        <div class="field"><label style="display:flex;align-items:center;gap:.75rem;cursor:pointer;"><input type="checkbox" id="sAuthDiscord" checked="checked"> Discord</label></div>
-        <div class="field"><label style="display:flex;align-items:center;gap:.75rem;cursor:pointer;"><input type="checkbox" id="sAuthMagic" checked="checked"> Email (magic link)</label><p style="font-weight:100;font-size:.6rem;color:var(--muted);margin:.3rem 0 0 1.85rem;">Requires a RESEND_API_KEY secret. If unset, the button stays hidden regardless of this toggle.</p></div>
-      </div>
-      <div class="settings-group">
-        <p class="settings-group-title">Sign-up Protection</p>
-        <div class="field"><label style="display:flex;align-items:center;gap:.75rem;cursor:pointer;"><input type="checkbox" id="sSignupBlockVpn"> Block VPN / proxy sign-ups</label></div>
-        <p style="font-weight:100;font-size:.6rem;color:var(--muted);line-height:1.7;margin:.3rem 0 1.1rem 1.85rem;">New accounts created over a detected VPN or proxy are blocked; existing users are unaffected. (Uses proxycheck.io — set a PROXYCHECK_KEY secret for higher limits.)</p>
-        <div class="field"><label>Max sign-ups per email domain <span style="opacity:.5">(0 = off)</span></label><input type="number" id="sSignupDomainLimit" min="0" placeholder="0" style="background:var(--panel);border:1px solid var(--border);color:var(--white);font-weight:300;font-size:.82rem;padding:.6rem .85rem;outline:none;font-family:inherit;width:130px;"></div>
-        <div class="field"><label>…within this many hours</label><input type="number" id="sSignupDomainWindow" min="1" placeholder="24" style="background:var(--panel);border:1px solid var(--border);color:var(--white);font-weight:300;font-size:.82rem;padding:.6rem .85rem;outline:none;font-family:inherit;width:130px;"></div>
-        <p style="font-weight:100;font-size:.6rem;color:var(--muted);line-height:1.7;margin:.3rem 0 0;">e.g. once 5 accounts on the same domain (like @zo0p.dev) sign up within 24h, further sign-ups from that domain are blocked.</p>
-        <div class="field" style="margin-top:1.1rem;"><label>Exempt domains <span style="opacity:.5">(comma-separated)</span></label><textarea id="sSignupDomainExempt" rows="2" placeholder="gmail.com, yahoo.com, outlook.com" style="background:var(--panel);border:1px solid var(--border);color:var(--white);font-weight:300;font-size:.78rem;padding:.6rem .85rem;outline:none;font-family:inherit;width:100%;resize:vertical;"></textarea></div>
-        <p style="font-weight:100;font-size:.6rem;color:var(--muted);line-height:1.7;margin:.3rem 0 0;">These domains skip the limit. Leave as-is to exempt the common providers (gmail, yahoo, outlook, icloud, proton…); clear it to rate-limit every domain.</p>
-      </div>
-      <div class="settings-group">
-        <p class="settings-group-title">Email Blocklist</p>
-        <p style="font-weight:100;font-size:.66rem;color:var(--muted);line-height:1.8;margin-bottom:1.2rem;">Blocked emails cannot sign in via any provider. Banning a user with "Block email permanently" adds them here automatically.</p>
-        <div style="display:flex;gap:.5rem;margin-bottom:1.2rem;">
-          <input type="email" id="blocklistEmailInput" placeholder="email@example.com" style="flex:1;background:var(--panel);border:1px solid var(--border);color:var(--white);font-weight:300;font-size:.82rem;padding:.6rem .85rem;outline:none;font-family:inherit;">
-          <button class="btn btn-sm" id="blocklistAddBtn">Block</button>
-        </div>
-        <div id="blocklistItems" style="display:flex;flex-direction:column;gap:.4rem;"></div>
-      </div>
-      <div class="settings-group" style="margin-top:2rem;">
-        <p class="settings-group-title">Email Allowlist <span style="opacity:.5">(lockdown)</span></p>
-        <p style="font-weight:100;font-size:.66rem;color:var(--muted);line-height:1.8;margin-bottom:1.2rem;">When Lockdown is on, only these emails (plus admins &amp; owners) can sign in or view the site. Has no effect when Lockdown is off.</p>
-        <div style="display:flex;gap:.5rem;margin-bottom:1.2rem;">
-          <input type="email" id="allowlistEmailInput" placeholder="email@example.com" style="flex:1;background:var(--panel);border:1px solid var(--border);color:var(--white);font-weight:300;font-size:.82rem;padding:.6rem .85rem;outline:none;font-family:inherit;">
-          <button class="btn btn-sm" id="allowlistAddBtn">Allow</button>
-        </div>
-        <div id="allowlistItems" style="display:flex;flex-direction:column;gap:.4rem;"></div>
-      </div>
-      </div>
+          <div class="bld-canvas-col" id="bldCanvasCol">
+            <div class="bld-browser">
+              <div class="bld-chrome">
+                <div class="bld-chrome-dots"><span></span><span></span><span></span></div>
+                <div class="bld-chrome-url" id="bldChromeUrl">lanson.pages.dev</div>
+              </div>
+              <div class="bld-canvas" id="bldCanvas">
+                <div class="bld-canvas-empty">Select or create a page, then add sections below</div>
+              </div>
+            </div>
+            <div class="bld-add-sec">
+              <button class="bld-open-picker" id="bldOpenPicker">
+                <span>＋</span> Add a section
+              </button>
+            </div>
+            <button class="bld-add-fab" id="bldAddFab" title="Add a section" aria-label="Add a section">
+              ＋
+            </button>
+          </div>
 
-      <div class="set-panel" data-panel="theme">
-      <div class="settings-group">
-        <p class="settings-group-title">Site Color Theme</p>
-        <p style="font-weight:100;font-size:.66rem;color:var(--muted);line-height:1.8;margin-bottom:1.2rem;">Applies to the gate, nav bar, and auth wall. Page-level colors are set in the Page Builder.</p>
-        <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.2rem;" id="themePresets">
-          <button class="btn btn-sm" data-theme='{"theme_bg":"#020a03","theme_accent":"#4dbd6a","theme_text":"#c8e6aa"}'>Deep Ocean</button>
-          <button class="btn btn-sm" data-theme='{"theme_bg":"#080510","theme_accent":"#9b5de5","theme_text":"#d4c0f5"}'>Midnight Purple</button>
-          <button class="btn btn-sm" data-theme='{"theme_bg":"#040c06","theme_accent":"#4caf70","theme_text":"#b8e6c4"}'>Forest Dark</button>
-          <button class="btn btn-sm" data-theme='{"theme_bg":"#0d0805","theme_accent":"#e07b4d","theme_text":"#f5d0b8"}'>Ember</button>
-          <button class="btn btn-sm" data-theme='{"theme_bg":"#080808","theme_accent":"#aaaaaa","theme_text":"#e0e0e0"}'>Monochrome</button>
-          <button class="btn btn-sm" data-theme='{"theme_bg":"#05050d","theme_accent":"#e05d85","theme_text":"#f5c0d0"}'>Rose Night</button>
-        </div>
-        <div class="field-row">
-          <div class="field"><label>Background</label><input type="text" class="coloris" id="sThemeBg" value="#020a03" style="height:38px;padding:.2rem;"></div>
-          <div class="field"><label>Accent</label><input type="text" class="coloris" id="sThemeAccent" value="#4dbd6a" style="height:38px;padding:.2rem;"></div>
-          <div class="field"><label>Text</label><input type="text" class="coloris" id="sThemeText" value="#c8e6aa" style="height:38px;padding:.2rem;"></div>
-        </div>
-      </div>
-      </div>
-
-     </div>
-     <div class="set-savebar">
-        <button class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
-        <div class="spinner" id="settingsSpinner"></div>
-        <span class="save-status" id="settingsStatus"></span>
-        <div style="flex:1;"></div>
-        <button class="btn btn-sm" id="pushUiUpdateBtn" title="Forces all visitors to reload and pick up new content">Push UI Update ↑</button>
-     </div>
-    </div>
-   </div>
-  </div>
-
-  
-  <div class="img-picker-overlay" id="imgPickerOverlay">
-    <div class="img-picker-box">
-      <div class="img-picker-head">
-        <span class="img-picker-title">Pick an image</span>
-        <label style="display:flex;align-items:center;gap:.5rem;font-weight:200;font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--green);cursor:pointer;border:1px solid rgba(77,189,106,.25);padding:.3rem .75rem;">
-          <input type="file" id="imgFileInput" accept="image/*" multiple="multiple" style="display:none;">
-          + Upload
-        </label>
-        <button class="img-picker-close" id="imgPickerClose">✕</button>
-      </div>
-      <div class="img-picker-grid" id="imgPickerGrid"></div>
-    </div>
-  </div>
-
-  
-  <div class="file-picker-overlay" id="filePickerOverlay">
-    <div class="file-picker-box">
-      <div class="file-picker-head">
-        <span class="img-picker-title">Pick a file</span>
-        <button class="img-picker-close" id="filePickerClose">✕</button>
-      </div>
-      <div class="file-picker-list" id="filePickerList"></div>
-    </div>
-  </div>
-
-  
-  <div class="section" id="sec-tutorials" style="flex-direction:column;overflow:hidden;">
-    <div style="display:flex;height:100%;overflow:hidden;">
-      
-      <div id="tutList" style="width:260px;flex-shrink:0;border-right:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;overflow:hidden;">
-        <div style="padding:.8rem .9rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-          <span style="font-size:.52rem;letter-spacing:.3em;text-transform:uppercase;color:var(--muted);font-weight:100;">Tutorials</span>
-          <button class="btn btn-xs" id="tutNewBtn">+ New</button>
-        </div>
-        <div id="tutListItems" style="flex:1;overflow-y:auto;padding:.4rem;"></div>
-      </div>
-      
-      <div id="tutEditor" style="flex:1;overflow-y:auto;padding:2rem;display:flex;flex-direction:column;gap:1.2rem;">
-        <p style="font-weight:100;font-size:.68rem;color:var(--muted);margin:auto;text-align:center;">Select a tutorial or create a new one.</p>
-      </div>
-    </div>
-  </div>
-
-  
-  <div class="section" id="sec-collections" style="flex-direction:column;overflow:hidden;">
-    <div style="display:flex;align-items:center;gap:.5rem;padding:.7rem .9rem;border-bottom:1px solid var(--border);background:var(--surface);flex-wrap:wrap;flex-shrink:0;">
-      <span style="font-size:.52rem;letter-spacing:.3em;text-transform:uppercase;color:var(--muted);font-weight:100;">Collection</span>
-      <select id="collSelect" style="background:var(--panel);border:1px solid var(--border);color:var(--white);font-size:.78rem;padding:.4rem .55rem;outline:none;border-radius:6px;max-width:220px;"></select>
-      <button class="btn btn-xs" id="collNewBtn">+ Collection</button>
-      <button class="btn btn-xs" id="collEditBtn">Rename</button>
-      <button class="btn btn-xs btn-danger" id="collDelBtn">Delete</button>
-      <span style="flex:1;"></span>
-      <button class="btn btn-primary btn-xs" id="collNewItemBtn">+ Entry</button>
-    </div>
-    <div style="display:flex;flex:1;min-height:0;overflow:hidden;">
-      <div id="collItemList" style="width:260px;flex-shrink:0;border-right:1px solid var(--border);background:var(--surface);overflow-y:auto;padding:.4rem;"></div>
-      <div id="collItemEditor" style="flex:1;overflow-y:auto;padding:2rem;display:flex;justify-content:center;"></div>
-    </div>
-  </div>
-
-  
-  <div class="section" id="sec-reviews" style="flex-direction:column;overflow:hidden;">
-    <div style="display:flex;height:100%;overflow:hidden;">
-      <div id="revList" style="width:260px;flex-shrink:0;border-right:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;overflow:hidden;">
-        <div style="padding:.8rem .9rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-          <span style="font-size:.52rem;letter-spacing:.3em;text-transform:uppercase;color:var(--muted);font-weight:100;">Reviews</span>
-          <button class="btn btn-xs" id="revNewBtn">+ New</button>
-        </div>
-        <div id="revListItems" style="flex:1;overflow-y:auto;padding:.4rem;"></div>
-      </div>
-      <div id="revEditor" style="flex:1;overflow-y:auto;padding:2rem;display:flex;flex-direction:column;gap:1.2rem;">
-        <p style="font-weight:100;font-size:.68rem;color:var(--muted);margin:auto;text-align:center;">Select a review or create a new one.</p>
-      </div>
-    </div>
-  </div>
-
-  
-  <div class="section" id="sec-analytics">
-    <div class="an-wrap">
-      <p class="an-heading">Analytics</p>
-      <p class="an-sub">Page views &amp; visitor intelligence</p>
-
-      <div class="stat-cards">
-        <div class="stat-card"><div class="stat-n" id="anTotal">—</div><div class="stat-l">Total Views</div></div>
-        <div class="stat-card"><div class="stat-n" id="anToday">—</div><div class="stat-l">Today</div></div>
-        <div class="stat-card"><div class="stat-n" id="anWeek">—</div><div class="stat-l">This Week</div></div>
-        <div class="stat-card"><div class="stat-n" id="anIPs">—</div><div class="stat-l">Unique IPs</div></div>
-        <div class="stat-card"><div class="stat-n" id="anCountriesN">—</div><div class="stat-l">Countries</div></div>
-      </div>
-
-      <p class="an-section-label">Recent Activity</p>
-      <div class="an-feed" id="anFeed"></div>
-
-      <p class="an-section-label">Breakdowns</p>
-      <div class="an-breakdowns" id="anBreakdowns"></div>
-
-      <p class="an-section-label">Signed-in Visitors</p>
-      <div id="vList"></div>
-    </div>
-  </div>
-
-  
-  <div class="section" id="sec-backup" style="flex-direction:column;overflow-y:auto;">
-    <div style="max-width:620px;margin:0 auto;width:100%;padding:1.5rem 1.2rem 4rem;font-family:'Josefin Sans',sans-serif;">
-      <p style="font-family:'Unbounded',sans-serif;font-weight:200;font-size:1.1rem;color:rgba(220,245,225,.92);margin:0 0 .3rem;">Backups</p>
-      <p style="font-size:.78rem;font-weight:200;color:rgba(220,245,225,.5);line-height:1.7;margin:0 0 1.8rem;">Download a portable <code style="color:var(--green);">.foyer</code> snapshot, or restore one. Restores <b>merge</b> — items with the same slug are overwritten, everything else is left alone.</p>
-
-      <div style="border:1px solid var(--border);border-radius:12px;padding:1.2rem 1.3rem;margin-bottom:1.3rem;background:rgba(var(--accent-rgb),.03);">
-        <p style="font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(var(--accent-rgb),.6);margin:0 0 .9rem;">Create a backup</p>
-        <select id="bkScope" class="bld-input" style="width:100%;margin-bottom:.7rem;">
-          <option value="site">Whole site — pages, collections, settings, images &amp; files</option>
-          <option value="all-pages">All pages (+ images they use)</option>
-          <option value="page">A single page…</option>
-        </select>
-        <div id="bkPageWrap" style="display:none;margin-bottom:.7rem;">
-          <select id="bkPage" class="bld-input" style="width:100%;"></select>
-        </div>
-        <button class="btn" id="bkDownload">Download .foyer</button>
-      </div>
-
-      <div style="border:1px solid var(--border);border-radius:12px;padding:1.2rem 1.3rem;background:rgba(var(--accent-rgb),.03);">
-        <p style="font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(var(--accent-rgb),.6);margin:0 0 .9rem;">Restore from a backup</p>
-        <input type="file" id="bkFile" accept=".foyer,application/json" style="font-size:.75rem;color:rgba(220,245,225,.7);margin-bottom:.8rem;display:block;">
-        <div id="bkSummary" style="margin-bottom:.9rem;"></div>
-        <button class="btn" id="bkRestore" disabled="disabled">Restore</button>
-      </div>
-    </div>
-  </div>
-
-  
-  <div class="section" id="sec-history" style="flex-direction:column;overflow-y:auto;">
-    <div style="max-width:640px;margin:0 auto;width:100%;padding:1.5rem 1.2rem 4rem;font-family:'Josefin Sans',sans-serif;">
-      <p style="font-family:'Unbounded',sans-serif;font-weight:200;font-size:1.1rem;color:rgba(220,245,225,.92);margin:0 0 .3rem;">Version history <span style="background:#7fa6d8;color:#070a0e;font-size:.5rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.1rem .35rem;border-radius:3px;vertical-align:middle;">Pro</span></p>
-      <p style="font-size:.78rem;font-weight:200;color:rgba(220,245,225,.5);line-height:1.7;margin:0 0 1.6rem;">Every time a page's content changes, the previous version is saved automatically (last 30 kept). Pick a page to see its history and restore an earlier version.</p>
-      <div class="field" style="margin-bottom:1.2rem;"><label>Page</label>
-        <select id="hxPage" class="bld-input" style="width:100%;"></select>
-      </div>
-      <div id="hxList"></div>
-    </div>
-  </div>
-
-  
-  <div class="section bld-sec" id="sec-builder" style="position:relative;">
-    <div class="m-bldbar" id="mBldBar">
-      <button class="m-bld-page" id="mBldPage"><span id="mBldPageName">Page</span> <span class="m-bld-caret">▾</span></button>
-      <button class="m-bld-tool" id="mBldAi" title="Foyer assistant" aria-label="AI assistant"><svg viewBox="0 0 44 50" width="15" height="17" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg></button>
-      <button class="m-bld-tool" id="mBldTheme" title="Theme &amp; background" aria-label="Theme">✦</button>
-      <button class="m-bld-add" id="mBldAdd">＋ Section</button>
-    </div>
-    <div class="bld-loading" id="bldLoading"><div class="bld-loading-inner"><div class="bld-loading-spin"></div><p class="bld-loading-label">Loading pages</p></div></div>
-    <div class="bld-topbar">
-      <div class="bld-tc">BG <input type="text" class="coloris" id="bldBg" value="#020a03"></div>
-      <div class="bld-tc">Accent <input type="text" class="coloris" id="bldAccent" value="#4dbd6a"></div>
-      <div class="bld-tc">Text <input type="text" class="coloris" id="bldText" value="#f0f7f1"></div>
-      <div class="bld-tc">Font
-        <select id="bldFont">
-          <option value="Josefin Sans">Josefin Sans</option>
-          <option value="Unbounded">Unbounded</option>
-          <option value="Inter">Inter</option>
-          <option value="Playfair Display">Playfair Display</option>
-          <option value="Space Grotesk">Space Grotesk</option>
-          <option value="Raleway">Raleway</option>
-          <option value="Poppins">Poppins</option>
-          <option value="DM Sans">DM Sans</option>
-          <option value="Lato">Lato</option>
-          <option value="Montserrat">Montserrat</option>
-          <option value="Fraunces">Fraunces</option>
-          <option value="Outfit">Outfit</option>
-          <option value="Georgia">Georgia</option>
-          <option value="Courier New">Courier New</option>
-        </select>
-      </div>
-      <div class="bld-tc">Background
-        <select id="bldBgStyle">
-          <option value="solid">Solid</option>
-          <option value="gradient">Gradient</option>
-          <option value="aurora">Aurora glow</option>
-          <option value="image">Image</option>
-        </select>
-      </div>
-      <div class="bld-tc" id="bldBgColor2Wrap" style="display:none;">BG 2 <input type="text" class="coloris" id="bldBgColor2" value="#0a1f12"></div>
-      <div class="bld-tc" id="bldBgAngleWrap" style="display:none;">Angle <input type="number" id="bldBgAngle" value="135" min="0" max="360" style="width:52px;"></div>
-      <div class="bld-tc" id="bldBgImageWrap" style="display:none;">Image URL <input type="url" id="bldBgImage" placeholder="https://…" style="width:130px;"></div>
-      <div class="bld-tc" id="bldBgOverlayWrap" style="display:none;">Dim <input type="range" id="bldBgOverlay" min="0" max="0.85" step="0.05" value="0.4" style="width:64px;"></div>
-      <div class="bld-tc" id="bldBgAnimWrap" style="display:none;"><label style="display:flex;align-items:center;gap:.3rem;cursor:pointer;"><input type="checkbox" id="bldBgAnim"> Animate</label></div>
-      <span class="bld-autosave" id="bldAutosave"><span class="bld-autosave-dot"></span><span id="bldAutosaveText">Saved</span></span>
-      <div class="bld-vsep"></div>
-      <button class="btn btn-xs" id="bldDiscardBtn" title="Discard unsaved changes for this page">Discard</button>
-      <button class="btn btn-xs" id="bldPreview">Preview ↗</button>
-      <button class="btn btn-primary btn-xs" id="bldPublish">Publish</button>
-      <div class="spinner" id="bldSpinner"></div>
-      <span class="save-status" id="bldStatus"></span>
-    </div>
-    <div class="bld-workspace">
-      
-      <div class="bld-pages">
-        <div class="bld-pages-hd">
-          <span class="bld-pages-label">Pages</span>
-          <button class="bld-ai-trigger" id="bldAiBtn" title="Foyer assistant — generate or edit this page"><svg viewBox="0 0 44 50" width="12" height="14" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg></button>
-          <button class="btn btn-xs" id="bldAddPageBtn">+ Page</button>
-        </div>
-        <div class="bld-page-list" id="bldPageList"></div>
-        <div class="bld-new-page-form" id="bldNewPageForm" style="display:none">
-          <input type="text" id="bldNPTitle" placeholder="Page title">
-          <input type="text" id="bldNPSlug" placeholder="/slug">
-          <p class="bld-npf-hint">Slug = URL path e.g. /about</p>
-          <div style="display:flex;gap:.35rem">
-            <button class="btn btn-primary btn-xs" style="flex:1" id="bldNPCreate">Create</button>
-            <button class="btn btn-xs" id="bldNPCancel">Cancel</button>
+          <div class="bld-editor" id="bldEditor">
+            <p class="bld-editor-hint">
+              Hover a section and click <strong>Edit</strong> to change its content.
+            </p>
           </div>
         </div>
       </div>
-      
-      <div class="bld-canvas-col" id="bldCanvasCol">
-        <div class="bld-browser">
-          <div class="bld-chrome">
-            <div class="bld-chrome-dots"><span></span><span></span><span></span></div>
-            <div class="bld-chrome-url" id="bldChromeUrl">lanson.pages.dev</div>
-          </div>
-          <div class="bld-canvas" id="bldCanvas">
-            <div class="bld-canvas-empty">Select or create a page, then add sections below</div>
-          </div>
-        </div>
-        <div class="bld-add-sec">
-          <button class="bld-open-picker" id="bldOpenPicker"><span>＋</span> Add a section</button>
-        </div>
-        <button class="bld-add-fab" id="bldAddFab" title="Add a section" aria-label="Add a section">＋</button>
+
+      <header class="m-top" id="mTop">
+        <button class="m-burger" id="mBurger" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+        <span class="m-title" id="mTitle">Builder</span>
+        <div class="m-actions" id="mActions"></div>
+      </header>
+    </div>
+
+    <div class="m-menu" id="mMenu" aria-hidden="true">
+      <div class="m-menu-top">
+        <span class="m-menu-brand"><img src="/icons/favicon.svg" alt="">Admin</span>
+        <button class="m-menu-x" id="mMenuClose" aria-label="Close">✕</button>
       </div>
-      
-      <div class="bld-editor" id="bldEditor">
-        <p class="bld-editor-hint">Hover a section and click <strong>Edit</strong> to change its content.</p>
+      <nav class="m-menu-list" id="mMenuList"></nav>
+      <div class="m-menu-foot">
+        <a href="/" target="_blank" class="m-menu-foot-link">View site ↗</a>
+        <button class="m-menu-foot-link" id="mLogout">Log out</button>
       </div>
     </div>
-  </div>
 
-  
-  <header class="m-top" id="mTop">
-    <button class="m-burger" id="mBurger" aria-label="Menu"><span></span><span></span><span></span></button>
-    <span class="m-title" id="mTitle">Builder</span>
-    <div class="m-actions" id="mActions"></div>
-  </header>
-</div>
+    <div class="m-sheet-back" id="mSheetBack"></div>
+    <div class="m-sheet" id="mSheet" role="dialog">
+      <div class="m-sheet-grip"></div>
+      <div class="m-sheet-head">
+        <span class="m-sheet-title" id="mSheetTitle"></span><button class="m-sheet-x" id="mSheetX" aria-label="Close">✕</button>
+      </div>
+      <div class="m-sheet-body" id="mSheetBody"></div>
+    </div>
 
-
-<div class="m-menu" id="mMenu" aria-hidden="true">
-  <div class="m-menu-top">
-    <span class="m-menu-brand"><img src="/icons/favicon.svg" alt="">Admin</span>
-    <button class="m-menu-x" id="mMenuClose" aria-label="Close">✕</button>
-  </div>
-  <nav class="m-menu-list" id="mMenuList"></nav>
-  <div class="m-menu-foot">
-    <a href="/" target="_blank" class="m-menu-foot-link">View site ↗</a>
-    <button class="m-menu-foot-link" id="mLogout">Log out</button>
-  </div>
-</div>
-
-
-<div class="m-sheet-back" id="mSheetBack"></div>
-<div class="m-sheet" id="mSheet" role="dialog">
-  <div class="m-sheet-grip"></div>
-  <div class="m-sheet-head"><span class="m-sheet-title" id="mSheetTitle"></span><button class="m-sheet-x" id="mSheetX" aria-label="Close">✕</button></div>
-  <div class="m-sheet-body" id="mSheetBody"></div>
-</div>
-
-<script src="js/lib.js?v={{VERSION}}" defer="defer"></script>
-<script src="/deps/foyer-toasts.js?v={{VERSION}}" defer="defer"></script>
-<script src="js/utils.js?v={{VERSION}}" defer="defer"></script>
-<script src="js/terms-gate.js?v={{VERSION}}" defer="defer"></script>
-<script src="js/builder.js?v={{VERSION}}" defer="defer"></script>
-<script src="js/analytics.js?v={{VERSION}}" defer="defer"></script>
-<script src="js/tutorials.js?v={{VERSION}}" defer="defer"></script>
-<script src="js/reviews.js?v={{VERSION}}" defer="defer"></script>
-<script src="js/collections.js?v={{VERSION}}" defer="defer"></script>
-<script src="js/backup.js?v={{VERSION}}" defer="defer"></script>
-<script src="js/interactions.js?v={{VERSION}}" defer="defer"></script>
-<script src="js/mobile.js?v={{VERSION}}" defer="defer"></script>
-<script src="js/main.js?v={{VERSION}}" defer="defer"></script>
-<script>try{console.log('%c ∩ foyer %c this site runs on the foyer website architecture · v{{VERSION}}','background:linear-gradient(135deg,#eef1f5,#a9b1bd);color:#11151b;font-weight:800;padding:3px 9px;border-radius:4px;letter-spacing:.05em','color:#8b94a6;font-style:italic;padding-left:6px');}catch(e){}</script>
-</body>
+    <script src="js/lib.js?v={{VERSION}}" defer="defer"></script>
+    <script src="/deps/foyer-toasts.js?v={{VERSION}}" defer="defer"></script>
+    <script src="js/utils.js?v={{VERSION}}" defer="defer"></script>
+    <script src="js/terms-gate.js?v={{VERSION}}" defer="defer"></script>
+    <script src="js/builder.js?v={{VERSION}}" defer="defer"></script>
+    <script src="js/analytics.js?v={{VERSION}}" defer="defer"></script>
+    <script src="js/tutorials.js?v={{VERSION}}" defer="defer"></script>
+    <script src="js/reviews.js?v={{VERSION}}" defer="defer"></script>
+    <script src="js/collections.js?v={{VERSION}}" defer="defer"></script>
+    <script src="js/backup.js?v={{VERSION}}" defer="defer"></script>
+    <script src="js/interactions.js?v={{VERSION}}" defer="defer"></script>
+    <script src="js/mobile.js?v={{VERSION}}" defer="defer"></script>
+    <script src="js/main.js?v={{VERSION}}" defer="defer"></script>
+    <script>
+      try {
+        console.log(
+          "%c ∩ foyer %c this site runs on the foyer website architecture · v{{VERSION}}",
+          "background:linear-gradient(135deg,#eef1f5,#a9b1bd);color:#11151b;font-weight:800;padding:3px 9px;border-radius:4px;letter-spacing:.05em",
+          "color:#8b94a6;font-style:italic;padding-left:6px"
+        );
+      } catch (e) {}
+    </script>
+  </body>
 </html>

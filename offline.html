@@ -1,120 +1,301 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Offline</title>
-  <meta name="robots" content="noindex">
-  <link rel="icon" href="/foyer/foyer-mark.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/assets/fonts/fonts.css">
-  <style>
-    :root { --bg:#0b0e13; --ink:#e8edf2; --muted:#8b94a6; --accent:#7fa6d8; }
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { background:var(--bg); color:var(--ink); font-family:'Josefin Sans',system-ui,sans-serif; font-weight:200;
-      min-height:100vh; display:flex; align-items:center; justify-content:center; text-align:center; padding:2rem; -webkit-font-smoothing:antialiased; overflow:hidden; }
-    .glow { position:fixed; inset:-30% -10% auto; height:70vh; background:radial-gradient(ellipse 50% 60% at 50% 0%, rgba(127,166,216,.10), transparent 70%); pointer-events:none; }
-    .wrap { position:relative; max-width:440px; }
-    .mark { width:62px; height:auto; margin:0 auto 1.8rem; display:block; opacity:.92; animation:breathe 4s ease-in-out infinite; }
-    @keyframes breathe { 0%,100%{opacity:.78;transform:translateY(0)} 50%{opacity:1;transform:translateY(-3px)} }
-    .name { font-family:'Unbounded',sans-serif; font-weight:200; font-size:1.7rem; letter-spacing:.02em; margin-bottom:.5rem; }
-    .eyebrow { font-size:.56rem; letter-spacing:.4em; text-transform:uppercase; color:var(--accent); margin-bottom:1.6rem; font-weight:300; }
-    p { color:rgba(232,237,242,.7); font-size:1rem; line-height:1.8; margin-bottom:2.2rem; }
-    .btn { display:inline-flex; align-items:center; gap:.55rem; font-family:'Josefin Sans',sans-serif; font-weight:300; font-size:.66rem;
-      letter-spacing:.22em; text-transform:uppercase; padding:.8rem 1.6rem; border-radius:9px; text-decoration:none;
-      border:1px solid rgba(170,190,215,.2); color:rgba(232,237,242,.82); transition:all .2s; }
-    .btn:hover { border-color:var(--accent); color:#fff; }
-    .btn svg { width:13px; height:auto; }
-    button.btn { font-family:'Josefin Sans',sans-serif; cursor:pointer; background:transparent; }
-    .recheck { color:var(--muted); font-size:.6rem; letter-spacing:.18em; text-transform:uppercase; margin-bottom:1.6rem; font-variant-numeric:tabular-nums; }
-    .btns { display:flex; gap:.7rem; justify-content:center; flex-wrap:wrap; }
-    .bypass { margin-top:2rem; }
-    .bypasslink { background:none; border:none; cursor:pointer; color:var(--muted); font-family:'Josefin Sans',sans-serif; font-weight:300;
-      font-size:.55rem; letter-spacing:.26em; text-transform:uppercase; opacity:.55; transition:opacity .2s; }
-    .bypasslink:hover { opacity:.95; }
-    .bypassform { display:none; margin-top:1rem; }
-    .bypassrow { display:flex; gap:.5rem; justify-content:center; flex-wrap:wrap; }
-    #bypassCode { background:rgba(255,255,255,.04); border:1px solid rgba(170,190,215,.2); color:var(--ink); font-family:'Josefin Sans',sans-serif;
-      font-weight:300; font-size:.72rem; letter-spacing:.1em; padding:.72rem 1rem; border-radius:9px; outline:none; width:170px; text-align:center; }
-    #bypassCode:focus { border-color:var(--accent); }
-    .bypasserr { color:#e0608a; font-size:.58rem; letter-spacing:.14em; text-transform:uppercase; margin-top:.8rem; min-height:.7rem; }
-  </style>
-</head>
-<body>
-  <div class="glow"></div>
-  <div class="wrap">
-    <svg class="mark" viewBox="0 0 44 50" fill="none" stroke="var(--ink)" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/>
-    </svg>
-    <p class="eyebrow" id="foyer-offline-eyebrow">Temporarily offline</p>
-    <p class="name" id="foyer-offline-title">This site is taking a short break</p>
-    <p id="foyer-offline-msg">It’ll be back soon. Thanks for your patience.</p>
-    <p class="recheck" id="recheck">Rechecking in 60s</p>
-    <div class="btns">
-      <button class="btn" id="checkNow" type="button">Check now</button>
-      <a class="btn" href="/foyer">
-        <svg viewBox="0 0 44 50" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg>
-        About Foyer
-      </a>
-    </div>
-    <div class="bypass" id="bypassWrap" style="display:none;">
-      <button class="bypasslink" id="bypassToggle" type="button">Operator access</button>
-      <form class="bypassform" id="bypassForm">
-        <div class="bypassrow">
-          <input id="bypassCode" type="password" placeholder="Bypass code" autocomplete="off" autocapitalize="off" spellcheck="false">
-          <button class="btn" type="submit">View site</button>
-        </div>
-        <p class="bypasserr" id="bypassErr"></p>
-      </form>
-    </div>
-  </div>
-
-  <script>
-    // Auto-recheck status via /api/sb/site (no Supabase key on the page) every 60s
-    // (+ a live countdown) and a "Check now" button. Back online/licensed → reload to enter.
-    (function () {
-      var rc = document.getElementById('recheck'), btn = document.getElementById('checkNow');
-      var n = 60, busy = false;
-      function check() {
-        if (busy) return; busy = true; rc.textContent = 'Rechecking…';
-        fetch('/api/sb/site', { cache: 'no-store' })
-          .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
-          .then(function (s) {
-            if (s && s.offline !== true && s.licensed !== false) {
-              // Online. If the middleware navigated us here the URL is the real page
-              // (reload to enter); if /offline was opened directly while the site is up,
-              // reloading would loop — go home instead.
-              var onOfflinePath = /^\/offline(\.html)?$/.test(location.pathname);
-              rc.textContent = onOfflinePath ? 'Site is online — redirecting…' : 'Back online — reloading…';
-              if (onOfflinePath) location.replace('/'); else location.reload();
-              return;
-            }
-            document.getElementById('bypassWrap').style.display = 'block';   // operator can try a bypass code
-            n = 60; busy = false;
-          })
-          .catch(function () { n = 60; busy = false; });
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Offline</title>
+    <meta name="robots" content="noindex">
+    <link rel="icon" href="/foyer/foyer-mark.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/assets/fonts/fonts.css">
+    <style>
+      :root {
+        --bg: #0b0e13;
+        --ink: #e8edf2;
+        --muted: #8b94a6;
+        --accent: #7fa6d8;
       }
-      setInterval(function () { if (busy) return; n--; if (n <= 0) check(); else rc.textContent = 'Rechecking in ' + n + 's'; }, 1000);
-      btn.addEventListener('click', function () { n = 60; check(); });
-      check();
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Josefin Sans", system-ui, sans-serif;
+        font-weight: 200;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 2rem;
+        -webkit-font-smoothing: antialiased;
+        overflow: hidden;
+      }
+      .glow {
+        position: fixed;
+        inset: -30% -10% auto;
+        height: 70vh;
+        background: radial-gradient(
+          ellipse 50% 60% at 50% 0%,
+          rgba(127, 166, 216, 0.1),
+          transparent 70%
+        );
+        pointer-events: none;
+      }
+      .wrap {
+        position: relative;
+        max-width: 440px;
+      }
+      .mark {
+        width: 62px;
+        height: auto;
+        margin: 0 auto 1.8rem;
+        display: block;
+        opacity: 0.92;
+        animation: breathe 4s ease-in-out infinite;
+      }
+      @keyframes breathe {
+        0%,
+        100% {
+          opacity: 0.78;
+          transform: translateY(0);
+        }
+        50% {
+          opacity: 1;
+          transform: translateY(-3px);
+        }
+      }
+      .name {
+        font-family: "Unbounded", sans-serif;
+        font-weight: 200;
+        font-size: 1.7rem;
+        letter-spacing: 0.02em;
+        margin-bottom: 0.5rem;
+      }
+      .eyebrow {
+        font-size: 0.56rem;
+        letter-spacing: 0.4em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 1.6rem;
+        font-weight: 300;
+      }
+      p {
+        color: rgba(232, 237, 242, 0.7);
+        font-size: 1rem;
+        line-height: 1.8;
+        margin-bottom: 2.2rem;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        font-family: "Josefin Sans", sans-serif;
+        font-weight: 300;
+        font-size: 0.66rem;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        padding: 0.8rem 1.6rem;
+        border-radius: 9px;
+        text-decoration: none;
+        border: 1px solid rgba(170, 190, 215, 0.2);
+        color: rgba(232, 237, 242, 0.82);
+        transition: all 0.2s;
+      }
+      .btn:hover {
+        border-color: var(--accent);
+        color: #fff;
+      }
+      .btn svg {
+        width: 13px;
+        height: auto;
+      }
+      button.btn {
+        font-family: "Josefin Sans", sans-serif;
+        cursor: pointer;
+        background: transparent;
+      }
+      .recheck {
+        color: var(--muted);
+        font-size: 0.6rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        margin-bottom: 1.6rem;
+        font-variant-numeric: tabular-nums;
+      }
+      .btns {
+        display: flex;
+        gap: 0.7rem;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .bypass {
+        margin-top: 2rem;
+      }
+      .bypasslink {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--muted);
+        font-family: "Josefin Sans", sans-serif;
+        font-weight: 300;
+        font-size: 0.55rem;
+        letter-spacing: 0.26em;
+        text-transform: uppercase;
+        opacity: 0.55;
+        transition: opacity 0.2s;
+      }
+      .bypasslink:hover {
+        opacity: 0.95;
+      }
+      .bypassform {
+        display: none;
+        margin-top: 1rem;
+      }
+      .bypassrow {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      #bypassCode {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(170, 190, 215, 0.2);
+        color: var(--ink);
+        font-family: "Josefin Sans", sans-serif;
+        font-weight: 300;
+        font-size: 0.72rem;
+        letter-spacing: 0.1em;
+        padding: 0.72rem 1rem;
+        border-radius: 9px;
+        outline: none;
+        width: 170px;
+        text-align: center;
+      }
+      #bypassCode:focus {
+        border-color: var(--accent);
+      }
+      .bypasserr {
+        color: #e0608a;
+        font-size: 0.58rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        margin-top: 0.8rem;
+        min-height: 0.7rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="glow"></div>
+    <div class="wrap">
+      <svg class="mark" viewBox="0 0 44 50" fill="none" stroke="var(--ink)" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/>
+        <path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/>
+      </svg>
+      <p class="eyebrow" id="foyer-offline-eyebrow">Temporarily offline</p>
+      <p class="name" id="foyer-offline-title">This site is taking a short break</p>
+      <p id="foyer-offline-msg">It’ll be back soon. Thanks for your patience.</p>
+      <p class="recheck" id="recheck">Rechecking in 60s</p>
+      <div class="btns">
+        <button class="btn" id="checkNow" type="button">Check now</button>
+        <a class="btn" href="/foyer">
+          <svg viewBox="0 0 44 50" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/>
+            <path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/>
+          </svg>
+          About Foyer
+        </a>
+      </div>
+      <div class="bypass" id="bypassWrap" style="display: none">
+        <button class="bypasslink" id="bypassToggle" type="button">Operator access</button>
+        <form class="bypassform" id="bypassForm">
+          <div class="bypassrow">
+            <input id="bypassCode" type="password" placeholder="Bypass code" autocomplete="off" autocapitalize="off" spellcheck="false">
+            <button class="btn" type="submit">View site</button>
+          </div>
+          <p class="bypasserr" id="bypassErr"></p>
+        </form>
+      </div>
+    </div>
 
-      // Operator view-bypass: load the site with a one-shot ?__fb param — the server
-      // middleware validates the code (and shows this screen again if it's wrong). Nothing
-      // is stored, and the bypass hash never leaves the server.
-      var toggle = document.getElementById('bypassToggle'),
-          form = document.getElementById('bypassForm'),
-          codeEl = document.getElementById('bypassCode');
-      toggle.addEventListener('click', function () {
-        var open = form.style.display === 'block';
-        form.style.display = open ? 'none' : 'block';
-        if (!open) codeEl.focus();
-      });
-      form.addEventListener('submit', function (e) {
-        e.preventDefault();
-        var code = codeEl.value;
-        if (code) location.href = '/?__fb=' + encodeURIComponent(code);
-      });
-    })();
-  </script>
-  <script>try{console.log('%c ∩ foyer %c this site runs on the foyer website architecture · v{{VERSION}}','background:linear-gradient(135deg,#eef1f5,#a9b1bd);color:#11151b;font-weight:800;padding:3px 9px;border-radius:4px;letter-spacing:.05em','color:#8b94a6;font-style:italic;padding-left:6px');}catch(e){}</script>
-</body>
+    <script>
+      // Auto-recheck status via /api/sb/site (no Supabase key on the page) every 60s
+      // (+ a live countdown) and a "Check now" button. Back online/licensed → reload to enter.
+      (function () {
+        var rc = document.getElementById("recheck"),
+          btn = document.getElementById("checkNow");
+        var n = 60,
+          busy = false;
+        function check() {
+          if (busy) return;
+          busy = true;
+          rc.textContent = "Rechecking…";
+          fetch("/api/sb/site", { cache: "no-store" })
+            .then(function (r) {
+              return r.ok ? r.json() : Promise.reject();
+            })
+            .then(function (s) {
+              if (s && s.offline !== true && s.licensed !== false) {
+                // Online. If the middleware navigated us here the URL is the real page
+                // (reload to enter); if /offline was opened directly while the site is up,
+                // reloading would loop — go home instead.
+                var onOfflinePath = /^\/offline(\.html)?$/.test(location.pathname);
+                rc.textContent = onOfflinePath
+                  ? "Site is online — redirecting…"
+                  : "Back online — reloading…";
+                if (onOfflinePath) location.replace("/");
+                else location.reload();
+                return;
+              }
+              document.getElementById("bypassWrap").style.display = "block"; // operator can try a bypass code
+              n = 60;
+              busy = false;
+            })
+            .catch(function () {
+              n = 60;
+              busy = false;
+            });
+        }
+        setInterval(function () {
+          if (busy) return;
+          n--;
+          if (n <= 0) check();
+          else rc.textContent = "Rechecking in " + n + "s";
+        }, 1000);
+        btn.addEventListener("click", function () {
+          n = 60;
+          check();
+        });
+        check();
+
+        // Operator view-bypass: load the site with a one-shot ?__fb param — the server
+        // middleware validates the code (and shows this screen again if it's wrong). Nothing
+        // is stored, and the bypass hash never leaves the server.
+        var toggle = document.getElementById("bypassToggle"),
+          form = document.getElementById("bypassForm"),
+          codeEl = document.getElementById("bypassCode");
+        toggle.addEventListener("click", function () {
+          var open = form.style.display === "block";
+          form.style.display = open ? "none" : "block";
+          if (!open) codeEl.focus();
+        });
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+          var code = codeEl.value;
+          if (code) location.href = "/?__fb=" + encodeURIComponent(code);
+        });
+      })();
+    </script>
+    <script>
+      try {
+        console.log(
+          "%c ∩ foyer %c this site runs on the foyer website architecture · v{{VERSION}}",
+          "background:linear-gradient(135deg,#eef1f5,#a9b1bd);color:#11151b;font-weight:800;padding:3px 9px;border-radius:4px;letter-spacing:.05em",
+          "color:#8b94a6;font-style:italic;padding-left:6px"
+        );
+      } catch (e) {}
+    </script>
+  </body>
 </html>

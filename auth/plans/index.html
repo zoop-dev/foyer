@@ -1,124 +1,480 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Foyer — Plans</title>
-  <meta name="description" content="Foyer plans — Free and Pro.">
-  <link rel="icon" href="/foyer-mark.svg" type="image/svg+xml">
-  <style>
-    :root{--bg:#0b0e13;--panel:#11151b;--ink:#e8edf2;--muted:#8b94a6;--accent:#7fa6d8;--line:rgba(127,166,216,.14)}
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{background:var(--bg);color:var(--ink);font-family:'Josefin Sans',system-ui,-apple-system,Segoe UI,sans-serif;font-weight:200;-webkit-font-smoothing:antialiased;line-height:1.5;min-height:100vh}
-    a{color:inherit;text-decoration:none}
-    .glow{position:fixed;inset:-20% -10% auto;height:80vh;background:radial-gradient(ellipse 45% 55% at 50% 0%,rgba(127,166,216,.10),transparent 70%);pointer-events:none;z-index:0}
-    .wrap{max-width:880px;margin:0 auto;padding:0 1.4rem}
-    nav{position:sticky;top:0;z-index:10;backdrop-filter:blur(12px);background:rgba(11,14,19,.6);border-bottom:1px solid var(--line)}
-    nav .wrap{display:flex;align-items:center;justify-content:space-between;height:62px}
-    .brand{display:flex;align-items:center;gap:.6rem;font-family:'Unbounded',system-ui,sans-serif;font-weight:300;font-size:1.05rem}
-    .brand svg{width:20px;height:23px}
-    nav a.back{font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(232,237,242,.7)}
-    header{position:relative;z-index:1;text-align:center;padding:4.5rem 0 2.6rem}
-    .sub{font-size:.6rem;letter-spacing:.4em;text-transform:uppercase;color:var(--accent);font-weight:300;margin-bottom:.8rem}
-    h1{font-family:'Unbounded',system-ui,sans-serif;font-weight:200;font-size:clamp(2rem,6vw,3rem)}
-    header p{color:rgba(232,237,242,.55);font-size:.92rem;margin-top:1rem;max-width:480px;margin-left:auto;margin-right:auto}
-    main{position:relative;z-index:1;padding-bottom:5rem}
-    .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem;align-items:start}
-    .tier{border:1px solid var(--line);background:rgba(127,166,216,.03);border-radius:16px;padding:1.8rem 1.6rem}
-    .tier.pro{border-color:rgba(127,166,216,.45);background:rgba(127,166,216,.06);box-shadow:0 0 0 1px rgba(127,166,216,.12)}
-    /* Ultra — the elite tier. Gold, glowing, understated luxury. */
-    .tier.ultra{border-color:rgba(232,198,106,.55);background:linear-gradient(180deg,rgba(232,198,106,.08),rgba(127,166,216,.02));box-shadow:0 0 0 1px rgba(232,198,106,.2),0 18px 50px -12px rgba(232,198,106,.18);position:relative;overflow:hidden}
-    .tier.ultra::before{content:'';position:absolute;inset:0;background:radial-gradient(120% 60% at 50% -10%,rgba(232,198,106,.12),transparent 60%);pointer-events:none}
-    .tier.ultra .nm{color:#f0d792;letter-spacing:.02em}
-    .tier.ultra .price{color:#f4e3b0}
-    .tier.ultra ul li svg{stroke:#e8c66a}
-    .pill.gold{background:rgba(232,198,106,.16);color:#f4e3b0;border:1px solid rgba(232,198,106,.45)}
-    .cta.gold{background:linear-gradient(135deg,#f0d792,#cda63f);color:#191205;border-color:#e8c66a;font-weight:400;box-shadow:0 6px 20px -6px rgba(232,198,106,.5)}
-    .cta.gold:hover{filter:brightness(1.07);color:#191205}
-    .tier .nm{font-family:'Unbounded',system-ui,sans-serif;font-weight:300;font-size:1rem;display:flex;align-items:center;gap:.5rem}
-    .pill{font-size:.5rem;letter-spacing:.18em;text-transform:uppercase;background:var(--accent);color:#070a0e;padding:.2rem .5rem;border-radius:999px;font-weight:400}
-    .price{font-family:'Unbounded',system-ui,sans-serif;font-weight:200;font-size:2.2rem;margin:.8rem 0 .2rem}
-    .price small{font-size:.8rem;color:var(--muted);font-weight:200}
-    .tier .blurb{font-size:.78rem;color:var(--muted);margin-bottom:1.3rem;min-height:2.4em}
-    ul{list-style:none;display:flex;flex-direction:column;gap:.6rem}
-    li{font-size:.84rem;font-weight:200;color:rgba(232,237,242,.8);position:relative;padding-left:1.55rem;line-height:1.5;margin-bottom:.55rem}
-    li svg{width:15px;height:15px;position:absolute;left:0;top:.16rem;stroke:var(--accent)}
-    li.off{color:rgba(232,237,242,.35)}li.off svg{stroke:rgba(139,148,166,.4)}
-    .cta{display:block;text-align:center;margin-top:1.6rem;font-weight:300;font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;padding:.85rem;border-radius:10px;border:1px solid var(--line);color:rgba(232,237,242,.82);transition:all .15s}
-    .cta:hover{border-color:var(--accent);color:#fff}
-    .cta.primary{background:var(--accent);color:#070a0e;border-color:var(--accent)}
-    footer{position:relative;z-index:1;text-align:center;padding:1rem 0 4rem;font-size:.7rem;color:rgba(139,148,166,.6)}
-    footer a{color:var(--accent)}
-    @media (max-width:920px){ .tiers{grid-template-columns:1fr} header{padding:3rem 0 2rem} }
-  </style>
-</head>
-<body>
-  <div class="glow"></div>
-  <nav><div class="wrap">
-    <a class="brand" href="/"><svg viewBox="0 0 44 50" fill="none" stroke="var(--accent)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/><path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg>Foyer</a>
-    <a class="back" href="/">← Home</a>
-  </div></nav>
-  <header><div class="wrap"><p class="sub">Plans</p><h1>Simple, honest pricing</h1><p>One hosted site, a real builder, your own domain. Start free, upgrade when you want the good stuff.</p></div></header>
-  <main><div class="wrap">
-    <div class="tiers">
-      <div class="tier">
-        <div class="nm">Free</div>
-        <div class="price">$0</div>
-        <div class="blurb">A real site to get you online.</div>
-        <ul>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Connect <b>your own custom domain</b> (bring your own)</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Full block page builder</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Up to 10 pages, 2 collections, 5 reviews &amp; 5 tutorials</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Contact form &amp; basic analytics</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>5 site backups</li>
-          <li class="off"><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>"Built with Foyer" footer</li>
-        </ul>
-        <a class="cta" href="https://foyer.zo0p.dev">Get started</a>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Foyer — Plans</title>
+    <meta name="description" content="Foyer plans — Free and Pro.">
+    <link rel="icon" href="/foyer-mark.svg" type="image/svg+xml">
+    <style>
+      :root {
+        --bg: #0b0e13;
+        --panel: #11151b;
+        --ink: #e8edf2;
+        --muted: #8b94a6;
+        --accent: #7fa6d8;
+        --line: rgba(127, 166, 216, 0.14);
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family:
+          "Josefin Sans",
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          sans-serif;
+        font-weight: 200;
+        -webkit-font-smoothing: antialiased;
+        line-height: 1.5;
+        min-height: 100vh;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      .glow {
+        position: fixed;
+        inset: -20% -10% auto;
+        height: 80vh;
+        background: radial-gradient(
+          ellipse 45% 55% at 50% 0%,
+          rgba(127, 166, 216, 0.1),
+          transparent 70%
+        );
+        pointer-events: none;
+        z-index: 0;
+      }
+      .wrap {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 0 1.4rem;
+      }
+      nav {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        backdrop-filter: blur(12px);
+        background: rgba(11, 14, 19, 0.6);
+        border-bottom: 1px solid var(--line);
+      }
+      nav .wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 62px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-family: "Unbounded", system-ui, sans-serif;
+        font-weight: 300;
+        font-size: 1.05rem;
+      }
+      .brand svg {
+        width: 20px;
+        height: 23px;
+      }
+      nav a.back {
+        font-size: 0.66rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: rgba(232, 237, 242, 0.7);
+      }
+      header {
+        position: relative;
+        z-index: 1;
+        text-align: center;
+        padding: 4.5rem 0 2.6rem;
+      }
+      .sub {
+        font-size: 0.6rem;
+        letter-spacing: 0.4em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 300;
+        margin-bottom: 0.8rem;
+      }
+      h1 {
+        font-family: "Unbounded", system-ui, sans-serif;
+        font-weight: 200;
+        font-size: clamp(2rem, 6vw, 3rem);
+      }
+      header p {
+        color: rgba(232, 237, 242, 0.55);
+        font-size: 0.92rem;
+        margin-top: 1rem;
+        max-width: 480px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      main {
+        position: relative;
+        z-index: 1;
+        padding-bottom: 5rem;
+      }
+      .tiers {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.2rem;
+        align-items: start;
+      }
+      .tier {
+        border: 1px solid var(--line);
+        background: rgba(127, 166, 216, 0.03);
+        border-radius: 16px;
+        padding: 1.8rem 1.6rem;
+      }
+      .tier.pro {
+        border-color: rgba(127, 166, 216, 0.45);
+        background: rgba(127, 166, 216, 0.06);
+        box-shadow: 0 0 0 1px rgba(127, 166, 216, 0.12);
+      }
+      /* Ultra — the elite tier. Gold, glowing, understated luxury. */
+      .tier.ultra {
+        border-color: rgba(232, 198, 106, 0.55);
+        background: linear-gradient(180deg, rgba(232, 198, 106, 0.08), rgba(127, 166, 216, 0.02));
+        box-shadow:
+          0 0 0 1px rgba(232, 198, 106, 0.2),
+          0 18px 50px -12px rgba(232, 198, 106, 0.18);
+        position: relative;
+        overflow: hidden;
+      }
+      .tier.ultra::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          120% 60% at 50% -10%,
+          rgba(232, 198, 106, 0.12),
+          transparent 60%
+        );
+        pointer-events: none;
+      }
+      .tier.ultra .nm {
+        color: #f0d792;
+        letter-spacing: 0.02em;
+      }
+      .tier.ultra .price {
+        color: #f4e3b0;
+      }
+      .tier.ultra ul li svg {
+        stroke: #e8c66a;
+      }
+      .pill.gold {
+        background: rgba(232, 198, 106, 0.16);
+        color: #f4e3b0;
+        border: 1px solid rgba(232, 198, 106, 0.45);
+      }
+      .cta.gold {
+        background: linear-gradient(135deg, #f0d792, #cda63f);
+        color: #191205;
+        border-color: #e8c66a;
+        font-weight: 400;
+        box-shadow: 0 6px 20px -6px rgba(232, 198, 106, 0.5);
+      }
+      .cta.gold:hover {
+        filter: brightness(1.07);
+        color: #191205;
+      }
+      .tier .nm {
+        font-family: "Unbounded", system-ui, sans-serif;
+        font-weight: 300;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .pill {
+        font-size: 0.5rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        background: var(--accent);
+        color: #070a0e;
+        padding: 0.2rem 0.5rem;
+        border-radius: 999px;
+        font-weight: 400;
+      }
+      .price {
+        font-family: "Unbounded", system-ui, sans-serif;
+        font-weight: 200;
+        font-size: 2.2rem;
+        margin: 0.8rem 0 0.2rem;
+      }
+      .price small {
+        font-size: 0.8rem;
+        color: var(--muted);
+        font-weight: 200;
+      }
+      .tier .blurb {
+        font-size: 0.78rem;
+        color: var(--muted);
+        margin-bottom: 1.3rem;
+        min-height: 2.4em;
+      }
+      ul {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+      }
+      li {
+        font-size: 0.84rem;
+        font-weight: 200;
+        color: rgba(232, 237, 242, 0.8);
+        position: relative;
+        padding-left: 1.55rem;
+        line-height: 1.5;
+        margin-bottom: 0.55rem;
+      }
+      li svg {
+        width: 15px;
+        height: 15px;
+        position: absolute;
+        left: 0;
+        top: 0.16rem;
+        stroke: var(--accent);
+      }
+      li.off {
+        color: rgba(232, 237, 242, 0.35);
+      }
+      li.off svg {
+        stroke: rgba(139, 148, 166, 0.4);
+      }
+      .cta {
+        display: block;
+        text-align: center;
+        margin-top: 1.6rem;
+        font-weight: 300;
+        font-size: 0.66rem;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        padding: 0.85rem;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        color: rgba(232, 237, 242, 0.82);
+        transition: all 0.15s;
+      }
+      .cta:hover {
+        border-color: var(--accent);
+        color: #fff;
+      }
+      .cta.primary {
+        background: var(--accent);
+        color: #070a0e;
+        border-color: var(--accent);
+      }
+      footer {
+        position: relative;
+        z-index: 1;
+        text-align: center;
+        padding: 1rem 0 4rem;
+        font-size: 0.7rem;
+        color: rgba(139, 148, 166, 0.6);
+      }
+      footer a {
+        color: var(--accent);
+      }
+      @media (max-width: 920px) {
+        .tiers {
+          grid-template-columns: 1fr;
+        }
+        header {
+          padding: 3rem 0 2rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="glow"></div>
+    <nav>
+      <div class="wrap">
+        <a class="brand" href="/"><svg viewBox="0 0 44 50" fill="none" stroke="var(--accent)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 46 V24 a16 16 0 0 1 32 0 V46"/>
+            <path d="M15 46 V28 a6 6 0 0 1 12 0 V46"/></svg>Foyer</a>
+        <a class="back" href="/">← Home</a>
       </div>
-      <div class="tier pro">
-        <div class="nm">Pro <span class="pill">Popular</span></div>
-        <div class="price">$10 <small>/ one-time</small></div>
-        <div class="blurb">Make it yours — no limits, no Foyer branding.</div>
-        <ul>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Everything in Free, plus:</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><b>White-label</b> — no Foyer branding</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Unlimited pages, collections, reviews &amp; tutorials</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Unlimited site backups</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>AI page-building assistant</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Members-only &amp; password-protected pages</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>"Ask this site" AI assistant</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Version history</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Detailed visitor analytics (geo, devices, live log)</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Multi-language sites (AI-translated pages)</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Visitor comments on tutorials &amp; reviews</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Reduced site moderation</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Priority support</li>
-        </ul>
-        <a class="cta primary" href="mailto:zoop@foyer.zo0p.dev?subject=Foyer%20Pro">Go Pro</a>
+    </nav>
+    <header>
+      <div class="wrap">
+        <p class="sub">Plans</p>
+        <h1>Simple, honest pricing</h1>
+        <p>
+          One hosted site, a real builder, your own domain. Start free, upgrade when you want the
+          good stuff.
+        </p>
       </div>
-      <div class="tier ultra">
-        <div class="nm"><svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align:-3px"><path fill="#f0d792" d="M12 1.3c.62 5.9 1.36 7.68 10.9 10.7C13.36 15.02 12.62 16.8 12 22.7c-.62-5.9-1.36-7.68-10.9-10.7C10.64 8.98 11.38 7.2 12 1.3Z"/></svg> Ultra <span class="pill gold">Elite</span></div>
-        <div class="price">$20 <small>/ one-time</small></div>
-        <div class="blurb">The full power of Foyer — for people who run a real operation.</div>
-        <ul>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Everything in Pro, plus:</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><b>Block Interactions</b> — no-code visual logic on any block</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Page <b>Trash &amp; one-click restore</b></li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><b>Bulk actions</b> on pages</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><b>Markdown / plaintext export</b> of your whole site</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><b>Web push notifications</b> (broadcast to visitors)</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><b>Scheduled publishing</b></li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Native <b>contact inbox</b></li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><b>Guestbook</b> &amp; reusable saved blocks</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><b>Multiple admins</b> with roles</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><b>Extended &amp; scheduled backups</b></li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>A free <b>yoursite.loop82.com</b> domain</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>White-glove priority support</li>
-        </ul>
-        <a class="cta gold" href="mailto:zoop@foyer.zo0p.dev?subject=Foyer%20Ultra">Go Ultra</a>
+    </header>
+    <main>
+      <div class="wrap">
+        <div class="tiers">
+          <div class="tier">
+            <div class="nm">Free</div>
+            <div class="price">$0</div>
+            <div class="blurb">A real site to get you online.</div>
+            <ul>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg>Connect <b>your own custom domain</b> (bring your own)
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg>Full block page builder
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg>Up to 10 pages, 2 collections, 5 reviews &amp; 5 tutorials
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg>Contact form &amp; basic analytics
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg>5 site backups
+              </li>
+              <li class="off">
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/></svg>"Built with Foyer" footer
+              </li>
+            </ul>
+            <a class="cta" href="https://foyer.zo0p.dev">Get started</a>
+          </div>
+          <div class="tier pro">
+            <div class="nm">Pro <span class="pill">Popular</span></div>
+            <div class="price">$10 <small>/ one-time</small></div>
+            <div class="blurb">Make it yours — no limits, no Foyer branding.</div>
+            <ul>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg>Everything in Free, plus:
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg><b>White-label</b> — no Foyer branding
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg>Unlimited pages, collections, reviews &amp; tutorials
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg>Unlimited site backups
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg>AI page-building assistant
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg>Members-only &amp; password-protected pages
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg>"Ask this site" AI assistant
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg>Version history
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg>Detailed visitor analytics (geo, devices, live log)
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg>Multi-language sites (AI-translated pages)
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg>Visitor comments on tutorials &amp; reviews
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg>Reduced site moderation
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg>Priority support
+              </li>
+            </ul>
+            <a class="cta primary" href="mailto:zoop@foyer.zo0p.dev?subject=Foyer%20Pro">Go Pro</a>
+          </div>
+          <div class="tier ultra">
+            <div class="nm">
+              <svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align: -3px">
+                <path fill="#f0d792" d="M12 1.3c.62 5.9 1.36 7.68 10.9 10.7C13.36 15.02 12.62 16.8 12 22.7c-.62-5.9-1.36-7.68-10.9-10.7C10.64 8.98 11.38 7.2 12 1.3Z"/>
+              </svg>
+              Ultra <span class="pill gold">Elite</span>
+            </div>
+            <div class="price">$20 <small>/ one-time</small></div>
+            <div class="blurb">The full power of Foyer — for people who run a real operation.</div>
+            <ul>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg>Everything in Pro, plus:
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg><b>Block Interactions</b> — no-code visual logic on any block
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg>Page <b>Trash &amp; one-click restore</b>
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg><b>Bulk actions</b> on pages
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg><b>Markdown / plaintext export</b> of your whole site
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg><b>Web push notifications</b> (broadcast to visitors)
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg><b>Scheduled publishing</b>
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg>Native <b>contact inbox</b>
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg><b>Guestbook</b> &amp; reusable saved blocks
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg><b>Multiple admins</b> with roles
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg><b>Extended &amp; scheduled backups</b>
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg>A free <b>yoursite.loop82.com</b> domain
+              </li>
+              <li>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/></svg>White-glove priority support
+              </li>
+            </ul>
+            <a class="cta gold" href="mailto:zoop@foyer.zo0p.dev?subject=Foyer%20Ultra">Go Ultra</a>
+          </div>
+        </div>
       </div>
-    </div>
-  </div></main>
-  <footer>Questions? <a href="mailto:zoop@foyer.zo0p.dev">zoop@foyer.zo0p.dev</a></footer>
-</body>
+    </main>
+    <footer>Questions? <a href="mailto:zoop@foyer.zo0p.dev">zoop@foyer.zo0p.dev</a></footer>
+  </body>
 </html>

@@ -5,23 +5,25 @@ import { mkdir, writeFile, readdir, rm } from "node:fs/promises";
 import path from "node:path";
 
 const OUT = path.join(process.cwd(), "assets/fonts");
-const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+const UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 const KEEP = new Set(["latin", "latin-ext"]);
 
 // family display name → css2 family query (weights/styles we actually use)
 const FAMILIES = {
-  "Unbounded": "Unbounded:wght@200;300;400",
+  Unbounded: "Unbounded:wght@200;300;400",
   "Josefin Sans": "Josefin+Sans:ital,wght@0,100;0,200;0,300;1,100",
-  "Inter": "Inter:ital,wght@0,200;0,300;0,400;1,200",
+  Inter: "Inter:ital,wght@0,200;0,300;0,400;1,200",
   "Playfair Display": "Playfair+Display:ital,wght@0,300;0,400;0,700;1,300;1,400",
   "Space Grotesk": "Space+Grotesk:wght@300;400;500",
-  "Raleway": "Raleway:ital,wght@0,200;0,300;0,400;1,200",
-  "Poppins": "Poppins:ital,wght@0,200;0,300;0,400;1,200",
+  Raleway: "Raleway:ital,wght@0,200;0,300;0,400;1,200",
+  Poppins: "Poppins:ital,wght@0,200;0,300;0,400;1,200",
   "DM Sans": "DM+Sans:ital,opsz,wght@0,9..40,200;0,9..40,300;0,9..40,400;1,9..40,300",
-  "Lato": "Lato:ital,wght@0,100;0,300;0,400;1,300",
-  "Montserrat": "Montserrat:ital,wght@0,200;0,300;0,400;1,200",
-  "Fraunces": "Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400",
-  "Outfit": "Outfit:wght@200;300;400;500",
+  Lato: "Lato:ital,wght@0,100;0,300;0,400;1,300",
+  Montserrat: "Montserrat:ital,wght@0,200;0,300;0,400;1,200",
+  Fraunces:
+    "Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400",
+  Outfit: "Outfit:wght@200;300;400;500",
 };
 
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-");
@@ -35,23 +37,31 @@ let files = 0;
 for (const [name, q] of Object.entries(FAMILIES)) {
   const url = `https://fonts.googleapis.com/css2?family=${q}&display=swap`;
   const res = await fetch(url, { headers: { "User-Agent": UA } });
-  if (!res.ok) { console.error(`✗ ${name}: ${res.status}`); continue; }
+  if (!res.ok) {
+    console.error(`✗ ${name}: ${res.status}`);
+    continue;
+  }
   const text = await res.text();
   // Each face is preceded by a `/* subset */` comment.
   const re = /\/\*\s*([\w-]+)\s*\*\/\s*(@font-face\s*\{[^}]*\})/g;
-  let m, kept = 0;
+  let m,
+    kept = 0;
   while ((m = re.exec(text))) {
-    const subset = m[1]; let block = m[2];
+    const subset = m[1];
+    let block = m[2];
     if (!KEEP.has(subset)) continue;
     const u = block.match(/url\((https:\/\/fonts\.gstatic\.com\/[^)]+\.woff2)\)/);
     if (!u) continue;
     const remote = u[1];
     const local = `${slug(name)}-${path.basename(remote)}`;
-    const buf = Buffer.from(await (await fetch(remote, { headers: { "User-Agent": UA } })).arrayBuffer());
+    const buf = Buffer.from(
+      await (await fetch(remote, { headers: { "User-Agent": UA } })).arrayBuffer()
+    );
     await writeFile(path.join(OUT, local), buf);
     block = block.replace(remote, `/assets/fonts/${local}`);
     css += block.trim() + "\n";
-    files++; kept++;
+    files++;
+    kept++;
   }
   console.log(`✓ ${name}: ${kept} faces`);
 }

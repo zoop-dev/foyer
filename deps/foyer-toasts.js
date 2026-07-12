@@ -114,273 +114,484 @@
 
   var ICONS = {
     info: '<svg viewBox="0 0 24 24"><path d="M12 0a12 12 0 1012 12A12.013 12.013 0 0012 0zm.25 5a1.5 1.5 0 11-1.5 1.5 1.5 1.5 0 011.5-1.5zm2.25 13.5h-4a1 1 0 010-2h.75a.25.25 0 00.25-.25v-4.5a.25.25 0 00-.25-.25h-.75a1 1 0 010-2h1a2 2 0 012 2v4.75a.25.25 0 00.25.25h.75a1 1 0 110 2z"/></svg>',
-    success: '<svg viewBox="0 0 24 24"><path d="M12 0a12 12 0 1012 12A12.014 12.014 0 0012 0zm6.927 8.2l-6.845 9.289a1.011 1.011 0 01-1.43.188l-4.888-3.908a1 1 0 111.25-1.562l4.076 3.261 6.227-8.451a1 1 0 111.61 1.183z"/></svg>',
-    warning: '<svg viewBox="0 0 24 24"><path d="M23.32 17.191L15.438 2.184C14.728.833 13.416 0 11.996 0c-1.42 0-2.733.833-3.443 2.184L.533 17.448a4.744 4.744 0 000 4.368C1.243 23.167 2.555 24 3.975 24h16.05C22.22 24 24 22.044 24 19.632c0-.904-.251-1.746-.68-2.44zm-9.622 1.46c0 1.033-.724 1.823-1.698 1.823s-1.698-.79-1.698-1.822v-.043c0-1.028.724-1.822 1.698-1.822s1.698.79 1.698 1.822v.043zm.039-12.285l-.84 8.06c-.057.581-.408.943-.897.943-.49 0-.84-.367-.896-.942l-.84-8.065c-.057-.624.25-1.095.776-1.095h2.717c.526.005.833.476.776 1.096z"/></svg>',
-    error: '<svg viewBox="0 0 24 24"><path d="M11.983 0a12.206 12.206 0 00-8.51 3.653A11.8 11.8 0 000 12.207 11.779 11.779 0 0011.8 24h.214A12.111 12.111 0 0024 11.791 11.766 11.766 0 0011.983 0zM10.5 16.542a1.476 1.476 0 011.449-1.53h.027a1.527 1.527 0 011.523 1.47 1.475 1.475 0 01-1.449 1.53h-.027a1.529 1.529 0 01-1.523-1.47zM11 12.5v-6a1 1 0 012 0v6a1 1 0 11-2 0z"/></svg>',
-    spinner: '<div class="Toastify__spinner"></div>'
+    success:
+      '<svg viewBox="0 0 24 24"><path d="M12 0a12 12 0 1012 12A12.014 12.014 0 0012 0zm6.927 8.2l-6.845 9.289a1.011 1.011 0 01-1.43.188l-4.888-3.908a1 1 0 111.25-1.562l4.076 3.261 6.227-8.451a1 1 0 111.61 1.183z"/></svg>',
+    warning:
+      '<svg viewBox="0 0 24 24"><path d="M23.32 17.191L15.438 2.184C14.728.833 13.416 0 11.996 0c-1.42 0-2.733.833-3.443 2.184L.533 17.448a4.744 4.744 0 000 4.368C1.243 23.167 2.555 24 3.975 24h16.05C22.22 24 24 22.044 24 19.632c0-.904-.251-1.746-.68-2.44zm-9.622 1.46c0 1.033-.724 1.823-1.698 1.823s-1.698-.79-1.698-1.822v-.043c0-1.028.724-1.822 1.698-1.822s1.698.79 1.698 1.822v.043zm.039-12.285l-.84 8.06c-.057.581-.408.943-.897.943-.49 0-.84-.367-.896-.942l-.84-8.065c-.057-.624.25-1.095.776-1.095h2.717c.526.005.833.476.776 1.096z"/></svg>',
+    error:
+      '<svg viewBox="0 0 24 24"><path d="M11.983 0a12.206 12.206 0 00-8.51 3.653A11.8 11.8 0 000 12.207 11.779 11.779 0 0011.8 24h.214A12.111 12.111 0 0024 11.791 11.766 11.766 0 0011.983 0zM10.5 16.542a1.476 1.476 0 011.449-1.53h.027a1.527 1.527 0 011.523 1.47 1.475 1.475 0 01-1.449 1.53h-.027a1.529 1.529 0 01-1.523-1.47zM11 12.5v-6a1 1 0 012 0v6a1 1 0 11-2 0z"/></svg>',
+    spinner: '<div class="Toastify__spinner"></div>',
   };
-  var CLOSE = '<svg aria-hidden="true" viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7.71 8.23l3.75 3.75-1.48 1.48-3.75-3.75-3.75 3.75L1 11.98l3.75-3.75L1 4.48 2.48 3l3.75 3.75L9.98 3l1.48 1.48z"/></svg>';
+  var CLOSE =
+    '<svg aria-hidden="true" viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7.71 8.23l3.75 3.75-1.48 1.48-3.75-3.75-3.75 3.75L1 11.98l3.75-3.75L1 4.48 2.48 3l3.75 3.75L9.98 3l1.48 1.48z"/></svg>';
 
   // direction key per position (drives bounce/slide enter/exit)
   function dirOf(pos) {
-    if (pos === 'top-center') return 'down';
-    if (pos === 'bottom-center') return 'up';
-    return pos.indexOf('left') > -1 ? 'left' : 'right';
+    if (pos === "top-center") return "down";
+    if (pos === "bottom-center") return "up";
+    return pos.indexOf("left") > -1 ? "left" : "right";
   }
-  var TRANS = { bounce: { d: 700, dir: 1 }, slide: { d: 750, dir: 1 }, zoom: { d: 550, dir: 0 }, flip: { d: 750, dir: 0 } };
-  function enterCls(t, pos) { return 'Toastify__' + t + '-enter' + (TRANS[t].dir ? '--' + dirOf(pos) : ''); }
-  function exitCls(t, pos) { return 'Toastify__' + t + '-exit' + (TRANS[t].dir ? '--' + dirOf(pos) : ''); }
+  var TRANS = {
+    bounce: { d: 700, dir: 1 },
+    slide: { d: 750, dir: 1 },
+    zoom: { d: 550, dir: 0 },
+    flip: { d: 750, dir: 0 },
+  };
+  function enterCls(t, pos) {
+    return "Toastify__" + t + "-enter" + (TRANS[t].dir ? "--" + dirOf(pos) : "");
+  }
+  function exitCls(t, pos) {
+    return "Toastify__" + t + "-exit" + (TRANS[t].dir ? "--" + dirOf(pos) : "");
+  }
 
   // ── defaults (override with foyerToast.configure({...})) ─────────────────
   var defaults = {
-    type: 'default', position: 'top-right', theme: 'light', autoClose: 5000,
-    hideProgressBar: false, closeButton: true, icon: true, closeOnClick: true,
-    pauseOnHover: true, pauseOnFocusLoss: true, draggable: true, draggablePercent: 80,
-    transition: 'bounce', rtl: false, newestOnTop: false, delay: 0, limit: 0, role: 'alert',
-    html: false, className: '', style: '', bodyClassName: '', progressClassName: '', progressStyle: '',
-    onOpen: null, onClose: null
+    type: "default",
+    position: "top-right",
+    theme: "light",
+    autoClose: 5000,
+    hideProgressBar: false,
+    closeButton: true,
+    icon: true,
+    closeOnClick: true,
+    pauseOnHover: true,
+    pauseOnFocusLoss: true,
+    draggable: true,
+    draggablePercent: 80,
+    transition: "bounce",
+    rtl: false,
+    newestOnTop: false,
+    delay: 0,
+    limit: 0,
+    role: "alert",
+    html: false,
+    className: "",
+    style: "",
+    bodyClassName: "",
+    progressClassName: "",
+    progressStyle: "",
+    onOpen: null,
+    onClose: null,
   };
 
   function injectCss() {
-    if (document.getElementById('foyer-toasts-css')) return;
-    var v = document.createElement('style'); v.id = 'foyer-toasts-vars'; v.textContent = VARS;
-    var s = document.createElement('style'); s.id = 'foyer-toasts-css'; s.textContent = CSS;
+    if (document.getElementById("foyer-toasts-css")) return;
+    var v = document.createElement("style");
+    v.id = "foyer-toasts-vars";
+    v.textContent = VARS;
+    var s = document.createElement("style");
+    s.id = "foyer-toasts-css";
+    s.textContent = CSS;
     var head = document.head || document.documentElement;
-    head.appendChild(v); head.appendChild(s);
+    head.appendChild(v);
+    head.appendChild(s);
   }
-  function escapeText(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function escapeText(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
 
-  var active = {};        // id -> entry
-  var queues = {};        // containerKey -> [pending fns]
-  var counts = {};        // containerKey -> visible count
-  var containers = {};    // containerKey -> element
+  var active = {}; // id -> entry
+  var queues = {}; // containerKey -> [pending fns]
+  var counts = {}; // containerKey -> visible count
+  var containers = {}; // containerKey -> element
   var seq = 0;
-  var paused = false;     // focus-loss pause
+  var paused = false; // focus-loss pause
 
-  function ckey(o) { return o.position + '|' + (o.rtl ? 'rtl' : 'ltr'); }
+  function ckey(o) {
+    return o.position + "|" + (o.rtl ? "rtl" : "ltr");
+  }
   function container(o) {
     var k = ckey(o);
     if (containers[k]) return containers[k];
-    var el = document.createElement('div');
-    el.className = 'Toastify__toast-container Toastify__toast-container--' + o.position + (o.rtl ? ' Toastify__toast-container--rtl' : '');
-    el.setAttribute('role', 'region');
+    var el = document.createElement("div");
+    el.className =
+      "Toastify__toast-container Toastify__toast-container--" +
+      o.position +
+      (o.rtl ? " Toastify__toast-container--rtl" : "");
+    el.setAttribute("role", "region");
     document.body.appendChild(el);
-    containers[k] = el; counts[k] = 0; queues[k] = [];
+    containers[k] = el;
+    counts[k] = 0;
+    queues[k] = [];
     return el;
   }
   function release(k) {
     counts[k]--;
-    if (queues[k] && queues[k].length) { var fn = queues[k].shift(); fn(); }
-    else if (counts[k] <= 0 && containers[k] && !containers[k].children.length) { containers[k].remove(); delete containers[k]; }
+    if (queues[k] && queues[k].length) {
+      var fn = queues[k].shift();
+      fn();
+    } else if (counts[k] <= 0 && containers[k] && !containers[k].children.length) {
+      containers[k].remove();
+      delete containers[k];
+    }
   }
 
   function iconHtmlFor(o) {
-    if (o.icon === false) return '';
+    if (o.icon === false) return "";
     var ic = o.icon;
     if (o.loading) ic = ICONS.spinner;
-    else if (ic === true || ic == null) ic = (o.type === 'default') ? '' : ICONS[o.type];
-    else if (typeof ic === 'string' && !/[<&]/.test(ic)) ic = escapeText(ic);   // plain text / emoji icon
-    return ic ? '<div class="Toastify__toast-icon Toastify--animate-icon">' + ic + '</div>' : '';
+    else if (ic === true || ic == null) ic = o.type === "default" ? "" : ICONS[o.type];
+    else if (typeof ic === "string" && !/[<&]/.test(ic)) ic = escapeText(ic); // plain text / emoji icon
+    return ic ? '<div class="Toastify__toast-icon Toastify--animate-icon">' + ic + "</div>" : "";
   }
   function progressClasses(o) {
-    return 'Toastify__progress-bar Toastify__progress-bar-theme--' + o.theme + ' Toastify__progress-bar--' + o.type
-      + (o.rtl ? ' Toastify__progress-bar--rtl' : '') + (o.progressClassName ? ' ' + o.progressClassName : '');
+    return (
+      "Toastify__progress-bar Toastify__progress-bar-theme--" +
+      o.theme +
+      " Toastify__progress-bar--" +
+      o.type +
+      (o.rtl ? " Toastify__progress-bar--rtl" : "") +
+      (o.progressClassName ? " " + o.progressClassName : "")
+    );
   }
   function wireType(toast, o, entering) {
-    toast.className = 'Toastify__toast Toastify__toast-theme--' + o.theme + ' Toastify__toast--' + o.type
-      + (o.closeOnClick ? ' Toastify__toast--close-on-click' : '') + (o.rtl ? ' Toastify__toast--rtl' : '')
-      + (entering ? ' Toastify--animate ' + enterCls(o.transition, o.position) : '') + (o.className ? ' ' + o.className : '');
-    if (entering) toast.style.animationDuration = (TRANS[o.transition].d / 1000) + 's';
+    toast.className =
+      "Toastify__toast Toastify__toast-theme--" +
+      o.theme +
+      " Toastify__toast--" +
+      o.type +
+      (o.closeOnClick ? " Toastify__toast--close-on-click" : "") +
+      (o.rtl ? " Toastify__toast--rtl" : "") +
+      (entering ? " Toastify--animate " + enterCls(o.transition, o.position) : "") +
+      (o.className ? " " + o.className : "");
+    if (entering) toast.style.animationDuration = TRANS[o.transition].d / 1000 + "s";
     if (o.style) toast.style.cssText += o.style;
   }
 
   function render(entry, entering) {
-    var o = entry.o, toast = entry.el;
+    var o = entry.o,
+      toast = entry.el;
     var content = o.html ? o.message : escapeText(o.message);
-    toast.innerHTML = '<div class="Toastify__toast-body' + (o.bodyClassName ? ' ' + o.bodyClassName : '') + '">' + iconHtmlFor(o) + '<div>' + content + '</div></div>'
-      + (o.closeButton === false ? '' : '<button class="Toastify__close-button" type="button" aria-label="close">' + (typeof o.closeButton === 'string' ? o.closeButton : CLOSE) + '</button>');
-    entry.controlled = typeof o.progress === 'number';
+    toast.innerHTML =
+      '<div class="Toastify__toast-body' +
+      (o.bodyClassName ? " " + o.bodyClassName : "") +
+      '">' +
+      iconHtmlFor(o) +
+      "<div>" +
+      content +
+      "</div></div>" +
+      (o.closeButton === false
+        ? ""
+        : '<button class="Toastify__close-button" type="button" aria-label="close">' +
+          (typeof o.closeButton === "string" ? o.closeButton : CLOSE) +
+          "</button>");
+    entry.controlled = typeof o.progress === "number";
     var hasBar = !o.hideProgressBar && (o.autoClose !== false || entry.controlled);
     entry.bar = null;
     if (hasBar) {
-      var bar = document.createElement('div');
-      bar.className = progressClasses(o) + (entry.controlled ? ' Toastify__progress-bar--controlled' : ' Toastify__progress-bar--animated');
+      var bar = document.createElement("div");
+      bar.className =
+        progressClasses(o) +
+        (entry.controlled
+          ? " Toastify__progress-bar--controlled"
+          : " Toastify__progress-bar--animated");
       if (o.progressStyle) bar.style.cssText += o.progressStyle;
-      if (entry.controlled) { bar.style.transform = 'scaleX(' + Math.min(1, Math.max(0, o.progress)) + ')'; bar.style.opacity = '1'; }
-      else { bar.style.animationDuration = (o.autoClose / 1000) + 's'; bar.addEventListener('animationend', function () { close(entry); }); }
+      if (entry.controlled) {
+        bar.style.transform = "scaleX(" + Math.min(1, Math.max(0, o.progress)) + ")";
+        bar.style.opacity = "1";
+      } else {
+        bar.style.animationDuration = o.autoClose / 1000 + "s";
+        bar.addEventListener("animationend", function () {
+          close(entry);
+        });
+      }
       toast.appendChild(bar);
       entry.bar = bar;
-      if (!entry.controlled && paused && o.pauseOnFocusLoss) bar.style.animationPlayState = 'paused';
+      if (!entry.controlled && paused && o.pauseOnFocusLoss)
+        bar.style.animationPlayState = "paused";
     }
-    var cb = toast.querySelector('.Toastify__close-button');
-    if (cb) cb.addEventListener('click', function (e) { e.stopPropagation(); close(entry); });
+    var cb = toast.querySelector(".Toastify__close-button");
+    if (cb)
+      cb.addEventListener("click", function (e) {
+        e.stopPropagation();
+        close(entry);
+      });
     wireType(toast, o, entering);
   }
 
   function show(message, opts) {
     injectCss();
-    var o = {}; for (var k in defaults) o[k] = defaults[k];
-    for (var k2 in (opts || {})) o[k2] = opts[k2];
+    var o = {};
+    for (var k in defaults) o[k] = defaults[k];
+    for (var k2 in opts || {}) o[k2] = opts[k2];
     o.message = message;
-    if (!ICONS[o.type] && o.type !== 'default') o.type = 'default';
-    if (!TRANS[o.transition]) o.transition = 'bounce';
-    var id = o.toastId != null ? o.toastId : (++seq);
-    if (active[id]) { update(id, opts || {}); return id; }   // re-show existing id → update in place
+    if (!ICONS[o.type] && o.type !== "default") o.type = "default";
+    if (!TRANS[o.transition]) o.transition = "bounce";
+    var id = o.toastId != null ? o.toastId : ++seq;
+    if (active[id]) {
+      update(id, opts || {});
+      return id;
+    } // re-show existing id → update in place
 
     var k = ckey(o);
     function mount() {
       var cont = container(o);
-      var toast = document.createElement('div');
-      toast.setAttribute('role', o.role || 'alert');
+      var toast = document.createElement("div");
+      toast.setAttribute("role", o.role || "alert");
       var entry = { id: id, el: toast, o: o, k: k, removed: false };
       render(entry, true);
-      if (o.newestOnTop) cont.insertBefore(toast, cont.firstChild); else cont.appendChild(toast);
+      if (o.newestOnTop) cont.insertBefore(toast, cont.firstChild);
+      else cont.appendChild(toast);
       active[id] = entry;
       bindInteractions(entry);
-      if (typeof o.onOpen === 'function') try { o.onOpen(); } catch (e) {}
+      if (typeof o.onOpen === "function")
+        try {
+          o.onOpen();
+        } catch (e) {}
     }
-    var run = function () { if (o.delay && o.delay > 0) setTimeout(function () { o.delay = 0; mount(); }, o.delay); else mount(); };
+    var run = function () {
+      if (o.delay && o.delay > 0)
+        setTimeout(function () {
+          o.delay = 0;
+          mount();
+        }, o.delay);
+      else mount();
+    };
     counts[k] = counts[k] || 0;
-    if (o.limit && o.limit > 0 && counts[k] >= o.limit) { (queues[k] = queues[k] || []).push(run); }
-    else { counts[k]++; run(); }
+    if (o.limit && o.limit > 0 && counts[k] >= o.limit) {
+      (queues[k] = queues[k] || []).push(run);
+    } else {
+      counts[k]++;
+      run();
+    }
     return id;
   }
 
   // Toast-level listeners live on the persistent element (kept across update()),
   // so we bind once and read the current flags from entry.o live.
   function bindInteractions(entry) {
-    if (entry.bound) return; entry.bound = true;
+    if (entry.bound) return;
+    entry.bound = true;
     var toast = entry.el;
-    toast.addEventListener('mouseenter', function () { if (entry.o.pauseOnHover && entry.bar && !entry.controlled) entry.bar.style.animationPlayState = 'paused'; });
-    toast.addEventListener('mouseleave', function () { if (entry.o.pauseOnHover && entry.bar && !entry.removed && !entry.controlled && !paused) entry.bar.style.animationPlayState = 'running'; });
-    toast.addEventListener('click', function () { if (entry.o.closeOnClick && !entry.dragging) close(entry); });
+    toast.addEventListener("mouseenter", function () {
+      if (entry.o.pauseOnHover && entry.bar && !entry.controlled)
+        entry.bar.style.animationPlayState = "paused";
+    });
+    toast.addEventListener("mouseleave", function () {
+      if (entry.o.pauseOnHover && entry.bar && !entry.removed && !entry.controlled && !paused)
+        entry.bar.style.animationPlayState = "running";
+    });
+    toast.addEventListener("click", function () {
+      if (entry.o.closeOnClick && !entry.dragging) close(entry);
+    });
     makeDraggable(entry);
   }
 
   function makeDraggable(entry) {
-    var toast = entry.el, startX = 0, delta = 0, dragging = false, w = 0;
-    toast.addEventListener('pointerdown', function (e) {
+    var toast = entry.el,
+      startX = 0,
+      delta = 0,
+      dragging = false,
+      w = 0;
+    toast.addEventListener("pointerdown", function (e) {
       if (!entry.o.draggable) return;
       if (e.button != null && e.button !== 0) return;
-      dragging = true; entry.dragging = false; startX = e.clientX; w = toast.offsetWidth;
-      toast.style.transition = 'none';
-      if (entry.bar) entry.bar.style.animationPlayState = 'paused';
-      try { toast.setPointerCapture(e.pointerId); } catch (err) {}
+      dragging = true;
+      entry.dragging = false;
+      startX = e.clientX;
+      w = toast.offsetWidth;
+      toast.style.transition = "none";
+      if (entry.bar) entry.bar.style.animationPlayState = "paused";
+      try {
+        toast.setPointerCapture(e.pointerId);
+      } catch (err) {}
     });
-    toast.addEventListener('pointermove', function (e) {
+    toast.addEventListener("pointermove", function (e) {
       if (!dragging) return;
       delta = e.clientX - startX;
       if (Math.abs(delta) > 3) entry.dragging = true;
-      toast.style.transform = 'translate3d(' + delta + 'px,0,0)';
+      toast.style.transform = "translate3d(" + delta + "px,0,0)";
       toast.style.opacity = String(Math.max(0, 1 - Math.abs(delta) / (w || 1)));
     });
     function end() {
-      if (!dragging) return; dragging = false;
-      if (w && Math.abs(delta) >= w * (entry.o.draggablePercent / 100)) { entry.flingDir = delta < 0 ? -1 : 1; close(entry, true); }
-      else {
-        toast.style.transition = 'transform .2s,opacity .2s';
-        toast.style.transform = ''; toast.style.opacity = '';
-        if (entry.bar && !entry.controlled && !paused) entry.bar.style.animationPlayState = 'running';
+      if (!dragging) return;
+      dragging = false;
+      if (w && Math.abs(delta) >= w * (entry.o.draggablePercent / 100)) {
+        entry.flingDir = delta < 0 ? -1 : 1;
+        close(entry, true);
+      } else {
+        toast.style.transition = "transform .2s,opacity .2s";
+        toast.style.transform = "";
+        toast.style.opacity = "";
+        if (entry.bar && !entry.controlled && !paused)
+          entry.bar.style.animationPlayState = "running";
       }
-      setTimeout(function () { entry.dragging = false; }, 0);
+      setTimeout(function () {
+        entry.dragging = false;
+      }, 0);
       delta = 0;
     }
-    toast.addEventListener('pointerup', end);
-    toast.addEventListener('pointercancel', end);
+    toast.addEventListener("pointerup", end);
+    toast.addEventListener("pointercancel", end);
   }
 
   function close(entry, fromDrag) {
-    if (entry.removed) return; entry.removed = true;
+    if (entry.removed) return;
+    entry.removed = true;
     delete active[entry.id];
-    var o = entry.o, toast = entry.el;
+    var o = entry.o,
+      toast = entry.el;
     var done = function () {
-      toast.removeEventListener('animationend', done);
+      toast.removeEventListener("animationend", done);
       toast.remove();
-      if (typeof o.onClose === 'function') try { o.onClose(); } catch (e) {}
+      if (typeof o.onClose === "function")
+        try {
+          o.onClose();
+        } catch (e) {}
       release(entry.k);
     };
     if (fromDrag) {
-      toast.style.transition = 'transform .3s,opacity .3s';
-      toast.style.transform = 'translate3d(' + ((toast.offsetWidth * 2) * (entry.flingDir || 1)) + 'px,0,0)';
-      toast.style.opacity = '0';
+      toast.style.transition = "transform .3s,opacity .3s";
+      toast.style.transform =
+        "translate3d(" + toast.offsetWidth * 2 * (entry.flingDir || 1) + "px,0,0)";
+      toast.style.opacity = "0";
       setTimeout(done, 300);
       return;
     }
     toast.classList.remove(enterCls(o.transition, o.position));
     toast.classList.add(exitCls(o.transition, o.position));
-    toast.style.animationDuration = (TRANS[o.transition].d / 1000) + 's';
-    toast.addEventListener('animationend', done);
+    toast.style.animationDuration = TRANS[o.transition].d / 1000 + "s";
+    toast.addEventListener("animationend", done);
   }
 
   function update(id, opts) {
-    var entry = active[id]; if (!entry) return;
-    var o = entry.o, was = entry.el;
-    for (var k in opts) if (k !== 'toastId') o[k] = opts[k];
+    var entry = active[id];
+    if (!entry) return;
+    var o = entry.o,
+      was = entry.el;
+    for (var k in opts) if (k !== "toastId") o[k] = opts[k];
     if (opts.message !== undefined) o.message = opts.message;
-    if (!ICONS[o.type] && o.type !== 'default') o.type = 'default';
-    render(entry, false);                 // re-render in place (no enter animation)
-    bindInteractions(entry);              // (was cleared by innerHTML; re-bind on same element listeners are additive but element kept)
+    if (!ICONS[o.type] && o.type !== "default") o.type = "default";
+    render(entry, false); // re-render in place (no enter animation)
+    bindInteractions(entry); // (was cleared by innerHTML; re-bind on same element listeners are additive but element kept)
     return id;
   }
 
   // ── public API ───────────────────────────────────────────────────────────
-  var api = function (message, opts) { return show(message, opts); };
-  ['success', 'error', 'info', 'warning'].forEach(function (t) {
-    api[t] = function (message, opts) { opts = opts || {}; opts.type = t; return show(message, opts); };
-  });
-  api.warn = api.warning;
-  api.dark = function (message, opts) { opts = opts || {}; opts.theme = 'dark'; return show(message, opts); };
-  api.loading = function (message, opts) {
-    opts = opts || {}; opts.type = 'default'; opts.loading = true; opts.autoClose = false;
-    opts.closeOnClick = false; opts.closeButton = opts.closeButton != null ? opts.closeButton : false; opts.draggable = false;
+  var api = function (message, opts) {
     return show(message, opts);
   };
-  api.update = function (id, opts) { return update(id, opts || {}); };
-  api.isActive = function (id) { return !!active[id]; };
+  ["success", "error", "info", "warning"].forEach(function (t) {
+    api[t] = function (message, opts) {
+      opts = opts || {};
+      opts.type = t;
+      return show(message, opts);
+    };
+  });
+  api.warn = api.warning;
+  api.dark = function (message, opts) {
+    opts = opts || {};
+    opts.theme = "dark";
+    return show(message, opts);
+  };
+  api.loading = function (message, opts) {
+    opts = opts || {};
+    opts.type = "default";
+    opts.loading = true;
+    opts.autoClose = false;
+    opts.closeOnClick = false;
+    opts.closeButton = opts.closeButton != null ? opts.closeButton : false;
+    opts.draggable = false;
+    return show(message, opts);
+  };
+  api.update = function (id, opts) {
+    return update(id, opts || {});
+  };
+  api.isActive = function (id) {
+    return !!active[id];
+  };
   api.dismiss = function (id) {
-    if (id == null) { for (var k in active) close(active[k]); return; }
+    if (id == null) {
+      for (var k in active) close(active[k]);
+      return;
+    }
     if (active[id]) close(active[id]);
   };
-  api.configure = function (cfg) { for (var k in (cfg || {})) defaults[k] = cfg[k]; };
+  api.configure = function (cfg) {
+    for (var k in cfg || {}) defaults[k] = cfg[k];
+  };
   api.promise = function (promise, msgs, opts) {
-    msgs = msgs || {}; opts = opts || {};
-    var base = {}; for (var k in opts) base[k] = opts[k];
-    var id = api.loading(msgs.pending || 'Loading…', base);
+    msgs = msgs || {};
+    opts = opts || {};
+    var base = {};
+    for (var k in opts) base[k] = opts[k];
+    var id = api.loading(msgs.pending || "Loading…", base);
     function resolveOpts(m, type) {
-      var r = (m && typeof m === 'object' && m.render !== undefined) ? m : { render: m };
-      var u = {}; for (var k in base) u[k] = base[k];
-      for (var k2 in r) if (k2 !== 'render') u[k2] = r[k2];
-      u.type = type; u.loading = false; u.icon = (r.icon !== undefined ? r.icon : true);
-      u.autoClose = (u.autoClose === undefined || u.autoClose === false) ? defaults.autoClose : u.autoClose;
+      var r = m && typeof m === "object" && m.render !== undefined ? m : { render: m };
+      var u = {};
+      for (var k in base) u[k] = base[k];
+      for (var k2 in r) if (k2 !== "render") u[k2] = r[k2];
+      u.type = type;
+      u.loading = false;
+      u.icon = r.icon !== undefined ? r.icon : true;
+      u.autoClose =
+        u.autoClose === undefined || u.autoClose === false ? defaults.autoClose : u.autoClose;
       u.closeOnClick = u.closeOnClick === undefined ? true : u.closeOnClick;
       u.closeButton = u.closeButton === undefined ? true : u.closeButton;
       u.draggable = u.draggable === undefined ? true : u.draggable;
       u.message = r.render;
       return u;
     }
-    return Promise.resolve(promise).then(function (val) {
-      if (msgs.success !== undefined) update(id, resolveOpts(typeof msgs.success === 'function' ? msgs.success(val) : msgs.success, 'success'));
-      else api.dismiss(id);
-      return val;
-    }, function (err) {
-      if (msgs.error !== undefined) update(id, resolveOpts(typeof msgs.error === 'function' ? msgs.error(err) : msgs.error, 'error'));
-      else api.dismiss(id);
-      throw err;
-    });
+    return Promise.resolve(promise).then(
+      function (val) {
+        if (msgs.success !== undefined)
+          update(
+            id,
+            resolveOpts(
+              typeof msgs.success === "function" ? msgs.success(val) : msgs.success,
+              "success"
+            )
+          );
+        else api.dismiss(id);
+        return val;
+      },
+      function (err) {
+        if (msgs.error !== undefined)
+          update(
+            id,
+            resolveOpts(typeof msgs.error === "function" ? msgs.error(err) : msgs.error, "error")
+          );
+        else api.dismiss(id);
+        throw err;
+      }
+    );
   };
-  api.POSITION = { TOP_LEFT: 'top-left', TOP_CENTER: 'top-center', TOP_RIGHT: 'top-right', BOTTOM_LEFT: 'bottom-left', BOTTOM_CENTER: 'bottom-center', BOTTOM_RIGHT: 'bottom-right' };
-  api.TYPE = { INFO: 'info', SUCCESS: 'success', WARNING: 'warning', ERROR: 'error', DEFAULT: 'default' };
-  api.THEME = { LIGHT: 'light', DARK: 'dark', COLORED: 'colored' };
-  api.TRANSITIONS = { BOUNCE: 'bounce', SLIDE: 'slide', ZOOM: 'zoom', FLIP: 'flip' };
+  api.POSITION = {
+    TOP_LEFT: "top-left",
+    TOP_CENTER: "top-center",
+    TOP_RIGHT: "top-right",
+    BOTTOM_LEFT: "bottom-left",
+    BOTTOM_CENTER: "bottom-center",
+    BOTTOM_RIGHT: "bottom-right",
+  };
+  api.TYPE = {
+    INFO: "info",
+    SUCCESS: "success",
+    WARNING: "warning",
+    ERROR: "error",
+    DEFAULT: "default",
+  };
+  api.THEME = { LIGHT: "light", DARK: "dark", COLORED: "colored" };
+  api.TRANSITIONS = { BOUNCE: "bounce", SLIDE: "slide", ZOOM: "zoom", FLIP: "flip" };
 
   // pause-on-focus-loss (react-toastify default)
-  window.addEventListener('blur', function () {
+  window.addEventListener("blur", function () {
     paused = true;
-    for (var id in active) { var e = active[id]; if (e.o.pauseOnFocusLoss && e.bar && !e.controlled) e.bar.style.animationPlayState = 'paused'; }
+    for (var id in active) {
+      var e = active[id];
+      if (e.o.pauseOnFocusLoss && e.bar && !e.controlled) e.bar.style.animationPlayState = "paused";
+    }
   });
-  window.addEventListener('focus', function () {
+  window.addEventListener("focus", function () {
     paused = false;
-    for (var id in active) { var e = active[id]; if (e.o.pauseOnFocusLoss && e.bar && !e.controlled && !e.removed) e.bar.style.animationPlayState = 'running'; }
+    for (var id in active) {
+      var e = active[id];
+      if (e.o.pauseOnFocusLoss && e.bar && !e.controlled && !e.removed)
+        e.bar.style.animationPlayState = "running";
+    }
   });
 
   window.foyerToast = api;

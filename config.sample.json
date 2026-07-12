@@ -1,45 +1,45 @@
 {
-  "// about":              "Copy this to sites/<your-site>/config.json and fill it in. One file per site; everything else (code) is shared. Easiest path: run `foyer new` for guided onboarding (it creates the D1 db, Pages project, secrets, Supabase entry, then builds & deploys).",
+  "// about": "Copy this to sites/<your-site>/config.json and fill it in. One file per site; everything else (code) is shared. Easiest path: run `foyer new` for guided onboarding (it creates the D1 db, Pages project, secrets, Supabase entry, then builds & deploys).",
 
-  "name":                 "Your Site Name",
-  "// name":              "Public display + meta/title fallback (the live name can still be overridden in the admin panel / D1 site_settings).",
+  "name": "Your Site Name",
+  "// name": "Public display + meta/title fallback (the live name can still be overridden in the admin panel / D1 site_settings).",
 
-  "shortName":            "YourSite",
-  "// shortName":         "PWA short_name + apple-mobile-web-app-title (home-screen label).",
+  "shortName": "YourSite",
+  "// shortName": "PWA short_name + apple-mobile-web-app-title (home-screen label).",
 
-  "domain":               "yoursite.com",
-  "// domain":            "Bare domain, no protocol. Used for canonical/OG/Twitter URLs and the JS meta origin.",
+  "domain": "yoursite.com",
+  "// domain": "Bare domain, no protocol. Used for canonical/OG/Twitter URLs and the JS meta origin.",
 
-  "themeColor":           "#4dbd6a",
-  "// themeColor":        "Accent color → browser UI theme, PWA theme_color, and the site accent CSS var.",
+  "themeColor": "#4dbd6a",
+  "// themeColor": "Accent color → browser UI theme, PWA theme_color, and the site accent CSS var.",
 
-  "bgColor":              "#020a03",
-  "// bgColor":           "Page background color (CSS --site-bg). Defaults to #020a03.",
+  "bgColor": "#020a03",
+  "// bgColor": "Page background color (CSS --site-bg). Defaults to #020a03.",
 
-  "textColor":            "#c8e6aa",
-  "// textColor":         "Body text color (CSS --site-text). Defaults to #c8e6aa.",
+  "textColor": "#c8e6aa",
+  "// textColor": "Body text color (CSS --site-text). Defaults to #c8e6aa.",
 
-  "accentBright":         "#39ff14",
-  "// accentBright":      "Brighter accent for highlights/glows. Defaults to themeColor.",
+  "accentBright": "#39ff14",
+  "// accentBright": "Brighter accent for highlights/glows. Defaults to themeColor.",
 
-  "mutedRgb":             "180,230,190",
-  "// mutedRgb":          "R,G,B for muted/secondary text (CSS --site-muted-rgb). Defaults to 180,230,190.",
+  "mutedRgb": "180,230,190",
+  "// mutedRgb": "R,G,B for muted/secondary text (CSS --site-muted-rgb). Defaults to 180,230,190.",
 
-  "tagline":              "What this site is about",
-  "description":          "One-line meta description for search/social.",
-  "keywords":             "comma, separated, keywords",
+  "tagline": "What this site is about",
+  "description": "One-line meta description for search/social.",
+  "keywords": "comma, separated, keywords",
 
-  "publicAccess":         false,
-  "// publicAccess":      "Set true to permanently open the site (no OAuth/magic-link gate), regardless of the admin 'site public' toggle. Enforced client-side (boot) and server-side (FOYER_PUBLIC var in wrangler.toml). Omit or false to keep the gate.",
+  "publicAccess": false,
+  "// publicAccess": "Set true to permanently open the site (no OAuth/magic-link gate), regardless of the admin 'site public' toggle. Enforced client-side (boot) and server-side (FOYER_PUBLIC var in wrangler.toml). Omit or false to keep the gate.",
 
-  "captcha":              "turnstile",
-  "// captcha":           "Gate bot-check provider: 'turnstile' (Cloudflare) or 'recaptcha' (Google v2 checkbox). Set the matching site key as a Cloudflare secret — TURNSTILE_SITE_KEY or RECAPTCHA_SITE_KEY. Omit/blank = auto (use whichever key is set).",
+  "captcha": "turnstile",
+  "// captcha": "Gate bot-check provider: 'turnstile' (Cloudflare) or 'recaptcha' (Google v2 checkbox). Set the matching site key as a Cloudflare secret — TURNSTILE_SITE_KEY or RECAPTCHA_SITE_KEY. Omit/blank = auto (use whichever key is set).",
 
   "cloudflare": {
-    "accountId":          "your-cloudflare-account-id",
-    "project":            "your-pages-project-name",
-    "d1Name":             "your-d1-database-name",
-    "d1Id":               "your-d1-database-uuid"
+    "accountId": "your-cloudflare-account-id",
+    "project": "your-pages-project-name",
+    "d1Name": "your-d1-database-name",
+    "d1Id": "your-d1-database-uuid"
   },
-  "// cloudflare":        "Used by build/deploy (Pages project + D1 target) and to generate wrangler.toml (which wires the D1 binding on deploy). SECRETS (OAuth client secrets, RESEND_API_KEY, ADMIN_PASSWORD, TURNSTILE_SECRET_KEY) are NEVER stored here — set them as Cloudflare encrypted secrets per project (foyer new does this for you). Public OAuth client IDs (GOOGLE_CLIENT_ID, GITHUB_CLIENT_ID, DISCORD_CLIENT_ID) are also set as project secrets/env."
+  "// cloudflare": "Used by build/deploy (Pages project + D1 target) and to generate wrangler.toml (which wires the D1 binding on deploy). SECRETS (OAuth client secrets, RESEND_API_KEY, ADMIN_PASSWORD, TURNSTILE_SECRET_KEY) are NEVER stored here — set them as Cloudflare encrypted secrets per project (foyer new does this for you). Public OAuth client IDs (GOOGLE_CLIENT_ID, GITHUB_CLIENT_ID, DISCORD_CLIENT_ID) are also set as project secrets/env."
 }

@@ -10,7 +10,15 @@ if (!site) {
   console.error("usage: node build.js <site>   (e.g. node build.js lanson)");
   process.exit(1);
 }
+import { execSync } from "node:child_process";
 const siteDir = path.join(root, "sites", site);
+try {
+  console.log("    \u2728 Running Prettier and ESLint...");
+  execSync("npm run format && npm run lint", { stdio: "inherit" });
+} catch (e) {
+  console.error("\n\u274C Linting or formatting failed. Please fix the errors above before building.");
+  process.exit(1);
+}
 const cfg = JSON.parse(await readFile(path.join(siteDir, "config.json"), "utf8"));
 const pkg = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
 const VERSION = pkg.version.split(".")[0];
@@ -32,7 +40,11 @@ const define = {
 };
 const hexToRgb = (hex) => {
   const h = hex.replace("#", "");
-  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)].join(",");
+  return [
+    parseInt(h.slice(0, 2), 16),
+    parseInt(h.slice(2, 4), 16),
+    parseInt(h.slice(4, 6), 16)
+  ].join(",");
 };
 const tokens = {
   VERSION: String(VERSION),
@@ -54,10 +66,7 @@ const tokens = {
   MUTED_RGB: cfg.mutedRgb || "180,230,190"
 };
 function applyTokens(s) {
-  return s.replace(
-    /\{\{([A-Z_]+)\}\}/g,
-    (m, k) => k in tokens ? tokens[k] : m
-  ).replace(/\?v=\d+/g, `?v=${VERSION}`);
+  return s.replace(/\{\{([A-Z_]+)\}\}/g, (m, k) => k in tokens ? tokens[k] : m).replace(/\?v=\d+/g, `?v=${VERSION}`);
 }
 const SHARED_RENDER = path.join(root, "src/blocks/render.js");
 function grabFn(src, name) {
@@ -75,14 +84,17 @@ function grabFn(src, name) {
 }
 async function assertRenderersInSync() {
   const shared = await readFile(SHARED_RENDER, "utf8");
-  if (!grabFn(shared, "bXtra")) throw new Error("renderer guard: bXtra() not found in src/blocks/render.js");
+  if (!grabFn(shared, "bXtra"))
+    throw new Error("renderer guard: bXtra() not found in src/blocks/render.js");
   const blocks = await readFile(path.join(root, "admin/js/blocks.js"), "utf8");
   const siteRender = await readFile(path.join(root, "src/main/20-render.js"), "utf8");
   const cases = (s) => [...(s || "").matchAll(/case '([a-z]+)'/g)].map((m) => m[1]).sort();
   const c1 = cases(grabFn(blocks, "bRender")), c2 = cases(grabFn(siteRender, "pgRenderSec"));
   if (c1.join(",") !== c2.join(",")) {
     const only = (a, b) => a.filter((x) => !b.includes(x));
-    throw new Error(`renderer drift: core block cases differ \u2014 preview-only [${only(c1, c2)}], site-only [${only(c2, c1)}]`);
+    throw new Error(
+      `renderer drift: core block cases differ \u2014 preview-only [${only(c1, c2)}], site-only [${only(c2, c1)}]`
+    );
   }
 }
 await assertRenderersInSync();
@@ -116,7 +128,18 @@ await esbuild.build({
   legalComments: "none"
 });
 await esbuild.build({
-  entryPoints: ["utils", "terms-gate", "analytics", "tutorials", "reviews", "collections", "backup", "interactions", "mobile", "main"].map((n) => path.join(root, "admin/js", `${n}.js`)),
+  entryPoints: [
+    "utils",
+    "terms-gate",
+    "analytics",
+    "tutorials",
+    "reviews",
+    "collections",
+    "backup",
+    "interactions",
+    "mobile",
+    "main"
+  ].map((n) => path.join(root, "admin/js", `${n}.js`)),
   outdir: path.join(dist, "admin/js"),
   bundle: false,
   minifyWhitespace: true,
@@ -166,11 +189,25 @@ await templateFile("robots.txt");
 await templateFile("style.css");
 await templateFile("admin/admin.css");
 await templateFile("admin/admin-mobile.css");
-for (const item of ["functions", "foyer", "offline.html", "_headers", "_redirects", "deps", "sw.js", "assets"]) {
+for (const item of [
+  "functions",
+  "foyer",
+  "offline.html",
+  "_headers",
+  "_redirects",
+  "deps",
+  "sw.js",
+  "assets"
+]) {
   await cp(path.join(root, item), path.join(dist, item), { recursive: true }).catch(() => {
   });
 }
-for (const html of ["foyer/index.html", "foyer/changelog/index.html", "foyer/about/index.html", "offline.html"]) {
+for (const html of [
+  "foyer/index.html",
+  "foyer/changelog/index.html",
+  "foyer/about/index.html",
+  "offline.html"
+]) {
   await templateFile(html).catch(() => {
   });
 }
@@ -188,7 +225,11 @@ const stripJs = async (code) => {
     return result.code || code;
   } catch {
     try {
-      return (await esbuild.transform(code, { loader: "js", minifyWhitespace: true, legalComments: "none" })).code;
+      return (await esbuild.transform(code, {
+        loader: "js",
+        minifyWhitespace: true,
+        legalComments: "none"
+      })).code;
     } catch {
       return code;
     }
@@ -209,30 +250,35 @@ async function stripHtml(s) {
     });
   } catch {
     s = s.replace(/<!--[\s\S]*?-->/g, (m) => m.includes(FOYER_MARK) ? m : "");
-    s = s.replace(/(<style[^>]*>)([\s\S]*?)(<\/style>)/gi, (m, o, body, cl) => o + body.replace(/\/\*[\s\S]*?\*\//g, "") + cl);
+    s = s.replace(
+      /(<style[^>]*>)([\s\S]*?)(<\/style>)/gi,
+      (m, o, body, cl) => o + body.replace(/\/\*[\s\S]*?\*\//g, "") + cl
+    );
     return s;
   }
 }
 async function stripComments() {
   const entries = await readdir(dist, { recursive: true, withFileTypes: true });
-  await Promise.all(entries.map(async (d) => {
-    if (!d.isFile()) return;
-    const fp = path.join(d.parentPath || d.path, d.name);
-    if (fp.includes(`${path.sep}deps${path.sep}`)) return;
-    if (d.name.endsWith(".html")) {
-      await writeFile(fp, await stripHtml(await readFile(fp, "utf8")));
-    } else if (d.name.endsWith(".css")) {
-      const s = await readFile(fp, "utf8");
-      try {
-        const result = await esbuild.transform(s, { loader: "css", minify: true });
-        await writeFile(fp, result.code);
-      } catch {
-        await writeFile(fp, s.replace(/\/\*[\s\S]*?\*\//g, ""));
+  await Promise.all(
+    entries.map(async (d) => {
+      if (!d.isFile()) return;
+      const fp = path.join(d.parentPath || d.path, d.name);
+      if (fp.includes(`${path.sep}deps${path.sep}`)) return;
+      if (d.name.endsWith(".html")) {
+        await writeFile(fp, await stripHtml(await readFile(fp, "utf8")));
+      } else if (d.name.endsWith(".css")) {
+        const s = await readFile(fp, "utf8");
+        try {
+          const result = await esbuild.transform(s, { loader: "css", minify: true });
+          await writeFile(fp, result.code);
+        } catch {
+          await writeFile(fp, s.replace(/\/\*[\s\S]*?\*\//g, ""));
+        }
+      } else if (d.name.endsWith(".js") && (fp.includes(`${path.sep}functions${path.sep}`) || d.name === "sw.js")) {
+        await writeFile(fp, await stripJs(await readFile(fp, "utf8")));
       }
-    } else if (d.name.endsWith(".js") && (fp.includes(`${path.sep}functions${path.sep}`) || d.name === "sw.js")) {
-      await writeFile(fp, await stripJs(await readFile(fp, "utf8")));
-    }
-  }));
+    })
+  );
 }
 await stripComments();
 const wrangler = `name = "${cfg.cloudflare.project}"
