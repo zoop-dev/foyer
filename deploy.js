@@ -35,9 +35,6 @@ run("npx", [
   "deploy",
   "dist",
   `--project-name=${cfg.cloudflare.project}`,
-
-
-
   "--branch=production",
   "--commit-dirty=true"
 ]);

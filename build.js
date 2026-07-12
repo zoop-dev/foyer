@@ -18,14 +18,10 @@ const SITE = {
   name: cfg.name,
   shortName: cfg.shortName,
   domain: cfg.domain,
-
   accent: cfg.themeColor,
   bg: cfg.bgColor || "#020a03",
   text: cfg.textColor || "#c8e6aa",
-
-
   publicAccess: cfg.publicAccess === true,
-
   captcha: (cfg.captcha || "").toLowerCase()
 };
 const iconNames = (await readdir(path.join(root, "assets/icons")).catch(() => [])).filter((f) => f.endsWith(".svg")).map((f) => f.slice(0, -4)).sort();
@@ -49,11 +45,8 @@ const tokens = {
   TAGLINE: cfg.tagline || "",
   DESCRIPTION: cfg.description || "",
   KEYWORDS: cfg.keywords || "",
-
-
   OG_IMAGE: cfg.ogImage ? /^https?:\/\//.test(cfg.ogImage) ? cfg.ogImage : `https://${cfg.domain}${cfg.ogImage.startsWith("/") ? "" : "/"}${cfg.ogImage}` : `https://${cfg.domain}/icons/favicon-512.png`,
   TWITTER_CARD: cfg.ogImage ? "summary_large_image" : "summary",
-
   ACCENT: cfg.themeColor,
   ACCENT_RGB: hexToRgb(cfg.themeColor),
   ACCENT_BRIGHT: cfg.accentBright || cfg.themeColor,
