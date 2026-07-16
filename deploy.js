@@ -25,7 +25,7 @@ run("npx", [
   cfg.cloudflare.d1Name,
   "--command",
   versionSql,
-  "--remote"
+  "--remote",
 ]);
 console.log(`
 \u25B8 deploying dist/ \u2192 Pages project '${cfg.cloudflare.project}'`);
@@ -36,7 +36,7 @@ run("npx", [
   "dist",
   `--project-name=${cfg.cloudflare.project}`,
   "--branch=production",
-  "--commit-dirty=true"
+  "--commit-dirty=true",
 ]);
 console.log(`
 \u2713 deployed ${site} v${VERSION}`);

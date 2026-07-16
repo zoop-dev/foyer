@@ -10,17 +10,18 @@ const stripJs = async (code) => {
       compress: false,
       mangle: false,
       keep_fnames: true,
-      output: { comments: false }
+      output: { comments: false },
     });
     if (r.code) return r.code;
-  } catch {
-  }
+  } catch {}
   try {
-    return (await esbuild.transform(code, {
-      loader: "js",
-      minifyWhitespace: false,
-      legalComments: "none"
-    })).code;
+    return (
+      await esbuild.transform(code, {
+        loader: "js",
+        minifyWhitespace: false,
+        legalComments: "none",
+      })
+    ).code;
   } catch {
     return code;
   }
@@ -28,7 +29,7 @@ const stripJs = async (code) => {
 const SKIP = [
   /[/\\](deps|node_modules|dist|\.git)[/\\]/,
   /[/\\]assets[/\\]fonts[/\\]/,
-  /\.(json|md|sql|ico|png|svg|woff2)$/
+  /\.(json|md|sql|ico|png|svg|woff2)$/,
 ];
 const entries = await readdir(ROOT, { recursive: true, withFileTypes: true });
 let n = 0;
@@ -65,17 +66,15 @@ await Promise.all(
             removeComments: true,
             ignoreCustomComments: [/Built with Foyer/],
             minifyCSS: false,
-            minifyJS: false
+            minifyJS: false,
           });
           if (stripped !== orig) {
             await writeFile(fp, stripped);
             n++;
           }
-        } catch {
-        }
+        } catch {}
       }
-    } catch {
-    }
+    } catch {}
   })
 );
 console.log(`  \u2713 stripped comments from ${n} source file${n !== 1 ? "s" : ""}`);

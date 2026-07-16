@@ -1,1 +1,55 @@
-import{sessionUser,isLicensedClient,SB_URL,sbH}from"./_lib.js";async function withCors(env,request,res){const origin=request.headers.get("Origin")||"";const h=new Headers(res.headers);let allow="";try{if(await isLicensedClient(env,new URL(origin).hostname))allow=origin}catch{}if(allow){h.set("access-control-allow-origin",allow);h.set("access-control-allow-credentials","true");h.set("vary","Origin")}h.set("access-control-allow-methods","GET, POST, OPTIONS");h.set("access-control-allow-headers","content-type");return new Response(res.body,{status:res.status,headers:h})}const json=(o,s=200)=>new Response(JSON.stringify(o),{status:s,headers:{"content-type":"application/json"}});export async function onRequestOptions({request:request,env:env}){return withCors(env,request,new Response(null,{status:204}))}export async function onRequestGet({request:request,env:env}){const u=await sessionUser(env,request);return withCors(env,request,json(u?{user:{name:u.name,email:u.email,avatar:u.avatar}}:{user:null}))}export async function onRequestPost({request:request,env:env}){const u=await sessionUser(env,request);if(!u)return withCors(env,request,json({error:"unauthorized"},401));const b=await request.json().catch(()=>({}));const upd={};if(typeof b.name==="string")upd.name=b.name.trim().slice(0,80);if(typeof b.avatar==="string"){const av=b.avatar.trim().slice(0,600);if(av&&!/^https:\/\//i.test(av))return withCors(env,request,json({error:"avatar must be an https URL"},400));upd.avatar=av}if(!Object.keys(upd).length)return withCors(env,request,json({error:"nothing to update"},400));const r=await fetch(`${SB_URL(env)}/rest/v1/foyer_users?id=eq.${u.id}`,{method:"PATCH",headers:{...sbH(env),Prefer:"return=minimal"},body:JSON.stringify(upd)});return withCors(env,request,json({ok:r.ok,name:upd.name??u.name,avatar:upd.avatar??u.avatar},r.ok?200:500))}
+import { sessionUser, isLicensedClient, SB_URL, sbH } from "./_lib.js";
+async function withCors(env, request, res) {
+  const origin = request.headers.get("Origin") || "";
+  const h = new Headers(res.headers);
+  let allow = "";
+  try {
+    if (await isLicensedClient(env, new URL(origin).hostname)) allow = origin;
+  } catch {}
+  if (allow) {
+    h.set("access-control-allow-origin", allow);
+    h.set("access-control-allow-credentials", "true");
+    h.set("vary", "Origin");
+  }
+  h.set("access-control-allow-methods", "GET, POST, OPTIONS");
+  h.set("access-control-allow-headers", "content-type");
+  return new Response(res.body, { status: res.status, headers: h });
+}
+const json = (o, s = 200) =>
+  new Response(JSON.stringify(o), { status: s, headers: { "content-type": "application/json" } });
+export async function onRequestOptions({ request: request, env: env }) {
+  return withCors(env, request, new Response(null, { status: 204 }));
+}
+export async function onRequestGet({ request: request, env: env }) {
+  const u = await sessionUser(env, request);
+  return withCors(
+    env,
+    request,
+    json(u ? { user: { name: u.name, email: u.email, avatar: u.avatar } } : { user: null })
+  );
+}
+export async function onRequestPost({ request: request, env: env }) {
+  const u = await sessionUser(env, request);
+  if (!u) return withCors(env, request, json({ error: "unauthorized" }, 401));
+  const b = await request.json().catch(() => ({}));
+  const upd = {};
+  if (typeof b.name === "string") upd.name = b.name.trim().slice(0, 80);
+  if (typeof b.avatar === "string") {
+    const av = b.avatar.trim().slice(0, 600);
+    if (av && !/^https:\/\//i.test(av))
+      return withCors(env, request, json({ error: "avatar must be an https URL" }, 400));
+    upd.avatar = av;
+  }
+  if (!Object.keys(upd).length)
+    return withCors(env, request, json({ error: "nothing to update" }, 400));
+  const r = await fetch(`${SB_URL(env)}/rest/v1/foyer_users?id=eq.${u.id}`, {
+    method: "PATCH",
+    headers: { ...sbH(env), Prefer: "return=minimal" },
+    body: JSON.stringify(upd),
+  });
+  return withCors(
+    env,
+    request,
+    json({ ok: r.ok, name: upd.name ?? u.name, avatar: upd.avatar ?? u.avatar }, r.ok ? 200 : 500)
+  );
+}
