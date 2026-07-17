@@ -1,4 +1,5 @@
 import { sb } from "./api/_lib/supabase.js";
+import { renderStatusPage } from "./status.js";
 async function siteState(env, host) {
   try {
     const { base, headers } = sb(env);
@@ -180,6 +181,7 @@ export async function onRequest(ctx) {
   const { request, next, env } = ctx;
   try {
     const url = new URL(request.url);
+    if (url.hostname.startsWith("status.")) return renderStatusPage(ctx);
     if (url.pathname === "/beta" || url.pathname.startsWith("/beta/")) {
       const rest = url.pathname.slice(5) || "/";
       const dest = new URL(rest + url.search, url.origin);
