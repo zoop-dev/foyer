@@ -1,7 +1,7 @@
 import * as esbuild from "esbuild";
 import { minify as terserMinify } from "terser";
 import { minify as htmlMinify } from "html-minifier-terser";
-import { readFile, writeFile, rm, mkdir, cp, readdir } from "node:fs/promises";
+import { readFile, writeFile, rm, mkdir, cp, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { CORE_BLOCK_TYPES } from "./src/blocks/core/index.js";
 const root = path.dirname(new URL(import.meta.url).pathname);
@@ -13,7 +13,7 @@ if (!site) {
 }
 import { execSync } from "node:child_process";
 const siteDir = path.join(root, "sites", site);
-const STAGE_TOTAL = 8;
+const STAGE_TOTAL = 9;
 let stageN = 0;
 function stage(label) {
   stageN++;
@@ -394,4 +394,75 @@ database_name = "${cfg.cloudflare.d1Name}"
 database_id = "${cfg.cloudflare.d1Id}"
 `;
 await writeFile(path.join(root, "wrangler.toml"), wrangler);
+stage("Splitting block packs");
+async function splitPacks() {
+  const packsDir = path.join(root, "packs");
+  const packNames = await readdir(packsDir).catch(() => []);
+  const catalog = [];
+  const manifest = {};
+  for (const packName of packNames) {
+    const packFile = path.join(packsDir, packName, `${packName}.js`);
+    if (!(await stat(packFile).catch(() => null))?.isFile()) continue;
+    const mod = await import(packFile);
+    if (!mod.PACK || !mod.PACK.name)
+      throw new Error(`packs/${packName}/${packName}.js is missing a PACK export with a name`);
+    const blocks = [];
+    for (const [blockKey, block] of Object.entries(mod)) {
+      if (blockKey === "PACK") continue;
+      if (!block || typeof block.type !== "string" || typeof block.preview !== "function" || typeof block.render !== "function") {
+        throw new Error(
+          `pack "${packName}" export "${blockKey}" must have a string "type" and preview()/render() functions`
+        );
+      }
+      blocks.push({ type: block.type, label: block.label || blockKey, icon: block.icon || "" });
+      const facade = `import { ${blockKey} } from ${JSON.stringify(packFile)};
+export const type = ${blockKey}.type;
+export const label = ${blockKey}.label;
+export const icon = ${blockKey}.icon;
+export const defaults = ${blockKey}.defaults;
+export const preview = ${blockKey}.preview;
+export const render = ${blockKey}.render;
+export const editorFields = ${blockKey}.editorFields;
+`;
+      await esbuild.build({
+        stdin: {
+          contents: facade,
+          resolveDir: path.join(packsDir, packName),
+          sourcefile: `${blockKey}.facade.js`
+        },
+        outfile: path.join(dist, "pack", packName, `${block.type}.js`),
+        bundle: true,
+        format: "esm",
+        minify: true,
+        target: "es2020",
+        legalComments: "none"
+      });
+      manifest[block.type] = `/pack/${packName}/${block.type}.js`;
+    }
+    catalog.push({
+      name: mod.PACK.name,
+      label: mod.PACK.label || packName,
+      description: mod.PACK.description || "",
+      icon: mod.PACK.icon || "",
+      blocks
+    });
+  }
+  await mkdir(path.join(dist, "pack"), { recursive: true });
+  await writeFile(path.join(dist, "pack", "catalog.json"), JSON.stringify(catalog));
+  await writeFile(
+    path.join(dist, "pack", "renderer.js"),
+    `const MANIFEST = ${JSON.stringify(manifest)};
+const _cache = {};
+export async function loadPackBlock(type) {
+  if (_cache[type]) return _cache[type];
+  const path = MANIFEST[type];
+  if (!path) return null;
+  const mod = await import(path);
+  _cache[type] = mod;
+  return mod;
+}
+`
+  );
+}
+await splitPacks();
 console.log(`✓ built ${site} (v${VERSION}) → dist/`);

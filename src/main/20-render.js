@@ -3,6 +3,22 @@ import { dismissLoading, escAttr, hookHover, md, pgE, pgRgb } from "./10-core.js
 import { sessionHeaders } from "./30-net.js";
 import { F } from "../shared/lib.js";
 import { CORE_BLOCKS } from "../blocks/core/index.js";
+let PACK_BLOCKS = {};
+export async function loadInstalledPacks() {
+  try {
+    const catalog = await fetch("/api/packs").then((r) => r.ok ? r.json() : []);
+    const installed = (catalog || []).filter((p) => p.installed);
+    if (!installed.length) return;
+    const { loadPackBlock } = await import("/pack/renderer.js");
+    for (const pack of installed) {
+      for (const b of pack.blocks || []) {
+        const mod = await loadPackBlock(b.type);
+        if (mod) PACK_BLOCKS[b.type] = mod;
+      }
+    }
+  } catch {
+  }
+}
 export function pgRenderSec(s, accent, text, font, bg) {
   const f = `font-family:'${font}',sans-serif;`;
   const c = `color:${text};`;
@@ -20,7 +36,7 @@ export function pgRenderSec(s, accent, text, font, bg) {
     fc: c,
     dispatch: (cs) => pgRenderSec(cs, accent, text, font, bg)
   };
-  const mod = CORE_BLOCKS[s.type];
+  const mod = CORE_BLOCKS[s.type] || PACK_BLOCKS[s.type];
   if (mod) return mod.render(s, h);
   return bXtra(s, {
     E: pgE,

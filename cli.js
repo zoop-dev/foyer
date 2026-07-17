@@ -1026,6 +1026,36 @@ async function cmdVersion(next) {
     );
   }
 }
+async function cmdRunDeploy() {
+  header("run deploy");
+  const pkgPath = path.join(ROOT, "package.json");
+  const pkg = JSON.parse(await readFile(pkgPath, "utf8"));
+  const currentV = parseInt(pkg.version.split(".")[0], 10) || 0;
+  const nextV = currentV + 1;
+  await cmdVersion(nextV);
+  console.log("  " + c.bold(`Changelog entry for v${nextV}`));
+  console.log("    " + dot + c.dim(" tag:"));
+  CHANGELOG_TAGS.forEach((t, i) => console.log("      " + c.cyan(String(i + 1)) + ". " + t));
+  let tag;
+  for (; ; ) {
+    const pick = await ask("Pick a tag (number)", { def: "4" });
+    const idx = parseInt(pick, 10) - 1;
+    if (CHANGELOG_TAGS[idx]) {
+      tag = CHANGELOG_TAGS[idx];
+      break;
+    }
+    console.log("    " + bad + " enter a number 1-" + CHANGELOG_TAGS.length);
+  }
+  const title = await ask("Title", { required: true });
+  const body = await ask("Body (optional)", { def: "" });
+  const draftAns = await ask("Draft? (y/N)", { def: "n" });
+  const draft = /^y/i.test(draftAns);
+  const argv = [String(nextV), tag, title];
+  if (body) argv.push("--body", body);
+  if (draft) argv.push("--draft");
+  await cmdChangelog(...argv);
+  await cmdDeploy("all");
+}
 async function cmdStatus(target) {
   const list = await resolveTargets(target);
   header("live status");
@@ -1430,6 +1460,7 @@ function help() {
     ["build <site|all>", "build to dist/"],
     ["deploy <site|all>", "build → bump reload → publish"],
     ["deploy github [msg]", "commit + push to GitHub"],
+    ["run deploy", "version bump → changelog prompts → deploy all, one shot"],
     ["stage <site|all>", "deploy to preview branch (staging)"],
     ["dev <site>", "build + local server"],
     ["status <site|all>", "compare live vs local version"],
@@ -1468,6 +1499,7 @@ const table = {
   list: () => cmdSites(),
   build: () => cmdBuild(args[0]),
   deploy: () => args[0] === "github" || args[0] === "gitea" ? cmdGithub(args.slice(1).join(" ")) : cmdDeploy(args[0]),
+  run: () => args[0] === "deploy" ? cmdRunDeploy() : die("usage: foyer run deploy"),
   stage: () => cmdStage(args[0]),
   dev: () => cmdDev(args[0]),
   status: () => cmdStatus(args[0]),

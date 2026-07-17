@@ -11,6 +11,7 @@ import { handlePush } from "./_lib/routes-push.js";
 import { handleComments } from "./_lib/routes-comments.js";
 import { handleInbox } from "./_lib/routes-inbox.js";
 import { handleGuestbook } from "./_lib/routes-guestbook.js";
+import { handlePacks } from "./_lib/routes-packs.js";
 import { cacheLookup, cacheSave, bumpEpoch } from "./_lib/edge-cache.js";
 const HANDLERS = [
   { name: "core", handler: handleCore },
@@ -24,7 +25,8 @@ const HANDLERS = [
   { name: "push", handler: handlePush },
   { name: "comments", handler: handleComments },
   { name: "inbox", handler: handleInbox },
-  { name: "guestbook", handler: handleGuestbook }
+  { name: "guestbook", handler: handleGuestbook },
+  { name: "packs", handler: handlePacks }
 ];
 const WRITE_METHODS = /* @__PURE__ */ new Set(["POST", "PUT", "DELETE"]);
 const PERM_RULES = [

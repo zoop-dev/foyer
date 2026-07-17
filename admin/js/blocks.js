@@ -13,6 +13,33 @@ function bRgb(hex, a) {
   const r = parseInt(h.slice(0, 2), 16) || 0, g = parseInt(h.slice(2, 4), 16) || 0, b = parseInt(h.slice(4, 6), 16) || 0;
   return `rgba(${r},${g},${b},${a})`;
 }
+let PACK_BLOCKS = {};
+let _packsPromise = null;
+function resetPacksCache() {
+  _packsPromise = null;
+}
+function loadPacksForAdmin() {
+  if (_packsPromise) return _packsPromise;
+  _packsPromise = (async () => {
+    let catalog = [];
+    try {
+      catalog = await fetch("/api/packs").then((r) => r.ok ? r.json() : []);
+      const installed = (catalog || []).filter((p) => p.installed);
+      if (installed.length) {
+        const { loadPackBlock } = await import("/pack/renderer.js");
+        for (const pack of installed) {
+          for (const b of pack.blocks || []) {
+            const mod = await loadPackBlock(b.type);
+            if (mod) PACK_BLOCKS[b.type] = mod;
+          }
+        }
+      }
+    } catch {
+    }
+    return catalog || [];
+  })();
+  return _packsPromise;
+}
 const BLOCK_CATALOG = [
   { t: "hero", l: "Hero", c: "Headers", i: "panel-top", k: "title name intro" },
   { t: "banner", l: "Banner", c: "Headers", i: "target", k: "cta call to action splash cover" },
@@ -154,7 +181,7 @@ function bRender(s, theme) {
     fc,
     dispatch: (cs) => bRender(cs, theme)
   };
-  const mod = window.FoyerCoreBlocks.CORE_BLOCKS[s.type];
+  const mod = window.FoyerCoreBlocks.CORE_BLOCKS[s.type] || PACK_BLOCKS[s.type];
   if (mod) return mod.preview(s, h);
   return bXtra(s, {
     E: bE,
@@ -888,6 +915,8 @@ function bDefault(type) {
         pad: "md"
       };
   }
+  const packMod = PACK_BLOCKS[type];
+  if (packMod && typeof packMod.defaults === "function") return packMod.defaults(id);
 }
 function bAlignRow(cur) {
   return `<div class="bld-ef"><label>Alignment</label><div class="bld-align-row">
@@ -1448,6 +1477,9 @@ function bEditorFields(s) {
        <button class="bld-add-li bld-add-item" data-shape='{"ftype":"text","label":"New field","placeholder":"","required":"no","options":"","width":"full"}'>+ Add field</button>
        <div class="bld-ef"><label>Submit button label</label><input type="text" data-f="button" value="${bA(s.button || "")}" /></div>${bPadRow(s.pad)}`;
   }
+  if (PACK_BLOCKS[s.type] && typeof PACK_BLOCKS[s.type].editorFields === "function") {
+    f += PACK_BLOCKS[s.type].editorFields(s);
+  }
   if (!["divider", "spacer"].includes(s.type)) {
     f += `<div class="bld-sep" style="margin:.4rem 0;"></div>
     <div style="font-size:.52rem;letter-spacing:.3em;text-transform:uppercase;color:rgba(var(--accent-rgb),.4);margin:.2rem 0 .5rem;">Section settings</div>
@@ -1493,7 +1525,10 @@ function bEditorFields(s) {
     <div class="bld-ef"><label>Anchor ID <span style="opacity:.45">(optional — link to it with #id)</span></label>
     <input type="text" data-f="anchor" value="${bA(s.anchor || "")}" placeholder="e.g. about" /></div>`;
   }
-  return { html: f, label: typeLabels[s.type] || s.type };
+  return {
+    html: f,
+    label: PACK_BLOCKS[s.type] && PACK_BLOCKS[s.type].label || typeLabels[s.type] || s.type
+  };
 }
 function bBindEditor(panel, s, onUpdate) {
   panel.querySelectorAll("[data-f]").forEach((inp) => {

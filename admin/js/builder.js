@@ -96,9 +96,61 @@ function bldBlockIco(ic, size) {
 function pickCard(b) {
   return `<button class="bld-pick" data-type="${bA(b.t)}" title="${bA(b.l)}"><span class="bld-pick-ic">${bldBlockIco(b.i)}</span><span class="bld-pick-l">${bE(b.l)}</span></button>`;
 }
+let bldPacksCatalog = null;
+function bldRenderPacksTab(grid) {
+  if (bldPacksCatalog === null) {
+    grid.innerHTML = `<p class="bld-picker-empty">Loading packs…</p>`;
+    loadPacksForAdmin().then((catalog) => {
+      bldPacksCatalog = catalog || [];
+      if (bldPickerCat === "__packs") bldRenderPicker();
+    });
+    return;
+  }
+  const installed = bldPacksCatalog.filter((p) => p.installed);
+  const available = bldPacksCatalog.filter((p) => !p.installed);
+  let html = "";
+  if (installed.length) {
+    html += `<div class="bld-picker-cathead">Installed</div>`;
+    for (const pack of installed) {
+      html += (pack.blocks || []).map((b) => pickCard({ t: b.type, l: b.label, i: b.icon })).join("");
+    }
+  }
+  html += `<div class="bld-picker-cathead">Pack Store</div>`;
+  html += available.length ? available.map(
+    (p) => `<div class="bld-pack-card"><span class="bld-pick-ic">${bldBlockIco(p.icon)}</span><div class="bld-pack-info"><div class="bld-pack-l">${bE(p.label)}</div><div class="bld-pack-d">${bE(p.description || "")}</div></div><button class="btn btn-sm" data-install="${bA(p.name)}">Install</button></div>`
+  ).join("") : `<p class="bld-picker-empty">${installed.length ? "All available packs are installed." : "No packs available yet."}</p>`;
+  grid.innerHTML = html;
+  grid.querySelectorAll(".bld-pick[data-type]").forEach((b) => b.addEventListener("click", () => bldAddBlock(b.dataset.type)));
+  grid.querySelectorAll("[data-install]").forEach(
+    (b) => b.addEventListener("click", async () => {
+      b.disabled = true;
+      b.textContent = "Installing…";
+      try {
+        const res = await fetch("/api/packs/install", {
+          method: "POST",
+          headers: Object.assign({ "Content-Type": "application/json" }, authHeaders()),
+          body: JSON.stringify({ name: b.dataset.install })
+        });
+        if (!res.ok) throw new Error();
+        toast("Pack installed.");
+        resetPacksCache();
+        bldPacksCatalog = null;
+        bldRenderPicker();
+      } catch {
+        toast("Couldn’t install that pack.", true);
+        b.disabled = false;
+        b.textContent = "Install";
+      }
+    })
+  );
+}
 function bldRenderPicker() {
   const grid = document.getElementById("bldPickerGrid");
   if (!grid) return;
+  if (bldPickerCat === "__packs") {
+    bldRenderPacksTab(grid);
+    return;
+  }
   if (bldPickerCat === "__saved") {
     const rows = bldSavedBlocks || [];
     grid.innerHTML = rows.length ? rows.map(
@@ -155,7 +207,7 @@ function bldBuildPicker() {
     if (e.target === ov) bldClosePicker();
   });
   const cats = document.getElementById("bldPickerCats");
-  cats.innerHTML = `<button class="bld-picker-cat on" data-cat="all">All blocks</button>` + (window.foyerPlan === "ultra" ? `<button class="bld-picker-cat" data-cat="__saved">✦ Saved</button>` : "") + BLK_CATS.map(
+  cats.innerHTML = `<button class="bld-picker-cat on" data-cat="all">All blocks</button>` + (window.foyerPlan === "ultra" ? `<button class="bld-picker-cat" data-cat="__saved">✦ Saved</button>` : "") + `<button class="bld-picker-cat" data-cat="__packs">🧩 Packs</button>` + BLK_CATS.map(
     (c) => `<button class="bld-picker-cat" data-cat="${bA(c)}">${bE(c)}</button>`
   ).join("");
   if (window.foyerPlan === "ultra" && !bldSavedBlocks)

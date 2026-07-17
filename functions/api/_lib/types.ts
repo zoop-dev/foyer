@@ -1,5 +1,6 @@
 export interface Env {
   DB: D1Database;
+  ASSETS: Fetcher;
   FOYER_KV?: KVNamespace;
   AI?: unknown;
   ADMIN_PASSWORD?: string;

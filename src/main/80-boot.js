@@ -1,6 +1,7 @@
 import { VERSION, dismissGate, dismissLoading, getSession, hookHover, pgE } from "./10-core.js";
 import { startVersionPoll } from "./30-net.js";
 import { loadAndShow, mountAskWidget } from "./40-pages.js";
+import { loadInstalledPacks } from "./20-render.js";
 import {
   _foyerSession,
   handleOAuthCallback,
@@ -193,7 +194,8 @@ function startMagicStub() {
   }
   const [cfg, settings] = await Promise.all([
     fetch("/api/config").then((r) => r.json()).catch(() => ({})),
-    fetch("/api/settings").then((r) => r.json()).catch(() => ({}))
+    fetch("/api/settings").then((r) => r.json()).catch(() => ({})),
+    loadInstalledPacks()
   ]);
   let clientId = settings.auth_google !== "0" ? cfg.google_client_id || "" : "";
   let githubId = settings.auth_github !== "0" ? cfg.github_client_id || "" : "";
