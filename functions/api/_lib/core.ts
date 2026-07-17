@@ -126,13 +126,20 @@ export async function buildCtx({
     if (!st) return false;
     await env.DB.prepare(CREATE_SESSIONS).run();
     const row = await env.DB.prepare(
-      "SELECT v.role, v.is_banned FROM sessions s JOIN visitors v ON v.id = s.visitor_id WHERE s.token = ? AND s.expires_at > datetime('now')"
+      "SELECT v.role, v.role_id, v.is_banned FROM sessions s JOIN visitors v ON v.id = s.visitor_id WHERE s.token = ? AND s.expires_at > datetime('now')"
     )
       .bind(st)
-      .first<{ role: string; is_banned: unknown }>()
+      .first<{ role: string; role_id: unknown; is_banned: unknown }>()
       .catch(() => null);
     if (!row || row.is_banned) return false;
-    return row.role === "owner" || row.role === "admin" ? (row.role as "owner" | "admin") : false;
+    if (row.role === "owner") return "owner";
+    // A visitor with a role_id is a permission-scoped admin even if `role`
+    // itself was never separately flipped to "admin" — role_id alone is
+    // proof of admin access now (see plan: collapsing the old two-field
+    // model that could desync and silently 401 a legitimately-configured
+    // custom-role admin).
+    if (row.role === "admin" || row.role_id != null) return "admin";
+    return false;
   };
   const authed = (): boolean => !!_adminRole;
   const visitorAuthed = async (): Promise<false | "banned" | "ok"> => {
@@ -204,13 +211,17 @@ export async function buildCtx({
           const rr = await env.DB.prepare("SELECT perms FROM roles WHERE id = ?")
             .bind(vr.role_id)
             .first<{ perms: string }>();
-          if (rr)
-            _perms = new Set(
-              String(rr.perms || "")
-                .split(",")
-                .map((x) => x.trim())
-                .filter(Boolean)
-            );
+          // Fail closed: a role_id that no longer resolves to a real role
+          // (deleted/orphaned) must deny everything, not fall through to the
+          // "no role_id at all" full-access default below.
+          _perms = rr
+            ? new Set(
+                String(rr.perms || "")
+                  .split(",")
+                  .map((x) => x.trim())
+                  .filter(Boolean)
+              )
+            : new Set();
         }
       }
     } catch (e) {

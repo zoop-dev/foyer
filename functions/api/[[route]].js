@@ -82,7 +82,10 @@ export async function onRequest(context) {
   }
   const _need = requiredPerm(_r, _m);
   if (_need && ctx._adminRole && !ctx.can(_need))
-    return ctx.respond({ error: "Your role doesn’t allow that.", need: _need }, 403);
+    return ctx.respond(
+      { error: "Your role doesn’t allow that.", code: "no_perms", need: _need },
+      403
+    );
   const cached = await cacheLookup(ctx);
   if (cached) return cached;
   for (const { handler } of HANDLERS) {

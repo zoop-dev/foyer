@@ -170,10 +170,18 @@ export async function handlePeople(ctx: Ctx): Promise<Response | null> {
   if (assign && method === "POST") {
     if (_adminRole !== "owner") return respond({ error: "owner_only" }, 403);
     await ensureRoles(env);
+    const id = parseInt(assign[1]);
+    const target = await env.DB.prepare("SELECT role FROM visitors WHERE id = ?")
+      .bind(id)
+      .first<{ role: string }>();
+    if (target?.role === "owner") return respond({ error: "cannot_modify_owner" }, 403);
     const b: { role_id?: number | string } = (await request.json().catch(() => ({}))) as any;
     const roleId = b.role_id ? parseInt(String(b.role_id)) : null;
-    await env.DB.prepare("UPDATE visitors SET role_id = ? WHERE id = ? AND role = ?")
-      .bind(roleId, parseInt(assign[1]), "admin")
+    // No longer requires role = 'admin' to already be set — a role_id alone
+    // is sufficient to grant permission-scoped admin access (see core.ts's
+    // resolveAdminRole()), so this works directly on any non-owner visitor.
+    await env.DB.prepare("UPDATE visitors SET role_id = ? WHERE id = ?")
+      .bind(roleId, id)
       .run()
       .catch(() => {});
     return respond({ ok: true });

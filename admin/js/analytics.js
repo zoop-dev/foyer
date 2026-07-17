@@ -187,12 +187,12 @@ async function openRolesModal() {
       fetch("/api/roles", { headers: authHeaders() }).then((r) => r.ok ? r.json() : []).catch(() => []),
       fetch("/api/visitors", { headers: authHeaders() }).then((r) => r.ok ? r.json() : { visitors: [] }).catch(() => ({ visitors: [] }))
     ]);
-    const admins = (vis.visitors || []).filter((v) => v.role === "admin");
+    const assignable = (vis.visitors || []).filter((v) => v.role !== "owner");
     const ed = editId ? roles.find((r) => r.id === editId) || {} : {};
     const body = ov.querySelector("#rolesBody");
     body.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem;"><h3 style="margin:0;font-weight:300;color:var(--white);">⚙ Roles &amp; access</h3><button class="btn btn-sm" id="rmX">Close</button></div>
-      <p style="font-size:.66rem;color:var(--muted);margin:0 0 1rem;">Create named roles with specific permissions, then assign them to your admins. Admins with no role keep full access.</p>
+      <p style="font-size:.66rem;color:var(--muted);margin:0 0 1rem;">Create named roles with specific permissions, then assign one to any visitor below to grant them scoped admin access. Admins with no role assigned keep full access.</p>
       <div style="font-size:.7rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem;">Roles</div>
       <div style="display:flex;flex-direction:column;gap:.35rem;margin-bottom:.8rem;">${roles.length ? roles.map((r) => `<div style="display:flex;align-items:center;gap:.5rem;background:var(--bg,#0c1116);border:1px solid var(--border);border-radius:8px;padding:.45rem .7rem;"><b style="font-weight:400;color:var(--white);font-size:.82rem;flex-shrink:0;">${escHtml(r.name)}</b><span style="flex:1;font-size:.64rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.perms.length ? r.perms.join(", ") : "no permissions"}</span><button class="btn btn-xs" data-redit="${r.id}">Edit</button><button class="btn btn-xs" data-rdel="${r.id}" style="color:#e0608a;">Delete</button></div>`).join("") : '<p style="font-size:.74rem;color:var(--muted);opacity:.7;">No roles yet.</p>'}</div>
       <div style="border:1px solid var(--border);border-radius:9px;padding:.8rem .9rem;margin-bottom:1.1rem;">
@@ -200,8 +200,12 @@ async function openRolesModal() {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:.3rem .8rem;margin-bottom:.7rem;">${ROLE_PERMS.map(([k, l]) => `<label style="display:flex;align-items:center;gap:.45rem;font-size:.74rem;color:rgba(220,245,225,.85);cursor:pointer;"><input type="checkbox" data-perm="${k}" ${(ed.perms || []).includes(k) ? "checked" : ""} style="width:auto;" /> ${l}</label>`).join("")}</div>
         <button class="btn btn-sm" id="rmSave" style="background:var(--accent,#4dbd6a);color:#06120a;">${editId ? "Save role" : "Create role"}</button>${editId ? '<button class="btn btn-sm" id="rmCancel" style="margin-left:.4rem;">Cancel</button>' : ""}
       </div>
-      <div style="font-size:.7rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem;">Admins</div>
-      <div style="display:flex;flex-direction:column;gap:.4rem;">${admins.length ? admins.map((a) => `<div style="display:flex;align-items:center;gap:.5rem;"><span style="flex:1;font-size:.8rem;color:var(--white);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(a.name || a.email || "—")}</span><select data-assign="${a.id}" class="btn btn-sm" style="cursor:pointer;"><option value="">Full access</option>${roles.map((r) => `<option value="${r.id}" ${a.role_id === r.id ? "selected" : ""}>${escHtml(r.name)}</option>`).join("")}</select></div>`).join("") : '<p style="font-size:.74rem;color:var(--muted);opacity:.7;">No other admins yet. Promote a visitor to admin first.</p>'}</div>`;
+      <div style="font-size:.7rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem;">Assign roles</div>
+      <div style="display:flex;flex-direction:column;gap:.4rem;">${assignable.length ? assignable.map((a) => {
+      const orphaned = a.role_id && !roles.some((r) => r.id === a.role_id);
+      const blankLabel = a.role === "admin" ? "Full access" : "No access";
+      return `<div style="display:flex;align-items:center;gap:.5rem;"><span style="flex:1;font-size:.8rem;color:var(--white);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(a.name || a.email || "—")}${orphaned ? ' <span style="color:#e0608a;font-size:.68rem;" title="This role was deleted — they currently have no access.">· role deleted, no access</span>' : ""}</span><select data-assign="${a.id}" class="btn btn-sm" style="cursor:pointer;"><option value="">${blankLabel}</option>${roles.map((r) => `<option value="${r.id}" ${a.role_id === r.id ? "selected" : ""}>${escHtml(r.name)}</option>`).join("")}</select></div>`;
+    }).join("") : '<p style="font-size:.74rem;color:var(--muted);opacity:.7;">No other visitors yet.</p>'}</div>`;
     body.querySelector("#rmX").addEventListener("click", () => ov.remove());
     body.querySelector("#rmCancel")?.addEventListener("click", () => {
       editId = null;
