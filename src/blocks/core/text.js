@@ -1,1 +1,18 @@
-export function preview(s,h){const ta=`text-align:${s.align||"left"};`;const fs=s.fsize==="sm"?".8rem":s.fsize==="lg"?"1.05rem":".92rem";const lh=s.lh==="compact"?"1.55":s.lh==="relaxed"?"2.3":"1.9";const mw=s.max_w==="narrow"?"360px":s.max_w==="wide"?"680px":s.max_w==="full"?"100%":"520px";const mc=s.align==="center"?"margin:0 auto;":"";const p=s.pad==="sm"?".8rem 2rem":s.pad==="lg"?"3rem 2rem":"1.4rem 2rem";return`<div style="${h.ff}${h.fc}${ta}padding:${p};"><div class="md-content" style="font-weight:200;font-size:${fs};line-height:${lh};color:${h.rgb(h.text,.72)};max-width:${mw};${mc}">${h.md(s.text)}</div></div>`}export function render(s,h){const ta=`text-align:${s.align||"left"};`;const fs=s.fsize==="sm"?".8rem":s.fsize==="lg"?"1.05rem":".92rem";const lh=s.lh==="compact"?"1.55":s.lh==="relaxed"?"2.3":"1.9";const mw=s.max_w==="narrow"?"360px":s.max_w==="wide"?"680px":s.max_w==="full"?"100%":"520px";const mc=s.align==="center"?"margin:0 auto;":"";const p=s.pad==="sm"?".8rem 2rem":s.pad==="lg"?"3rem 2rem":"1.4rem 2rem";return`<div style="${h.ff}${h.fc}${ta}padding:${p};"><div class="md-content" style="font-weight:200;font-size:${fs};line-height:${lh};color:${h.rgb(h.text,.7)};max-width:${mw};${mc}">${h.md(s.text)}</div></div>`}
+export function preview(s, h) {
+  const ta = `text-align:${s.align || "left"};`;
+  const fs = s.fsize === "sm" ? ".8rem" : s.fsize === "lg" ? "1.05rem" : ".92rem";
+  const lh = s.lh === "compact" ? "1.55" : s.lh === "relaxed" ? "2.3" : "1.9";
+  const mw = s.max_w === "narrow" ? "360px" : s.max_w === "wide" ? "680px" : s.max_w === "full" ? "100%" : "520px";
+  const mc = s.align === "center" ? "margin:0 auto;" : "";
+  const p = s.pad === "sm" ? ".8rem 2rem" : s.pad === "lg" ? "3rem 2rem" : "1.4rem 2rem";
+  return `<div style="${h.ff}${h.fc}${ta}padding:${p};"><div class="md-content" style="font-weight:200;font-size:${fs};line-height:${lh};color:${h.rgb(h.text, 0.72)};max-width:${mw};${mc}">${h.md(s.text)}</div></div>`;
+}
+export function render(s, h) {
+  const ta = `text-align:${s.align || "left"};`;
+  const fs = s.fsize === "sm" ? ".8rem" : s.fsize === "lg" ? "1.05rem" : ".92rem";
+  const lh = s.lh === "compact" ? "1.55" : s.lh === "relaxed" ? "2.3" : "1.9";
+  const mw = s.max_w === "narrow" ? "360px" : s.max_w === "wide" ? "680px" : s.max_w === "full" ? "100%" : "520px";
+  const mc = s.align === "center" ? "margin:0 auto;" : "";
+  const p = s.pad === "sm" ? ".8rem 2rem" : s.pad === "lg" ? "3rem 2rem" : "1.4rem 2rem";
+  return `<div style="${h.ff}${h.fc}${ta}padding:${p};"><div class="md-content" style="font-weight:200;font-size:${fs};line-height:${lh};color:${h.rgb(h.text, 0.7)};max-width:${mw};${mc}">${h.md(s.text)}</div></div>`;
+}

@@ -14,12 +14,10 @@ if (!site) {
 import { execSync } from "node:child_process";
 const siteDir = path.join(root, "sites", site);
 try {
-  console.log("    \u2728 Running Prettier and ESLint...");
+  console.log("    ✨ Running Prettier and ESLint...");
   execSync("npm run format && npm run lint", { stdio: "inherit" });
 } catch (e) {
-  console.error(
-    "\n\u274C Linting or formatting failed. Please fix the errors above before building."
-  );
+  console.error("\n❌ Linting or formatting failed. Please fix the errors above before building.");
   process.exit(1);
 }
 const cfg = JSON.parse(await readFile(path.join(siteDir, "config.json"), "utf8"));
@@ -120,7 +118,7 @@ async function assertCoreBlocksComplete() {
   if (actual.join(",") !== EXPECTED_CORE_BLOCK_TYPES.join(",")) {
     const only = (a, b) => a.filter((x) => !b.includes(x));
     throw new Error(
-      `core block manifest drift \u2014 missing [${only(EXPECTED_CORE_BLOCK_TYPES, actual)}], unexpected [${only(actual, EXPECTED_CORE_BLOCK_TYPES)}]`
+      `core block manifest drift — missing [${only(EXPECTED_CORE_BLOCK_TYPES, actual)}], unexpected [${only(actual, EXPECTED_CORE_BLOCK_TYPES)}]`
     );
   }
   for (const name of CORE_BLOCK_TYPES) {
@@ -223,7 +221,7 @@ await esbuild.build({
   define,
   logLevel: "silent"
 }).catch((e) => {
-  console.error("\n\u274C admin/js import graph is broken:\n" + e.message);
+  console.error("\n❌ admin/js import graph is broken:\n" + e.message);
   process.exit(1);
 });
 const stripExports = (s) => s.replace(/^export (?=(function|const|let|class)\b)/gm, "");
@@ -353,7 +351,7 @@ const wrangler = `name = "${cfg.cloudflare.project}"
 compatibility_date = "2024-09-23"
 pages_build_output_dir = "dist"
 
-# Workers AI \u2014 powers the builder's "Generate page" assistant (env.AI).
+# Workers AI — powers the builder's "Generate page" assistant (env.AI).
 [ai]
 binding = "AI"
 
@@ -377,4 +375,4 @@ database_name = "${cfg.cloudflare.d1Name}"
 database_id = "${cfg.cloudflare.d1Id}"
 `;
 await writeFile(path.join(root, "wrangler.toml"), wrangler);
-console.log(`\u2713 built ${site} (v${VERSION}) \u2192 dist/`);
+console.log(`✓ built ${site} (v${VERSION}) → dist/`);

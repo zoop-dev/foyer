@@ -1,1 +1,113 @@
-const EMBED_MODEL="@cf/baai/bge-base-en-v1.5";export function ragEnabled(env){return!!(env&&env.RAG_URL&&env.AI&&env.DB_HTTP_SECRET)}function piHeaders(env){const h={"Content-Type":"application/json",Authorization:`Bearer ${env.DB_HTTP_SECRET}`};if(env.CF_ACCESS_CLIENT_ID&&env.CF_ACCESS_CLIENT_SECRET){h["CF-Access-Client-Id"]=env.CF_ACCESS_CLIENT_ID;h["CF-Access-Client-Secret"]=env.CF_ACCESS_CLIENT_SECRET}return h}function piUrl(env,path){return env.RAG_URL.replace(/\/$/,"")+path}function ragDb(env){return env.RAG_DB||env.DB_HTTP_NAME||"site"}export async function embed(env,texts){const out=await env.AI.run(EMBED_MODEL,{text:texts});return out&&out.data||[]}export function chunkText(s,size=800,overlap=120){s=String(s||"").replace(/\s+/g," ").trim();if(!s)return[];const out=[];for(let i=0;i<s.length;i+=size-overlap){out.push(s.slice(i,i+size));if(i+size>=s.length)break}return out}async function piPost(env,path,body){try{const r=await fetch(piUrl(env,path),{method:"POST",headers:piHeaders(env),body:JSON.stringify(body)});if(!r.ok)return null;return await r.json()}catch{return null}}export async function ragUpsertPage(env,slug,text){const chunks=chunkText(text);if(!chunks.length){await piPost(env,"/rag/upsert",{db:ragDb(env),slug:slug,chunks:[]});return 0}const vecs=await embed(env,chunks);const payload=chunks.map((t,i)=>({text:t,embedding:vecs[i]||[]})).filter(c=>c.embedding.length);await piPost(env,"/rag/upsert",{db:ragDb(env),slug:slug,chunks:payload});return payload.length}export async function ragSearch(env,query,topk=6){const vecs=await embed(env,[query]);if(!vecs[0])return[];const d=await piPost(env,"/rag/search",{db:ragDb(env),embedding:vecs[0],topk:topk});return d&&d.results||[]}export async function ragStats(env){return await piPost(env,"/rag/stats",{db:ragDb(env)})||{chunks:0,pages:0}}const _SKIP=new Set(["id","type","url","href","img","photo","src","bg_img","bg_image","image","avatar","cover_image","data","anchor","access_key","target","buy_url","btn_url","btn2_url","button_url"]);export function extractPageText(jsonStr){let st;try{st=JSON.parse(jsonStr||"{}")}catch{return""}const out=[];const collect=(o,d)=>{if(d>7||o==null)return;if(typeof o==="string"){if(o.length>1&&!/^(https?:|\/|#|data:|mailto:|tel:)/i.test(o)&&!/^#?[0-9a-f]{3,8}$/i.test(o))out.push(o);return}if(Array.isArray(o)){for(const v of o)collect(v,d+1);return}if(typeof o==="object"){for(const k in o)if(!_SKIP.has(k))collect(o[k],d+1)}};collect(st.sections||[],0);return out.join(" ")}
+const EMBED_MODEL = "@cf/baai/bge-base-en-v1.5";
+export function ragEnabled(env) {
+  return !!(env && env.RAG_URL && env.AI && env.DB_HTTP_SECRET);
+}
+function piHeaders(env) {
+  const h = { "Content-Type": "application/json", Authorization: `Bearer ${env.DB_HTTP_SECRET}` };
+  if (env.CF_ACCESS_CLIENT_ID && env.CF_ACCESS_CLIENT_SECRET) {
+    h["CF-Access-Client-Id"] = env.CF_ACCESS_CLIENT_ID;
+    h["CF-Access-Client-Secret"] = env.CF_ACCESS_CLIENT_SECRET;
+  }
+  return h;
+}
+function piUrl(env, path) {
+  return env.RAG_URL.replace(/\/$/, "") + path;
+}
+function ragDb(env) {
+  return env.RAG_DB || env.DB_HTTP_NAME || "site";
+}
+export async function embed(env, texts) {
+  const out = await env.AI.run(EMBED_MODEL, { text: texts });
+  return out && out.data || [];
+}
+export function chunkText(s, size = 800, overlap = 120) {
+  s = String(s || "").replace(/\s+/g, " ").trim();
+  if (!s) return [];
+  const out = [];
+  for (let i = 0; i < s.length; i += size - overlap) {
+    out.push(s.slice(i, i + size));
+    if (i + size >= s.length) break;
+  }
+  return out;
+}
+async function piPost(env, path, body) {
+  try {
+    const r = await fetch(piUrl(env, path), {
+      method: "POST",
+      headers: piHeaders(env),
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) return null;
+    return await r.json();
+  } catch {
+    return null;
+  }
+}
+export async function ragUpsertPage(env, slug, text) {
+  const chunks = chunkText(text);
+  if (!chunks.length) {
+    await piPost(env, "/rag/upsert", { db: ragDb(env), slug, chunks: [] });
+    return 0;
+  }
+  const vecs = await embed(env, chunks);
+  const payload = chunks.map((t, i) => ({ text: t, embedding: vecs[i] || [] })).filter((c) => c.embedding.length);
+  await piPost(env, "/rag/upsert", { db: ragDb(env), slug, chunks: payload });
+  return payload.length;
+}
+export async function ragSearch(env, query, topk = 6) {
+  const vecs = await embed(env, [query]);
+  if (!vecs[0]) return [];
+  const d = await piPost(env, "/rag/search", { db: ragDb(env), embedding: vecs[0], topk });
+  return d && d.results || [];
+}
+export async function ragStats(env) {
+  return await piPost(env, "/rag/stats", { db: ragDb(env) }) || { chunks: 0, pages: 0 };
+}
+const _SKIP = /* @__PURE__ */ new Set([
+  "id",
+  "type",
+  "url",
+  "href",
+  "img",
+  "photo",
+  "src",
+  "bg_img",
+  "bg_image",
+  "image",
+  "avatar",
+  "cover_image",
+  "data",
+  "anchor",
+  "access_key",
+  "target",
+  "buy_url",
+  "btn_url",
+  "btn2_url",
+  "button_url"
+]);
+export function extractPageText(jsonStr) {
+  let st;
+  try {
+    st = JSON.parse(jsonStr || "{}");
+  } catch {
+    return "";
+  }
+  const out = [];
+  const collect = (o, d) => {
+    if (d > 7 || o == null) return;
+    if (typeof o === "string") {
+      if (o.length > 1 && !/^(https?:|\/|#|data:|mailto:|tel:)/i.test(o) && !/^#?[0-9a-f]{3,8}$/i.test(o))
+        out.push(o);
+      return;
+    }
+    if (Array.isArray(o)) {
+      for (const v of o) collect(v, d + 1);
+      return;
+    }
+    if (typeof o === "object") {
+      for (const k in o) if (!_SKIP.has(k)) collect(o[k], d + 1);
+    }
+  };
+  collect(st.sections || [], 0);
+  return out.join(" ");
+}

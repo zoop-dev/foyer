@@ -13,10 +13,10 @@ const VERSION = pkg.version.split(".")[0];
 const env = { ...process.env, CLOUDFLARE_ACCOUNT_ID: cfg.cloudflare.accountId };
 const run = (cmd, args) => execFileSync(cmd, args, { stdio: "inherit", env });
 console.log(`
-\u25B8 building ${site} v${VERSION}`);
+▸ building ${site} v${VERSION}`);
 run("node", ["build.js", site]);
 console.log(`
-\u25B8 setting D1 (${cfg.cloudflare.d1Name}) versions.sys = '${VERSION}'`);
+▸ setting D1 (${cfg.cloudflare.d1Name}) versions.sys = '${VERSION}'`);
 const versionSql = `CREATE TABLE IF NOT EXISTS versions (id INTEGER PRIMARY KEY CHECK (id = 1), sys TEXT NOT NULL DEFAULT '1', ui TEXT NOT NULL DEFAULT '1');INSERT OR IGNORE INTO versions (id, sys, ui) VALUES (1, '1', '1');UPDATE versions SET sys='${VERSION}' WHERE id=1;`;
 run("npx", [
   "wrangler",
@@ -28,7 +28,7 @@ run("npx", [
   "--remote"
 ]);
 console.log(`
-\u25B8 deploying dist/ \u2192 Pages project '${cfg.cloudflare.project}'`);
+▸ deploying dist/ → Pages project '${cfg.cloudflare.project}'`);
 run("npx", [
   "wrangler",
   "pages",
@@ -39,4 +39,4 @@ run("npx", [
   "--commit-dirty=true"
 ]);
 console.log(`
-\u2713 deployed ${site} v${VERSION}`);
+✓ deployed ${site} v${VERSION}`);

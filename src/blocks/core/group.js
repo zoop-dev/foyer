@@ -1,1 +1,11 @@
-export function preview(s,h){const open=s.default_open!=="no"&&s.default_open!==false;const inner=(s.sections||[]).map(cs=>h.dispatch(cs)).join("");return`<details class="bld-group-details" ${open?"open":""}><summary class="bld-group-summary" style="color:${h.rgb(h.text,.75)};font-family:'${h.font}',sans-serif;">${h.E(s.label||"Group")}<span style="font-size:.65rem;color:${h.rgb(h.accent,.4)};">▾</span></summary><div class="bld-group-body">${inner||`<div class="bld-group-empty">Empty — add sections via editor</div>`}</div></details>`}export function render(s,h){const open=s.default_open!=="no"&&s.default_open!==false;const p=s.pad==="sm"?"1rem 2rem":s.pad==="lg"?"4rem 2rem":"2rem 2rem";const inner=(s.sections||[]).map(cs=>h.dispatch(cs)).join("");return`<details ${open?"open":""} style="${h.ff}${h.fc}border-bottom:1px solid ${h.rgb(h.accent,.1)};"><summary style="cursor:pointer;padding:.85rem ${p.split(" ")[1]};font-weight:300;font-size:.9rem;letter-spacing:.04em;color:${h.rgb(h.text,.88)};list-style:none;display:flex;justify-content:space-between;align-items:center;user-select:none;">${h.E(s.label||"")}<span style="font-size:.7rem;color:${h.rgb(h.accent,.4)};">▾</span></summary><div>${inner}</div></details>`}
+export function preview(s, h) {
+  const open = s.default_open !== "no" && s.default_open !== false;
+  const inner = (s.sections || []).map((cs) => h.dispatch(cs)).join("");
+  return `<details class="bld-group-details" ${open ? "open" : ""}><summary class="bld-group-summary" style="color:${h.rgb(h.text, 0.75)};font-family:'${h.font}',sans-serif;">${h.E(s.label || "Group")}<span style="font-size:.65rem;color:${h.rgb(h.accent, 0.4)};">▾</span></summary><div class="bld-group-body">${inner || `<div class="bld-group-empty">Empty — add sections via editor</div>`}</div></details>`;
+}
+export function render(s, h) {
+  const open = s.default_open !== "no" && s.default_open !== false;
+  const p = s.pad === "sm" ? "1rem 2rem" : s.pad === "lg" ? "4rem 2rem" : "2rem 2rem";
+  const inner = (s.sections || []).map((cs) => h.dispatch(cs)).join("");
+  return `<details ${open ? "open" : ""} style="${h.ff}${h.fc}border-bottom:1px solid ${h.rgb(h.accent, 0.1)};"><summary style="cursor:pointer;padding:.85rem ${p.split(" ")[1]};font-weight:300;font-size:.9rem;letter-spacing:.04em;color:${h.rgb(h.text, 0.88)};list-style:none;display:flex;justify-content:space-between;align-items:center;user-select:none;">${h.E(s.label || "")}<span style="font-size:.7rem;color:${h.rgb(h.accent, 0.4)};">▾</span></summary><div>${inner}</div></details>`;
+}

@@ -1,4 +1,3 @@
-import { minify as terserMinify } from "terser";
 import * as esbuild from "esbuild";
 import { minify as htmlMinify } from "html-minifier-terser";
 import { readFile, writeFile, readdir } from "node:fs/promises";
@@ -6,20 +5,13 @@ import path from "node:path";
 const ROOT = path.resolve(process.argv[2] || ".");
 const stripJs = async (code) => {
   try {
-    const r = await terserMinify(code, {
-      compress: false,
-      mangle: false,
-      keep_fnames: true,
-      output: { comments: false }
-    });
-    if (r.code) return r.code;
-  } catch {
-  }
-  try {
     return (await esbuild.transform(code, {
       loader: "js",
       minifyWhitespace: false,
-      legalComments: "none"
+      minifyIdentifiers: false,
+      minifySyntax: false,
+      legalComments: "none",
+      charset: "utf8"
     })).code;
   } catch {
     return code;
@@ -49,7 +41,7 @@ await Promise.all(
         const orig = await readFile(fp, "utf8");
         let stripped;
         try {
-          stripped = (await esbuild.transform(orig, { loader: "css", minify: true })).code;
+          stripped = (await esbuild.transform(orig, { loader: "css", minify: false, charset: "utf8" })).code;
         } catch {
           stripped = orig.replace(/\/\*[\s\S]*?\*\//g, "");
         }
@@ -78,4 +70,4 @@ await Promise.all(
     }
   })
 );
-console.log(`  \u2713 stripped comments from ${n} source file${n !== 1 ? "s" : ""}`);
+console.log(`  ✓ stripped comments from ${n} source file${n !== 1 ? "s" : ""}`);
