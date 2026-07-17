@@ -13,11 +13,24 @@ if (!site) {
 }
 import { execSync } from "node:child_process";
 const siteDir = path.join(root, "sites", site);
+const STAGE_TOTAL = 8;
+let stageN = 0;
+function stage(label) {
+  stageN++;
+  console.log(`::stage::${stageN}/${STAGE_TOTAL}::${label}`);
+}
+stage("Formatting & linting");
 try {
-  console.log("    ✨ Running Prettier and ESLint...");
   execSync("npm run format && npm run lint", { stdio: "inherit" });
 } catch (e) {
   console.error("\n❌ Linting or formatting failed. Please fix the errors above before building.");
+  process.exit(1);
+}
+stage("Running tests");
+try {
+  execSync("npm test", { stdio: "inherit" });
+} catch (e) {
+  console.error("\n❌ Tests failed. Please fix the failures above before building.");
   process.exit(1);
 }
 const cfg = JSON.parse(await readFile(path.join(siteDir, "config.json"), "utf8"));
@@ -132,6 +145,7 @@ async function assertCoreBlocksComplete() {
 await assertCoreBlocksComplete();
 await rm(dist, { recursive: true, force: true });
 await mkdir(dist, { recursive: true });
+stage("Bundling site JS");
 await esbuild.build({
   entryPoints: [path.join(root, "src/main/80-boot.js")],
   outfile: path.join(dist, "app.js"),
@@ -157,6 +171,7 @@ await esbuild.build({
   define,
   legalComments: "none"
 });
+stage("Bundling admin JS");
 await esbuild.build({
   entryPoints: [
     "utils",
@@ -224,6 +239,7 @@ await esbuild.build({
   console.error("\n❌ admin/js import graph is broken:\n" + e.message);
   process.exit(1);
 });
+stage("Building page-builder bundle");
 const stripExports = (s) => s.replace(/^export (?=(function|const|let|class)\b)/gm, "");
 const builderSource = [
   stripExports(await readFile(path.join(root, "src/shared/lib.js"), "utf8")),
@@ -248,6 +264,7 @@ async function templateFile(rel) {
   await mkdir(path.dirname(dest), { recursive: true });
   await writeFile(dest, out);
 }
+stage("Templating HTML/CSS & copying assets");
 await templateFile("index.html");
 await templateFile("admin/index.html");
 await templateFile("manifest.json");
@@ -346,7 +363,9 @@ async function stripComments() {
     })
   );
 }
+stage("Stripping comments from dist");
 await stripComments();
+stage("Finalizing (wrangler.toml)");
 const wrangler = `name = "${cfg.cloudflare.project}"
 compatibility_date = "2024-09-23"
 pages_build_output_dir = "dist"

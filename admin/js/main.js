@@ -749,7 +749,12 @@ async function uploadFiles(files, nameOverride) {
     });
     if (res.ok) {
       const { id } = await res.json();
-      _imgList.unshift({ id, name, size, created_at: /* @__PURE__ */ (/* @__PURE__ */ new Date()).toISOString() });
+      _imgList.unshift({
+        id,
+        name,
+        size,
+        created_at: /* @__PURE__ */ (/* @__PURE__ */ new Date()).toISOString()
+      });
       toast(`Uploaded: ${name}`);
     } else {
       toast(`Failed to upload ${file.name}`, true);

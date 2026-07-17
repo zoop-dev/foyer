@@ -60,29 +60,45 @@ function die(msg) {
 function header(t) {
   console.log("\n  " + c.bold(c.br("▸ ")) + c.bold(t));
 }
+const STAGE_RE = /^::stage::(\d+)\/(\d+)::(.*)$/;
 function run(label, cmd2, args2, env = process.env, input = null, cwd = ROOT) {
   const frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
   return new Promise((resolve, reject) => {
-    let i = 0, buf = "";
-    const tick = tty ? setInterval(() => {
-      process.stdout.write(
-        "\r    " + c.br(frames[i++ % frames.length]) + " " + c.dim(label) + "   "
-      );
-    }, 80) : null;
+    let i = 0, buf = "", pending = "", statusText = c.dim(label);
+    const CLR = "\r\x1B[2K";
+    const render = () => process.stdout.write(CLR + "    " + c.br(frames[i++ % frames.length]) + " " + statusText);
+    const feedLine = (line) => {
+      const m = line.match(STAGE_RE);
+      if (m) {
+        const [, n, total, stageLabel] = m;
+        const pct = Math.round(Number(n) / Number(total) * 100);
+        statusText = c.dim(label) + c.grey(`  [${n}/${total} · ${pct}%] `) + c.dim(stageLabel);
+      } else if (line) {
+        buf += line + "\n";
+      }
+    };
+    const tick = tty ? setInterval(render, 80) : null;
     const p = spawn(cmd2, args2, { env, cwd });
     if (input != null) {
       p.stdin.write(input);
       p.stdin.end();
     }
-    p.stdout.on("data", (d) => buf += d);
-    p.stderr.on("data", (d) => buf += d);
+    const onData = (d) => {
+      pending += d;
+      const lines = pending.split("\n");
+      pending = lines.pop();
+      for (const l of lines) feedLine(l);
+    };
+    p.stdout.on("data", onData);
+    p.stderr.on("data", onData);
     p.on("close", (code) => {
+      if (pending) feedLine(pending);
       if (tick) clearInterval(tick);
       if (code === 0) {
-        process.stdout.write("\r    " + ok + " " + label + "             \n");
+        process.stdout.write(CLR + "    " + ok + " " + label + "\n");
         resolve(buf);
       } else {
-        process.stdout.write("\r    " + bad + " " + label + "             \n");
+        process.stdout.write(CLR + "    " + bad + " " + label + "\n");
         console.log(
           c.dim(
             buf.split("\n").filter(Boolean).slice(-14).map((l) => "      " + l).join("\n")
