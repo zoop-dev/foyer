@@ -22,6 +22,7 @@ const SKIP = [
   /[/\\]assets[/\\]fonts[/\\]/,
   /\.(json|md|sql|ico|png|svg|woff2)$/
 ];
+const hasTemplateTokens = (s) => /\{\{[A-Z_]+\}\}/.test(s);
 const entries = await readdir(ROOT, { recursive: true, withFileTypes: true });
 let n = 0;
 await Promise.all(
@@ -40,10 +41,14 @@ await Promise.all(
       } else if (d.name.endsWith(".css")) {
         const orig = await readFile(fp, "utf8");
         let stripped;
-        try {
-          stripped = (await esbuild.transform(orig, { loader: "css", minify: false, charset: "utf8" })).code;
-        } catch {
+        if (hasTemplateTokens(orig)) {
           stripped = orig.replace(/\/\*[\s\S]*?\*\//g, "");
+        } else {
+          try {
+            stripped = (await esbuild.transform(orig, { loader: "css", minify: false, charset: "utf8" })).code;
+          } catch {
+            stripped = orig.replace(/\/\*[\s\S]*?\*\//g, "");
+          }
         }
         if (stripped !== orig) {
           await writeFile(fp, stripped);
@@ -51,19 +56,27 @@ await Promise.all(
         }
       } else if (d.name.endsWith(".html")) {
         const orig = await readFile(fp, "utf8");
-        try {
-          const stripped = await htmlMinify(orig, {
-            collapseWhitespace: false,
-            removeComments: true,
-            ignoreCustomComments: [/Built with Foyer/],
-            minifyCSS: false,
-            minifyJS: false
-          });
+        if (hasTemplateTokens(orig)) {
+          const stripped = orig.replace(/<!--[\s\S]*?-->/g, "");
           if (stripped !== orig) {
             await writeFile(fp, stripped);
             n++;
           }
-        } catch {
+        } else {
+          try {
+            const stripped = await htmlMinify(orig, {
+              collapseWhitespace: false,
+              removeComments: true,
+              ignoreCustomComments: [/Built with Foyer/],
+              minifyCSS: false,
+              minifyJS: false
+            });
+            if (stripped !== orig) {
+              await writeFile(fp, stripped);
+              n++;
+            }
+          } catch {
+          }
         }
       }
     } catch {

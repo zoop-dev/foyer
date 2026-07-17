@@ -17,41 +17,13 @@
   border: 0;
 }
 :root {
-  --site-bg: {
-     {
-      BG_COLOR;
-    }
-  }
-  --site-bg-rgb: {
-     {
-      BG_RGB;
-    }
-  }
-  --site-accent: {
-     {
-      ACCENT;
-    }
-  }
-  --site-accent-rgb: {
-     {
-      ACCENT_RGB;
-    }
-  }
-  --site-accent-bright: {
-     {
-      ACCENT_BRIGHT;
-    }
-  }
-  --site-text: {
-     {
-      TEXT;
-    }
-  }
-  --site-muted-rgb: {
-     {
-      MUTED_RGB;
-    }
-  }
+  --site-bg:{{BG_COLOR}};
+  --site-bg-rgb:{{BG_RGB}};
+  --site-accent:{{ACCENT}};
+  --site-accent-rgb:{{ACCENT_RGB}};
+  --site-accent-bright:{{ACCENT_BRIGHT}};
+  --site-text:{{TEXT}};
+  --site-muted-rgb:{{MUTED_RGB}};
   color-scheme: dark;
 }
 html,

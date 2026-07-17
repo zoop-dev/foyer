@@ -305,6 +305,47 @@ async function foyerEnv(key) {
   const m = env.match(new RegExp(key + "\\s*=\\s*(.+)"));
   return m ? m[1].trim() : null;
 }
+async function cfApi(method, apiPath, token, body) {
+  const r = await fetch(`https://api.cloudflare.com/client/v4${apiPath}`, {
+    method,
+    headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+    body: body ? JSON.stringify(body) : void 0
+  });
+  const j = await r.json().catch(() => null);
+  return { success: r.ok && j?.success, status: r.status, json: j };
+}
+async function cmdStatusDomain(target) {
+  const token = await foyerEnv("CLOUDFLARE_API_TOKEN");
+  if (!token)
+    die(
+      "needs a Cloudflare API token.\n      Create one at dash.cloudflare.com → My Profile → API Tokens\n      (permissions: Account > Cloudflare Pages > Edit), then put " + c.cyan("CLOUDFLARE_API_TOKEN=<token>") + " in " + c.cyan(".foyer.env") + "."
+    );
+  const list = await resolveTargets(target);
+  header(`attach status domain${list.length > 1 ? "s" : ""}`);
+  for (const { name, cfg } of list) {
+    const hostname = `status.${cfg.domain}`;
+    const { success, status, json } = await cfApi(
+      "POST",
+      `/accounts/${cfg.cloudflare.accountId}/pages/projects/${cfg.cloudflare.project}/domains`,
+      token,
+      { name: hostname }
+    );
+    const alreadyExists = (json?.errors || []).some(
+      (e) => /already exists|duplicate|already associated/i.test(e.message || "")
+    );
+    if (success || alreadyExists) {
+      console.log(
+        "    " + ok + " " + c.bold(hostname) + c.dim(` (${name})` + (alreadyExists ? "  already attached" : "  attached"))
+      );
+    } else {
+      const msg = (json?.errors || []).map((e) => e.message).join("; ") || `HTTP ${status}`;
+      console.log("    " + bad + " " + c.bold(hostname) + c.dim(` (${name})  ` + msg));
+    }
+  }
+  console.log(
+    "\n  " + dot + c.dim(" if the domain's zone is on this Cloudflare account, DNS is created automatically.") + "\n  " + dot + c.dim(" otherwise, add this at your DNS provider: ") + c.cyan("status.<domain> CNAME <project>.pages.dev") + "\n  " + dot + c.dim(" SSL certificate issuance can take a few minutes.") + "\n"
+  );
+}
 async function cmdAuthDeploy() {
   header("deploy Foyer platform → " + c.br("foyer.zo0p.dev"));
   const acct = await foyerEnv("FOYER_AUTH_ACCOUNT");
@@ -1395,6 +1436,7 @@ function help() {
     ["new [site]", "interactive onboarding → db, project, secrets, deploy"],
     ["delete <site>", "delete a site everywhere (local, CF project, D1, registry)"],
     ["icons <site> [svg]", "generate the full favicon set from an SVG"],
+    ["statusdomain <site|all>", "attach status.<domain> to the site's Pages project"],
     ["secret <site> <NAME>", "set a Cloudflare secret"],
     ['db <site> "<SQL>"', "run a D1 query (remote)"],
     ["setrole <site> <email> <role>", "set a visitor's role (admin|owner|none)"],
@@ -1433,6 +1475,7 @@ const table = {
   delete: () => cmdDelete(args[0]),
   remove: () => cmdDelete(args[0]),
   icons: () => cmdIcons(args[0], args[1]),
+  statusdomain: () => cmdStatusDomain(args[0]),
   secret: () => cmdSecret(args[0], args[1]),
   db: () => cmdDb(...args),
   setrole: () => cmdSetRole(args[0], args[1], args[2]),

@@ -6,31 +6,11 @@
   box-sizing: border-box;
 }
 :root {
-  --accent: {
-     {
-      ACCENT;
-    }
-  }
-  --accent-rgb: {
-     {
-      ACCENT_RGB;
-    }
-  }
-  --muted-rgb: {
-     {
-      MUTED_RGB;
-    }
-  }
-  --bg: {
-     {
-      BG_COLOR;
-    }
-  }
-  --bg-rgb: {
-     {
-      BG_RGB;
-    }
-  }
+  --accent:{{ACCENT}};
+  --accent-rgb:{{ACCENT_RGB}};
+  --muted-rgb:{{MUTED_RGB}};
+  --bg:{{BG_COLOR}};
+  --bg-rgb:{{BG_RGB}};
   --surface: color-mix(in srgb, var(--accent) 6%, #05060a);
   --panel: color-mix(in srgb, var(--accent) 11%, #06080c);
   --border:rgba(var(--accent-rgb),.12);
