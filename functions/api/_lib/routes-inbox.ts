@@ -2,17 +2,19 @@ import { canonHost } from "./site-config.js";
 import { isUltra } from "./plan.js";
 import { notifyOwner } from "./routes-push.js";
 import { rateLimit, clientIp } from "./rate-limit.js";
+import type { Ctx, Env } from "./types.ts";
+
 const CREATE_INBOX =
   "CREATE TABLE IF NOT EXISTS inbox (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT, subject TEXT, body TEXT, page TEXT, ip TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), read_at TEXT)";
 let _ready = false;
-async function ensureInbox(env) {
+async function ensureInbox(env: Env): Promise<void> {
   if (_ready) return;
   await env.DB.prepare(CREATE_INBOX)
     .run()
     .catch(() => {});
   _ready = true;
 }
-export async function handleInbox(ctx) {
+export async function handleInbox(ctx: Ctx): Promise<Response | null> {
   const {
     route: route,
     method: method,
@@ -29,9 +31,9 @@ export async function handleInbox(ctx) {
       return respond({ error: "The native inbox is an Ultra feature." }, 403);
     const rl = await rateLimit(env, `inbox:${clientIp(request)}`, 5, 60);
     if (!rl.ok) return respond({ error: "Too many submissions — try again shortly." }, 429);
-    let data = {};
+    let data: Record<string, unknown> = {};
     const ct = request.headers.get("content-type") || "";
-    if (ct.includes("application/json")) data = await request.json().catch(() => ({}));
+    if (ct.includes("application/json")) data = (await request.json().catch(() => ({}))) as any;
     else {
       try {
         const fd = await request.formData();
@@ -83,8 +85,8 @@ export async function handleInbox(ctx) {
     const { results: results } = await env.DB.prepare(
       "SELECT id, name, email, subject, body, page, created_at, read_at FROM inbox ORDER BY id DESC LIMIT 300"
     )
-      .all()
-      .catch(() => ({ results: [] }));
+      .all<{ read_at: string | null }>()
+      .catch(() => ({ results: [] }) as { results: { read_at: string | null }[] });
     const unread = (results || []).filter((m) => !m.read_at).length;
     return respond({ messages: results || [], unread: unread });
   }

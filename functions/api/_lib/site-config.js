@@ -1,8 +1,1 @@
-export function canonHost(env, request) {
-  if (env && env.FOYER_DOMAIN) return env.FOYER_DOMAIN;
-  try {
-    return new URL(request.url).hostname;
-  } catch (e) {
-    return "";
-  }
-}
+export function canonHost(env,request){if(env&&env.FOYER_DOMAIN)return env.FOYER_DOMAIN;try{return new URL(request.url).hostname}catch(e){return""}}

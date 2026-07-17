@@ -1,17 +1,26 @@
 import { canonHost } from "./site-config.js";
 import { isUltra } from "./plan.js";
 import { rateLimit, clientIp } from "./rate-limit.js";
+import type { Ctx, Env } from "./types.ts";
+
+interface GuestbookRow {
+  id: number;
+  name: string;
+  message: string;
+  created_at: string;
+}
+
 const CREATE_GB =
   "CREATE TABLE IF NOT EXISTS guestbook (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, message TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')), ip TEXT)";
 let _ready = false;
-async function ensureGB(env) {
+async function ensureGB(env: Env): Promise<void> {
   if (_ready) return;
   await env.DB.prepare(CREATE_GB)
     .run()
     .catch(() => {});
   _ready = true;
 }
-export async function handleGuestbook(ctx) {
+export async function handleGuestbook(ctx: Ctx): Promise<Response | null> {
   const {
     route: route,
     method: method,
@@ -26,8 +35,8 @@ export async function handleGuestbook(ctx) {
     const { results: results } = await env.DB.prepare(
       "SELECT id, name, message, created_at FROM guestbook ORDER BY id DESC LIMIT 200"
     )
-      .all()
-      .catch(() => ({ results: [] }));
+      .all<GuestbookRow>()
+      .catch(() => ({ results: [] as GuestbookRow[] }));
     return respond(results || []);
   }
   if (route === "guestbook" && method === "POST") {
@@ -35,7 +44,7 @@ export async function handleGuestbook(ctx) {
       return respond({ error: "The guestbook is an Ultra feature." }, 403);
     const rl = await rateLimit(env, `gb:${clientIp(request)}`, 4, 120);
     if (!rl.ok) return respond({ error: "You just signed — give it a moment." }, 429);
-    const b = await request.json().catch(() => ({}));
+    const b: Record<string, unknown> = (await request.json().catch(() => ({}))) as any;
     const name = String(b.name || "")
       .slice(0, 60)
       .trim();

@@ -3,9 +3,19 @@ import { isPro, isUltra, sitePlan } from "./plan.js";
 import { ragEnabled, ragSearch, ragUpsertPage, ragStats, extractPageText } from "./rag.js";
 import { sb } from "./supabase.js";
 import { rateLimit, clientIp } from "./rate-limit.js";
+import type { Ctx, Env } from "./types.ts";
+
 const AUDIT_LOG_TABLE =
   "CREATE TABLE IF NOT EXISTS audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, actor TEXT NOT NULL, action TEXT NOT NULL, detail TEXT, path TEXT, ip TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')))";
-export async function auditLog(env, actor, action, detail, request, db) {
+
+export async function auditLog(
+  env: Env,
+  actor: string,
+  action: string,
+  detail: unknown,
+  request: Request,
+  db: D1Database
+): Promise<void> {
   await db.prepare(AUDIT_LOG_TABLE).run();
   const ip = request?.headers?.get?.("CF-Connecting-IP") || "";
   const path = (request?.url ? new URL(request.url).pathname : "").slice(0, 300);
@@ -21,7 +31,8 @@ export async function auditLog(env, actor, action, detail, request, db) {
     .run()
     .catch(() => {});
 }
-async function aiEnabledForHost(env, host) {
+
+async function aiEnabledForHost(env: Env, host: string): Promise<boolean> {
   try {
     const { base: base, headers: headers } = sb(env);
     const r = await fetch(
@@ -29,13 +40,14 @@ async function aiEnabledForHost(env, host) {
       { headers: headers, cf: { cacheTtl: 60, cacheEverything: true } }
     );
     if (!r.ok) return true;
-    const row = (await r.json())[0];
+    const row = ((await r.json()) as Array<{ ai_enabled?: boolean }>)[0];
     return !(row && row.ai_enabled === false);
   } catch {
     return true;
   }
 }
-export async function handleCore(ctx) {
+
+export async function handleCore(ctx: Ctx): Promise<Response | null> {
   const {
     route: route,
     method: method,
@@ -70,7 +82,7 @@ export async function handleCore(ctx) {
     const { base: sbBase, headers: sbH } = sb(env);
     const host = new URL(request.url).hostname,
       enc = encodeURIComponent(host);
-    const get = (p, ttl) =>
+    const get = (p: string, ttl: number): Promise<unknown> =>
       fetch(`${sbBase}/rest/v1/${p}`, {
         headers: sbH,
         cf: { cacheTtl: ttl, cacheEverything: true },
@@ -79,10 +91,10 @@ export async function handleCore(ctx) {
         .catch(() => null);
     if (route === "sb/site" && method === "GET") {
       const row =
-        ((await get(
+        (((await get(
           `foyer_sites?domain=eq.${enc}&select=offline,licensed,hide_branding,ai_enabled,plan`,
           30
-        )) || [])[0] || null;
+        )) as Array<Record<string, unknown>>) || [])[0] || null;
       return respond({
         offline: !!(row && row.offline === true),
         licensed: !(row && row.licensed === false),
@@ -92,12 +104,17 @@ export async function handleCore(ctx) {
       });
     }
     if (route === "sb/version" && method === "GET") {
-      const rows = await get(`foyer_meta?key=eq.latest_version&select=value`, 60);
+      const rows = (await get(`foyer_meta?key=eq.latest_version&select=value`, 60)) as Array<{
+        value?: unknown;
+      }> | null;
       return respond({ version: (rows && rows[0] && rows[0].value) || null });
     }
     if (route === "sb/flags" && method === "GET") {
-      const rows = await get(`foyer_flags?scope=in.(global,${enc})&select=key,value`, 60);
-      const f = {};
+      const rows = (await get(
+        `foyer_flags?scope=in.(global,${enc})&select=key,value`,
+        60
+      )) as Array<{ key: string; value: unknown }> | null;
+      const f: Record<string, unknown> = {};
       (rows || []).forEach((r) => {
         f[r.key] = r.value;
       });
@@ -111,7 +128,7 @@ export async function handleCore(ctx) {
       return respond(rows || []);
     }
     if (route === "sb/beat" && method === "POST") {
-      const b = await request.json().catch(() => ({}));
+      const b = (await request.json().catch(() => ({}))) as { version?: unknown };
       await fetch(`${sbBase}/rest/v1/foyer_heartbeats?on_conflict=domain`, {
         method: "POST",
         headers: {
@@ -128,7 +145,11 @@ export async function handleCore(ctx) {
       return respond({ ok: true });
     }
     if (route === "sb/err" && method === "POST") {
-      const b = await request.json().catch(() => ({}));
+      const b = (await request.json().catch(() => ({}))) as {
+        message?: unknown;
+        stack?: unknown;
+        url?: unknown;
+      };
       await fetch(`${sbBase}/rest/v1/foyer_errors`, {
         method: "POST",
         headers: { ...sbH, "content-type": "application/json", Prefer: "return=minimal" },
@@ -153,26 +174,31 @@ export async function handleCore(ctx) {
       if (!rl.ok) return respond({ error: "You’re asking very fast — give it a moment." }, 429);
     }
     const enRow = await env.DB.prepare("SELECT value FROM site_settings WHERE key='ask_enabled'")
-      .first()
+      .first<{ value: string }>()
       .catch(() => null);
     if (!(enRow && enRow.value === "1"))
       return respond({ error: "The site assistant is turned off." }, 403);
-    const body = await request.json().catch(() => ({}));
-    let history = Array.isArray(body.messages)
-      ? body.messages
-      : body.prompt
-        ? [{ role: "user", content: String(body.prompt) }]
-        : [];
+    const body = (await request.json().catch(() => ({}))) as {
+      messages?: unknown;
+      prompt?: unknown;
+    };
+    let history: Array<{ role: string; content: string }> = (
+      Array.isArray(body.messages)
+        ? (body.messages as Array<{ role?: string; content?: unknown }>)
+        : body.prompt
+          ? [{ role: "user", content: String(body.prompt) }]
+          : []
+    ) as any;
     history = history
       .filter((m) => m && (m.role === "user" || m.role === "assistant") && m.content)
       .slice(-8)
       .map((m) => ({ role: m.role, content: String(m.content).slice(0, 1500) }));
     if (!history.length) return respond({ error: "Ask a question." }, 400);
-    const setRow = async (k) =>
+    const setRow = async (k: string): Promise<string> =>
       (
         await env.DB.prepare("SELECT value FROM site_settings WHERE key=?")
           .bind(k)
-          .first()
+          .first<{ value: string }>()
           .catch(() => null)
       )?.value || "";
     const ownerPrompt = (await setRow("ask_prompt")).slice(0, 2e3);
@@ -184,7 +210,7 @@ export async function handleCore(ctx) {
         const hits = await ragSearch(env, q, 6);
         if (hits.length)
           corpus = hits
-            .map((h) => h.text)
+            .map((h: { text: string }) => h.text)
             .join("\n\n")
             .slice(0, 9e3);
       } catch {}
@@ -197,9 +223,14 @@ export async function handleCore(ctx) {
       const { results: results } = await env.DB.prepare(
         "SELECT title, slug, page_json FROM pages WHERE is_published = 1 AND slug != '__404__' AND (pw_hash IS NULL OR pw_hash = '')"
       )
-        .all()
-        .catch(() => ({ results: [] }));
-      const parts = [];
+        .all<{ title: string; slug: string; page_json: string }>()
+        .catch(
+          () =>
+            ({ results: [] }) as {
+              results: Array<{ title: string; slug: string; page_json: string }>;
+            }
+        );
+      const parts: string[] = [];
       for (const p of results || []) {
         let x = "";
         try {
@@ -211,9 +242,11 @@ export async function handleCore(ctx) {
     }
     corpus = corpus || "(This site has no readable page content yet.)";
     const system = `You are the website assistant for "${siteName}". Answer visitors' questions using ONLY the SITE CONTENT below. If the answer isn't in the content, say you're not sure and suggest the visitor use the site's contact form — never invent facts, prices, dates, or links. Keep answers short, friendly, and plain-text.\n${ownerPrompt ? `\nThe site owner's instructions for you: ${ownerPrompt}\n` : ""}\n--- SITE CONTENT ---\n${corpus}`;
-    let out;
+    let out: { response?: string } | undefined;
     try {
-      out = await env.AI.run("@cf/meta/llama-3.2-3b-instruct", {
+      out = await (
+        env.AI as { run: (model: string, opts: unknown) => Promise<{ response?: string }> }
+      ).run("@cf/meta/llama-3.2-3b-instruct", {
         messages: [{ role: "system", content: system }, ...history],
         max_tokens: 700,
         temperature: 0.3,
@@ -241,8 +274,13 @@ export async function handleCore(ctx) {
     const { results: results } = await env.DB.prepare(
       "SELECT title, slug, page_json FROM pages WHERE is_published = 1 AND slug != '__404__' AND (pw_hash IS NULL OR pw_hash = '')"
     )
-      .all()
-      .catch(() => ({ results: [] }));
+      .all<{ title: string; slug: string; page_json: string }>()
+      .catch(
+        () =>
+          ({ results: [] }) as {
+            results: Array<{ title: string; slug: string; page_json: string }>;
+          }
+      );
     let pages = 0,
       chunks = 0;
     for (const p of results || []) {
@@ -273,19 +311,31 @@ export async function handleCore(ctx) {
       if (!rl.ok)
         return respond({ error: "Too many generations in a row — give it a moment." }, 429);
     }
-    const body = await request.json().catch(() => ({}));
-    let history = Array.isArray(body.messages)
-      ? body.messages
-      : body.prompt
-        ? [{ role: "user", content: String(body.prompt) }]
-        : [];
+    const body = (await request.json().catch(() => ({}))) as {
+      messages?: unknown;
+      prompt?: unknown;
+      sections?: unknown;
+      schema?: unknown;
+      site?: { name?: unknown; pages?: Array<{ title?: unknown; slug?: unknown }> };
+    };
+    let history: Array<{ role: string; content: string }> = (
+      Array.isArray(body.messages)
+        ? (body.messages as Array<{ role?: string; content?: unknown }>)
+        : body.prompt
+          ? [{ role: "user", content: String(body.prompt) }]
+          : []
+    ) as any;
     history = history
       .filter((m) => m && (m.role === "user" || m.role === "assistant") && m.content)
       .slice(-12)
       .map((m) => ({ role: m.role, content: String(m.content).slice(0, 2e3) }));
     if (!history.length) return respond({ error: "Say something." }, 400);
-    let current = Array.isArray(body.sections) ? body.sections : [];
-    current = current.map(({ id: id, anchor: anchor, ...rest }) => rest).slice(0, 40);
+    let current: Array<Record<string, unknown>> = Array.isArray(body.sections)
+      ? (body.sections as Array<Record<string, unknown>>)
+      : [];
+    current = current
+      .map(({ id: id, anchor: anchor, ...rest }: Record<string, unknown>) => rest)
+      .slice(0, 40);
     const schema =
       String(body.schema || "").slice(0, 14e3) ||
       `- hero: eyebrow, name, tagline\n- features: heading, sub, items:[{icon, title, text}]\n- pricing: heading, items:[{name, price, period, features, featured}]\n- cta: text, button_label, button_url\n- contactform: heading, sub`;
@@ -312,9 +362,11 @@ export async function handleCore(ctx) {
           .join("\n")
       : "(empty — no sections yet)";
     const system = `You are the Foyer assistant — a friendly, concise helper for building one web page, chatting with the site's owner.\n\nAbout Foyer (use only if the owner asks): Foyer is the website platform this site is built on — a config-driven site builder and framework created by Zach (zo0p.dev). It gives each site a visual page builder (the blocks below), built-in sign-in/auth, image & file hosting, and runs on Cloudflare. If they ask a basic question about Foyer or who made it, answer briefly and warmly; otherwise your job is building and editing THIS page.\n\nA page is a list of "sections" (blocks). Each block is a JSON object with a "type". Available block types and their fields (a|b|c = pick one of those values; field="example" shows the kind of value; items:[{…}] is a list of objects; icon = one emoji; pricing "features" is a newline-separated string; yes/no fields use "yes"/"no"):\n${schema}\n${siteCtx}\n\nThe current page (index: type):\n${pageList}\n\nHow to respond — keep your text reply to ONE short sentence (a question or a one-line plan), then, ONLY when actually changing the page, end your message with ONE fenced \`\`\`json … \`\`\` block. Inside it, do the SMALLEST change — do NOT resend unchanged blocks:\n- ADD section(s): the new block object(s), each with "_op":"add". Add "_at":N to insert before index N (omit = append at the end).\n- EDIT a section: {"_op":"update","_at":N, ...only the fields you're changing}.\n- REMOVE a section: {"_op":"remove","_at":N}.\n- BUILD FROM SCRATCH / big restructure only: the full page as a plain JSON array of blocks (no "_op").\n\nExample — user says "add an FAQ after the quote", you reply EXACTLY like:\nSure — adding an FAQ section after your quote.\n\`\`\`json\n{"_op":"add","_at":3,"type":"faq","heading":"Frequently Asked Questions","items":[{"q":"What's your specialty?","a":"Building fast, clean web apps."},{"q":"How can I reach you?","a":"Use the contact form below."}]}\n\`\`\`\n\nHard rules: the JSON MUST sit inside the fence and be VALID JSON (real double-quotes, real commas, a real "type"). NEVER describe a block in prose or in the "type — field=value" shorthand — that shorthand is ONLY how I list the current page TO you; your output is ALWAYS real JSON. Never write JSON outside the one fence. Write real, specific copy (never lorem ipsum). Omit image/url fields unless you have a real value. If you're only chatting or planning, include NO JSON. A good fresh page is 8-14 blocks, opens with a hero/banner and ends with a contact form or CTA.`;
-    let out;
+    let out: { response?: string } | undefined;
     try {
-      out = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+      out = await (
+        env.AI as { run: (model: string, opts: unknown) => Promise<{ response?: string }> }
+      ).run("@cf/meta/llama-3.1-8b-instruct", {
         messages: [{ role: "system", content: system }, ...history],
         max_tokens: 4096,
         temperature: 0.3,
@@ -323,10 +375,10 @@ export async function handleCore(ctx) {
       return respond({ error: "The AI request failed — try again." }, 502);
     }
     const txt = (out && out.response) || "";
-    let sections = null,
+    let sections: Array<Record<string, unknown>> | null = null,
       reply = txt;
-    const blocks = [],
-      seen = new Set();
+    const blocks: Array<Record<string, unknown>> = [],
+      seen = new Set<string>();
     let firstStart = -1;
     for (let i = 0; i < txt.length; i++) {
       if (txt[i] !== "{") continue;
@@ -356,7 +408,7 @@ export async function handleCore(ctx) {
       }
       if (depth === 0 && j < txt.length) {
         try {
-          const o = JSON.parse(txt.slice(i, j + 1));
+          const o = JSON.parse(txt.slice(i, j + 1)) as Record<string, unknown>;
           if (
             o &&
             typeof o === "object" &&
@@ -392,7 +444,7 @@ export async function handleCore(ctx) {
     await env.DB.prepare(CREATE_VERSIONS).run();
     await env.DB.prepare("INSERT OR IGNORE INTO versions (id, ui) VALUES (1, '1')").run();
     const row = await env.DB.prepare("SELECT ui FROM versions WHERE id = 1")
-      .first()
+      .first<{ ui: string }>()
       .catch(() => null);
     return respond({ ui_version: row?.ui || "0" });
   }
@@ -400,10 +452,12 @@ export async function handleCore(ctx) {
     if (!authed()) return respond({ error: "unauthorized" }, 401);
     await env.DB.prepare(CREATE_VERSIONS).run();
     await env.DB.prepare("INSERT OR IGNORE INTO versions (id, ui) VALUES (1, '1')").run();
-    const b = await request.json().catch(() => ({}));
+    const b = (await request.json().catch(() => ({}))) as { ui?: unknown };
     if (b.ui != null)
       await env.DB.prepare("UPDATE versions SET ui = ? WHERE id = 1").bind(String(b.ui)).run();
-    const row = await env.DB.prepare("SELECT ui FROM versions WHERE id = 1").first();
+    const row = await env.DB.prepare("SELECT ui FROM versions WHERE id = 1").first<{
+      ui: string;
+    }>();
     return respond({ ok: true, ui_version: row?.ui });
   }
   if (route === "me" && method === "GET") {

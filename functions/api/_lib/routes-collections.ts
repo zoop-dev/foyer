@@ -1,6 +1,8 @@
 import { isPro } from "./plan.js";
 import { canonHost } from "./site-config.js";
-export async function handleCollections(ctx) {
+import type { Ctx } from "./types.ts";
+
+export async function handleCollections(ctx: Ctx): Promise<Response | null> {
   const {
     route: route,
     method: method,
@@ -46,15 +48,19 @@ export async function handleCollections(ctx) {
     if (!authed()) return respond({ error: "unauthorized" }, 401);
     await env.DB.prepare(CREATE_TUTORIALS).run();
     if (!(await isPro(env, canonHost(env, request)))) {
-      const c = await env.DB.prepare("SELECT COUNT(*) AS c FROM tutorials").first();
+      const c = await env.DB.prepare("SELECT COUNT(*) AS c FROM tutorials").first<{ c: number }>();
       if ((c?.c || 0) >= 5)
         return respond(
           { error: "Free plan is limited to 5 tutorials — upgrade to Pro for unlimited." },
           403
         );
     }
-    const b = await request.json();
-    if ((b.slug || "").trim().toLowerCase() === "all")
+    const b: Record<string, unknown> = await request.json();
+    if (
+      String(b.slug || "")
+        .trim()
+        .toLowerCase() === "all"
+    )
       return respond({ error: '"all" is a reserved slug' }, 409);
     const r = await env.DB.prepare(
       "INSERT INTO tutorials (title, slug, description, content, cover_image) VALUES (?, ?, ?, ?, ?)"
@@ -66,8 +72,12 @@ export async function handleCollections(ctx) {
   if (tutSingle && method === "PUT") {
     if (!authed()) return respond({ error: "unauthorized" }, 401);
     await env.DB.prepare(CREATE_TUTORIALS).run();
-    const b = await request.json();
-    if ((b.slug || "").trim().toLowerCase() === "all")
+    const b: Record<string, unknown> = await request.json();
+    if (
+      String(b.slug || "")
+        .trim()
+        .toLowerCase() === "all"
+    )
       return respond({ error: '"all" is a reserved slug' }, 409);
     await env.DB.prepare(
       "UPDATE tutorials SET title=?, slug=?, description=?, content=?, cover_image=?, updated_at=datetime('now') WHERE id=?"
@@ -116,14 +126,14 @@ export async function handleCollections(ctx) {
     if (!authed()) return respond({ error: "unauthorized" }, 401);
     await env.DB.prepare(CREATE_REVIEWS).run();
     if (!(await isPro(env, canonHost(env, request)))) {
-      const c = await env.DB.prepare("SELECT COUNT(*) AS c FROM reviews").first();
+      const c = await env.DB.prepare("SELECT COUNT(*) AS c FROM reviews").first<{ c: number }>();
       if ((c?.c || 0) >= 5)
         return respond(
           { error: "Free plan is limited to 5 reviews — upgrade to Pro for unlimited." },
           403
         );
     }
-    const b = await request.json();
+    const b: Record<string, any> = await request.json();
     if (!b.slug?.trim()) return respond({ error: "slug required" }, 400);
     if (b.slug.trim().toLowerCase() === "all")
       return respond({ error: '"all" is a reserved slug' }, 409);
@@ -148,8 +158,12 @@ export async function handleCollections(ctx) {
   if (revSingle && method === "PUT") {
     if (!authed()) return respond({ error: "unauthorized" }, 401);
     await env.DB.prepare(CREATE_REVIEWS).run();
-    const b = await request.json();
-    if ((b.slug || "").trim().toLowerCase() === "all")
+    const b: Record<string, any> = await request.json();
+    if (
+      String(b.slug || "")
+        .trim()
+        .toLowerCase() === "all"
+    )
       return respond({ error: '"all" is a reserved slug' }, 409);
     await env.DB.prepare(
       "UPDATE reviews SET title=?, slug=?, description=?, content=?, cover_image=?, rating=?, updated_at=datetime('now') WHERE id=?"
@@ -178,14 +192,14 @@ export async function handleCollections(ctx) {
     await env.DB.prepare(CREATE_CITEMS).run();
   };
   const RESERVED = new Set(["all", "new"]);
-  const cleanSlug = (s) =>
+  const cleanSlug = (s: unknown) =>
     String(s || "")
       .trim()
       .replace(/^\/+|\/+$/g, "");
-  const collBySlug = (cs) =>
+  const collBySlug = (cs: string) =>
     env.DB.prepare("SELECT id, name, slug FROM collections WHERE slug = ?")
       .bind(decodeURIComponent(cs))
-      .first();
+      .first<{ id: number; name: string; slug: string }>();
   if (route === "collections" && method === "GET") {
     await ensureColl();
     const { results: results } = await env.DB.prepare(
@@ -197,14 +211,16 @@ export async function handleCollections(ctx) {
     if (!authed()) return respond({ error: "unauthorized" }, 401);
     await ensureColl();
     if (!(await isPro(env, canonHost(env, request)))) {
-      const c = await env.DB.prepare("SELECT COUNT(*) AS c FROM collections").first();
+      const c = await env.DB.prepare("SELECT COUNT(*) AS c FROM collections").first<{
+        c: number;
+      }>();
       if ((c?.c || 0) >= 2)
         return respond(
           { error: "Free plan is limited to 2 collections — upgrade to Pro for unlimited." },
           403
         );
     }
-    const b = await request.json().catch(() => ({}));
+    const b: Record<string, any> = (await request.json().catch(() => ({}))) as any;
     const slug = cleanSlug(b.slug);
     if (!b.name || !slug) return respond({ error: "name and slug required" }, 400);
     if (RESERVED.has(slug.toLowerCase())) return respond({ error: "reserved slug" }, 409);
@@ -221,7 +237,7 @@ export async function handleCollections(ctx) {
   if (collSingle && method === "PUT") {
     if (!authed()) return respond({ error: "unauthorized" }, 401);
     await ensureColl();
-    const b = await request.json().catch(() => ({}));
+    const b: Record<string, any> = (await request.json().catch(() => ({}))) as any;
     const slug = cleanSlug(b.slug);
     if (!b.name || !slug) return respond({ error: "name and slug required" }, 400);
     await env.DB.prepare("UPDATE collections SET name=?, slug=? WHERE id=?")
@@ -257,7 +273,7 @@ export async function handleCollections(ctx) {
     await ensureColl();
     const c = await collBySlug(ciList[1]);
     if (!c) return respond({ error: "collection not found" }, 404);
-    const b = await request.json().catch(() => ({}));
+    const b: Record<string, any> = (await request.json().catch(() => ({}))) as any;
     const slug = cleanSlug(b.slug);
     if (!slug) return respond({ error: "slug required" }, 400);
     if (RESERVED.has(slug.toLowerCase())) return respond({ error: "reserved slug" }, 409);
@@ -294,7 +310,7 @@ export async function handleCollections(ctx) {
   if (ciSingle && method === "PUT") {
     if (!authed()) return respond({ error: "unauthorized" }, 401);
     await ensureColl();
-    const b = await request.json().catch(() => ({}));
+    const b: Record<string, any> = (await request.json().catch(() => ({}))) as any;
     const slug = cleanSlug(b.slug);
     await env.DB.prepare(
       "UPDATE collection_items SET title=?, slug=?, description=?, content=?, cover_image=?, updated_at=datetime('now') WHERE id=?"

@@ -1,7 +1,9 @@
 import { canonHost } from "./site-config.js";
 import { isPro, isUltra, sitePlan } from "./plan.js";
 import { rateLimit, clientIp } from "./rate-limit.js";
-const ADMIN_LIMIT = { free: 5, pro: 10, ultra: Infinity };
+import type { Ctx, Env } from "./types.ts";
+
+const ADMIN_LIMIT: Record<string, number> = { free: 5, pro: 10, ultra: Infinity };
 const PERM_KEYS = [
   "pages",
   "content",
@@ -13,7 +15,7 @@ const PERM_KEYS = [
   "team",
 ];
 let _pageViewsReady = false;
-async function ensureRoles(env) {
+async function ensureRoles(env: Env): Promise<void> {
   await env.DB.prepare(
     "CREATE TABLE IF NOT EXISTS roles (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, perms TEXT, created_at TEXT DEFAULT (datetime('now')))"
   )
@@ -23,7 +25,7 @@ async function ensureRoles(env) {
     .run()
     .catch(() => {});
 }
-export async function handlePeople(ctx) {
+export async function handlePeople(ctx: Ctx): Promise<Response | null> {
   const {
     route: route,
     method: method,
@@ -43,7 +45,7 @@ export async function handlePeople(ctx) {
     can: can,
   } = ctx;
   const CREATE_PAGE_VIEWS = `CREATE TABLE IF NOT EXISTS page_views (\n    id        INTEGER PRIMARY KEY AUTOINCREMENT,\n    sess      TEXT NOT NULL DEFAULT '',\n    path      TEXT NOT NULL DEFAULT '/',\n    referrer  TEXT NOT NULL DEFAULT '',\n    ip        TEXT NOT NULL DEFAULT '',\n    country   TEXT NOT NULL DEFAULT '',\n    city      TEXT NOT NULL DEFAULT '',\n    region    TEXT NOT NULL DEFAULT '',\n    postal    TEXT NOT NULL DEFAULT '',\n    lat       REAL,\n    lon       REAL,\n    tz        TEXT NOT NULL DEFAULT '',\n    asn       TEXT NOT NULL DEFAULT '',\n    isp       TEXT NOT NULL DEFAULT '',\n    colo      TEXT NOT NULL DEFAULT '',\n    continent TEXT NOT NULL DEFAULT '',\n    is_eu     INTEGER NOT NULL DEFAULT 0,\n    ua        TEXT NOT NULL DEFAULT '',\n    screen    TEXT NOT NULL DEFAULT '',\n    lang      TEXT NOT NULL DEFAULT '',\n    http      TEXT NOT NULL DEFAULT '',\n    tls       TEXT NOT NULL DEFAULT '',\n    viewed_at TEXT NOT NULL DEFAULT (datetime('now'))\n  )`;
-  async function ensurePageViews() {
+  async function ensurePageViews(): Promise<void> {
     if (_pageViewsReady) return;
     _pageViewsReady = true;
     await env.DB.prepare(CREATE_PAGE_VIEWS).run();
@@ -69,7 +71,9 @@ export async function handlePeople(ctx) {
     if (_adminRole !== "owner") return respond({ error: "owner_only" }, 403);
     const id = parseInt(roleChange[1]);
     const newRole = roleChange[2] === "promote" ? "admin" : "";
-    const target = await env.DB.prepare("SELECT role FROM visitors WHERE id = ?").bind(id).first();
+    const target = await env.DB.prepare("SELECT role FROM visitors WHERE id = ?")
+      .bind(id)
+      .first<{ role: string }>();
     if (target?.role === "owner") return respond({ error: "cannot_modify_owner" }, 403);
     if (newRole === "admin") {
       const plan = await sitePlan(env, canonHost(env, request));
@@ -77,7 +81,7 @@ export async function handlePeople(ctx) {
       const c = await env.DB.prepare(
         "SELECT COUNT(*) AS n FROM visitors WHERE role IN ('owner','admin')"
       )
-        .first()
+        .first<{ n: number }>()
         .catch(() => ({ n: 0 }));
       if ((c?.n || 0) >= limit)
         return respond(
@@ -98,8 +102,8 @@ export async function handlePeople(ctx) {
     const { results: results } = await env.DB.prepare(
       "SELECT id, name, perms FROM roles ORDER BY name"
     )
-      .all()
-      .catch(() => ({ results: [] }));
+      .all<{ id: number; name: string; perms: string }>()
+      .catch(() => ({ results: [] as { id: number; name: string; perms: string }[] }));
     return respond(
       (results || []).map((r) => ({
         id: r.id,
@@ -115,12 +119,12 @@ export async function handlePeople(ctx) {
     if (!(await isUltra(env, canonHost(env, request))))
       return respond({ error: "Custom roles are an Ultra feature." }, 403);
     await ensureRoles(env);
-    const b = await request.json().catch(() => ({}));
+    const b: { name?: string; perms?: unknown[] } = (await request.json().catch(() => ({}))) as any;
     const name = String(b.name || "")
       .slice(0, 40)
       .trim();
     const perms = (Array.isArray(b.perms) ? b.perms : [])
-      .filter((p) => PERM_KEYS.includes(p))
+      .filter((p) => PERM_KEYS.includes(p as string))
       .join(",");
     if (!name) return respond({ error: "A role name is required." }, 400);
     const r = await env.DB.prepare("INSERT INTO roles (name, perms) VALUES (?,?)")
@@ -135,12 +139,12 @@ export async function handlePeople(ctx) {
   if (roleOne && method === "PUT") {
     if (_adminRole !== "owner") return respond({ error: "owner_only" }, 403);
     await ensureRoles(env);
-    const b = await request.json().catch(() => ({}));
+    const b: { name?: string; perms?: unknown[] } = (await request.json().catch(() => ({}))) as any;
     const name = String(b.name || "")
       .slice(0, 40)
       .trim();
     const perms = (Array.isArray(b.perms) ? b.perms : [])
-      .filter((p) => PERM_KEYS.includes(p))
+      .filter((p) => PERM_KEYS.includes(p as string))
       .join(",");
     await env.DB.prepare("UPDATE roles SET name = ?, perms = ? WHERE id = ?")
       .bind(name, perms, parseInt(roleOne[1]))
@@ -166,8 +170,8 @@ export async function handlePeople(ctx) {
   if (assign && method === "POST") {
     if (_adminRole !== "owner") return respond({ error: "owner_only" }, 403);
     await ensureRoles(env);
-    const b = await request.json().catch(() => ({}));
-    const roleId = b.role_id ? parseInt(b.role_id) : null;
+    const b: { role_id?: number | string } = (await request.json().catch(() => ({}))) as any;
+    const roleId = b.role_id ? parseInt(String(b.role_id)) : null;
     await env.DB.prepare("UPDATE visitors SET role_id = ? WHERE id = ? AND role = ?")
       .bind(roleId, parseInt(assign[1]), "admin")
       .run()
@@ -185,7 +189,7 @@ export async function handlePeople(ctx) {
   if (route === "banned-emails" && method === "POST") {
     if (!authed()) return respond({ error: "unauthorized" }, 401);
     await env.DB.prepare(CREATE_BANNED_EMAILS).run();
-    const { email: email } = await request.json().catch(() => ({}));
+    const { email: email } = (await request.json().catch(() => ({}) as { email?: string })) as any;
     if (!email?.trim()) return respond({ error: "email required" }, 400);
     const addr = email.trim().toLowerCase();
     const ownerEmail = await env.DB.prepare(
@@ -228,7 +232,7 @@ export async function handlePeople(ctx) {
   if (route === "allowed-emails" && method === "POST") {
     if (!authed()) return respond({ error: "unauthorized" }, 401);
     await env.DB.prepare(CREATE_ALLOWED_EMAILS).run();
-    const { email: email } = await request.json().catch(() => ({}));
+    const { email: email } = (await request.json().catch(() => ({}) as { email?: string })) as any;
     if (!email?.trim()) return respond({ error: "email required" }, 400);
     await env.DB.prepare("INSERT OR IGNORE INTO allowed_emails (email) VALUES (?)")
       .bind(email.trim().toLowerCase())
@@ -249,11 +253,15 @@ export async function handlePeople(ctx) {
     if (!authed()) return respond({ error: "unauthorized" }, 401);
     const id = parseInt(visitorBan[1]);
     const banning = visitorBan[2] === "ban";
-    const { scope: scope = "one" } = banning ? await request.json().catch(() => ({})) : {};
+    const { scope: scope = "one" } = (
+      banning
+        ? await request.json().catch(() => ({}) as { scope?: string })
+        : ({} as { scope?: string })
+    ) as any;
     if (banning) {
       const target = await env.DB.prepare("SELECT role FROM visitors WHERE id = ?")
         .bind(id)
-        .first();
+        .first<{ role: string }>();
       if (target?.role === "owner") return respond({ error: "cannot_ban_owner" }, 403);
       const ownerGuard = " AND role != 'owner'";
       await env.DB.prepare(
@@ -262,7 +270,9 @@ export async function handlePeople(ctx) {
         .bind(id)
         .run();
       if (scope === "email" || scope === "email_block") {
-        const v = await env.DB.prepare("SELECT email FROM visitors WHERE id = ?").bind(id).first();
+        const v = await env.DB.prepare("SELECT email FROM visitors WHERE id = ?")
+          .bind(id)
+          .first<{ email: string }>();
         if (v?.email) {
           await env.DB.prepare(
             "UPDATE visitors SET is_banned = 1, google_sub = 'banned:' || google_sub WHERE email = ? AND id != ? AND google_sub NOT LIKE 'banned:%'" +
@@ -285,7 +295,9 @@ export async function handlePeople(ctx) {
         .bind(id)
         .run();
       await env.DB.prepare(CREATE_BANNED_EMAILS).run();
-      const v = await env.DB.prepare("SELECT email FROM visitors WHERE id = ?").bind(id).first();
+      const v = await env.DB.prepare("SELECT email FROM visitors WHERE id = ?")
+        .bind(id)
+        .first<{ email: string }>();
       if (v?.email) {
         await env.DB.prepare("DELETE FROM banned_emails WHERE email = ?").bind(v.email).run();
         await env.DB.prepare(
@@ -306,7 +318,7 @@ export async function handlePeople(ctx) {
       "SELECT token FROM sessions WHERE visitor_id = ?"
     )
       .bind(visId)
-      .all();
+      .all<{ token: string }>();
     if (!sessions.length) return respond({ views: [], no_sessions: true });
     const tokens = sessions.map((s) => s.token);
     const ph = tokens.map(() => "?").join(",");
@@ -322,10 +334,16 @@ export async function handlePeople(ctx) {
     const rl = await rateLimit(env, `pv:${clientIp(request)}`, 40, 60);
     if (!rl.ok) return respond({ ok: true });
     await ensurePageViews();
-    const cf = request.cf || {};
+    const cf = (request.cf || {}) as Partial<IncomingRequestCfProperties>;
     const ip = request.headers.get("CF-Connecting-IP") || "";
     const ua = request.headers.get("User-Agent") || "";
-    const b = await request.json().catch(() => ({}));
+    const b: {
+      session?: string;
+      path?: string;
+      referrer?: string;
+      screen?: string;
+      lang?: string;
+    } = (await request.json().catch(() => ({}))) as any;
     await env.DB.prepare(
       `INSERT INTO page_views (sess,path,referrer,ip,country,city,region,postal,lat,lon,tz,asn,isp,colo,continent,is_eu,ua,screen,lang,http,tls)\n       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
     )
@@ -361,17 +379,19 @@ export async function handlePeople(ctx) {
     await ensurePageViews();
     const pro = await isPro(env, canonHost(env, request));
     const [total, today, week, uIPs, uCountries, topPaths, visitors] = await Promise.all([
-      env.DB.prepare("SELECT COUNT(*) n FROM page_views").first(),
+      env.DB.prepare("SELECT COUNT(*) n FROM page_views").first<{ n: number }>(),
       env.DB.prepare(
         "SELECT COUNT(*) n FROM page_views WHERE viewed_at >= datetime('now','-1 day')"
-      ).first(),
+      ).first<{ n: number }>(),
       env.DB.prepare(
         "SELECT COUNT(*) n FROM page_views WHERE viewed_at >= datetime('now','-7 days')"
-      ).first(),
-      env.DB.prepare("SELECT COUNT(DISTINCT ip) n FROM page_views WHERE ip != ''").first(),
-      env.DB.prepare(
-        "SELECT COUNT(DISTINCT country) n FROM page_views WHERE country != ''"
-      ).first(),
+      ).first<{ n: number }>(),
+      env.DB.prepare("SELECT COUNT(DISTINCT ip) n FROM page_views WHERE ip != ''").first<{
+        n: number;
+      }>(),
+      env.DB.prepare("SELECT COUNT(DISTINCT country) n FROM page_views WHERE country != ''").first<{
+        n: number;
+      }>(),
       env.DB.prepare(
         "SELECT path, COUNT(*) n FROM page_views GROUP BY path ORDER BY n DESC LIMIT 12"
       ).all(),
@@ -379,7 +399,7 @@ export async function handlePeople(ctx) {
         "SELECT id,email,name,picture,visit_count,is_banned,role,first_seen,last_seen FROM visitors ORDER BY last_seen DESC"
       ).all(),
     ]);
-    const out = {
+    const out: Record<string, unknown> = {
       caller_role: _adminRole || "",
       pro: pro,
       total: total?.n || 0,

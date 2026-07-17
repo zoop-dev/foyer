@@ -1,11 +1,13 @@
-function b64ToBytes(data) {
+import type { Ctx } from "./types.ts";
+
+function b64ToBytes(data: unknown): Uint8Array {
   const bin = atob(String(data).replace(/^data:[^;]+;base64,/, ""));
   const len = bin.length,
     bytes = new Uint8Array(len);
   for (let i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
   return bytes;
 }
-export async function handleMedia(ctx) {
+export async function handleMedia(ctx: Ctx): Promise<Response | null> {
   const {
     route: route,
     method: method,
@@ -40,7 +42,9 @@ export async function handleMedia(ctx) {
       data: data,
       mime: mime = "image/jpeg",
       size: size = 0,
-    } = await request.json().catch(() => ({}));
+    } = (await request
+      .json()
+      .catch(() => ({}) as { name?: string; data?: string; mime?: string; size?: number })) as any;
     if (!data) return respond({ error: "data required" }, 400);
     const r = await env.DB.prepare(
       "INSERT INTO images (name, data, mime, size) VALUES (?, ?, ?, ?)"
@@ -51,15 +55,15 @@ export async function handleMedia(ctx) {
   }
   const imageSingle = route.match(/^images\/(\d+)$/);
   if (imageSingle && method === "GET") {
-    const cache = caches.default;
+    const cache = (caches as any).default;
     const cacheKey = new Request(new URL(request.url).toString(), { method: "GET" });
     const hit = await cache.match(cacheKey);
     if (hit) return hit;
     const row = await env.DB.prepare("SELECT data, mime FROM images WHERE id = ?")
       .bind(parseInt(imageSingle[1]))
-      .first();
+      .first<{ data: string; mime: string }>();
     if (!row) return new Response("Not found", { status: 404 });
-    const resp = new Response(b64ToBytes(row.data), {
+    const resp = new Response(b64ToBytes(row.data) as any, {
       headers: {
         "Content-Type": row.mime,
         "Cache-Control": "public, max-age=3600, stale-while-revalidate=604800",
@@ -76,7 +80,9 @@ export async function handleMedia(ctx) {
       data: data,
       mime: mime,
       size: size,
-    } = await request.json().catch(() => ({}));
+    } = (await request
+      .json()
+      .catch(() => ({}) as { name?: string; data?: string; mime?: string; size?: number })) as any;
     const id = parseInt(imageSingle[1]);
     if (data) {
       await env.DB.prepare("UPDATE images SET data = ?, mime = ?, size = ? WHERE id = ?")
@@ -84,7 +90,7 @@ export async function handleMedia(ctx) {
         .run();
       if (typeof name === "string")
         await env.DB.prepare("UPDATE images SET name = ? WHERE id = ?").bind(name, id).run();
-      await caches.default
+      await (caches as any).default
         .delete(new Request(new URL(request.url).toString(), { method: "GET" }))
         .catch(() => {});
     } else {
@@ -97,7 +103,7 @@ export async function handleMedia(ctx) {
   if (imageSingle && method === "DELETE") {
     if (!authed()) return respond({ error: "unauthorized" }, 401);
     await env.DB.prepare("DELETE FROM images WHERE id = ?").bind(parseInt(imageSingle[1])).run();
-    await caches.default
+    await (caches as any).default
       .delete(new Request(new URL(request.url).toString(), { method: "GET" }))
       .catch(() => {});
     return respond({ ok: true });
@@ -119,7 +125,9 @@ export async function handleMedia(ctx) {
       data: data,
       mime: mime = "application/octet-stream",
       size: size = 0,
-    } = await request.json().catch(() => ({}));
+    } = (await request
+      .json()
+      .catch(() => ({}) as { name?: string; data?: string; mime?: string; size?: number })) as any;
     if (!data) return respond({ error: "data required" }, 400);
     const r = await env.DB.prepare("INSERT INTO files (name, data, mime, size) VALUES (?, ?, ?, ?)")
       .bind(name, data, mime, size)
@@ -128,18 +136,18 @@ export async function handleMedia(ctx) {
   }
   const fileSingle = route.match(/^files\/(\d+)$/);
   if (fileSingle && method === "GET") {
-    const cache = caches.default;
+    const cache = (caches as any).default;
     const cacheKey = new Request(new URL(request.url).toString(), { method: "GET" });
     const hit = await cache.match(cacheKey);
     if (hit) return hit;
     const row = await env.DB.prepare("SELECT data, mime, name FROM files WHERE id = ?")
       .bind(parseInt(fileSingle[1]))
-      .first();
+      .first<{ data: string; mime: string; name: string }>();
     if (!row) return new Response("Not found", { status: 404 });
     const filename = encodeURIComponent(row.name || `file-${fileSingle[1]}`);
     const url2 = new URL(request.url);
     const inline = url2.searchParams.has("preview") || url2.searchParams.has("inline");
-    const resp = new Response(b64ToBytes(row.data), {
+    const resp = new Response(b64ToBytes(row.data) as any, {
       headers: {
         "Content-Type": row.mime,
         "Content-Disposition": `${inline ? "inline" : "attachment"}; filename*=UTF-8''${filename}`,
@@ -153,7 +161,7 @@ export async function handleMedia(ctx) {
   if (fileSingle && method === "DELETE") {
     if (!authed()) return respond({ error: "unauthorized" }, 401);
     await env.DB.prepare("DELETE FROM files WHERE id = ?").bind(parseInt(fileSingle[1])).run();
-    await caches.default
+    await (caches as any).default
       .delete(new Request(new URL(request.url).toString(), { method: "GET" }))
       .catch(() => {});
     return respond({ ok: true });

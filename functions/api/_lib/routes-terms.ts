@@ -1,16 +1,18 @@
+import type { Ctx } from "./types.ts";
+
 export const TERMS_VERSION = "2026-06-07";
 const DDL = `CREATE TABLE IF NOT EXISTS terms_acceptances (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  who TEXT NOT NULL,\n  email TEXT,\n  version TEXT NOT NULL,\n  accepted_at TEXT NOT NULL DEFAULT (datetime('now')),\n  ip TEXT,\n  user_agent TEXT\n)`;
 let _ready = false;
-async function ensure(env) {
+async function ensure(env: Ctx["env"]): Promise<void> {
   if (_ready) return;
   await env.DB.prepare(DDL).run();
   _ready = true;
 }
-async function whoOf(ctx) {
+async function whoOf(ctx: Ctx): Promise<{ who: string; email: string | null }> {
   const v = await ctx.currentVisitor();
-  return v ? { who: "v" + v.id, email: v.email || null } : { who: "pw", email: null };
+  return v ? { who: "v" + v.id, email: (v.email as string) || null } : { who: "pw", email: null };
 }
-export async function termsAccepted(ctx) {
+export async function termsAccepted(ctx: Ctx): Promise<boolean> {
   await ensure(ctx.env);
   const { who: who } = await whoOf(ctx);
   const row = await ctx.env.DB.prepare(
@@ -21,7 +23,7 @@ export async function termsAccepted(ctx) {
     .catch(() => null);
   return !!row;
 }
-export async function handleTerms(ctx) {
+export async function handleTerms(ctx: Ctx): Promise<Response | null> {
   const {
     route: route,
     method: method,

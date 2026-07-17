@@ -1,43 +1,52 @@
 import { canonHost } from "./site-config.js";
 import { sb } from "./supabase.js";
-const _b64 = (buf) => {
+import type { Ctx, Env } from "./types.ts";
+
+interface EncBundle {
+  foyer_enc: 1;
+  alg: string;
+  iv: string;
+  data: string;
+}
+
+const _b64 = (buf: ArrayBuffer | Uint8Array): string => {
   const b = new Uint8Array(buf);
   let s = "";
   const CH = 32768;
   for (let i = 0; i < b.length; i += CH)
-    s += String.fromCharCode.apply(null, b.subarray(i, i + CH));
+    s += String.fromCharCode.apply(null, b.subarray(i, i + CH) as unknown as number[]);
   return btoa(s);
 };
-const _unb64 = (str) => {
+const _unb64 = (str: string): Uint8Array => {
   const bin = atob(str);
   const b = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i);
   return b;
 };
-async function _aesKey(secret) {
+async function _aesKey(secret: string): Promise<CryptoKey> {
   const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(secret));
   return crypto.subtle.importKey("raw", hash, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
 }
-async function encryptBundle(obj, secret) {
+async function encryptBundle(obj: unknown, secret: string): Promise<EncBundle> {
   const key = await _aesKey(secret);
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const ct = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv: iv },
+    { name: "AES-GCM", iv: iv as any },
     key,
-    new TextEncoder().encode(JSON.stringify(obj))
+    new TextEncoder().encode(JSON.stringify(obj)) as any
   );
   return { foyer_enc: 1, alg: "AES-GCM", iv: _b64(iv), data: _b64(ct) };
 }
-async function decryptBundle(envlp, secret) {
+async function decryptBundle(envlp: EncBundle, secret: string): Promise<unknown> {
   const key = await _aesKey(secret);
   const pt = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: _unb64(envlp.iv) },
+    { name: "AES-GCM", iv: _unb64(envlp.iv) as any },
     key,
-    _unb64(envlp.data)
+    _unb64(envlp.data) as any
   );
   return JSON.parse(new TextDecoder().decode(pt));
 }
-async function backupUsage(env, host) {
+async function backupUsage(env: Env, host: string): Promise<{ quota: number; used: number }> {
   const { base: base, headers: H } = sb(env);
   let quota = 5,
     used = 0;
@@ -47,7 +56,7 @@ async function backupUsage(env, host) {
       { headers: H }
     );
     if (r.ok) {
-      const rows = await r.json();
+      const rows = (await r.json()) as Array<{ backup_quota?: unknown; plan?: string }>;
       const row = rows[0];
       if (row && row.backup_quota != null) quota = +row.backup_quota || 0;
       else if (row && row.plan === "pro") quota = 0;
@@ -66,7 +75,7 @@ async function backupUsage(env, host) {
   } catch (e) {}
   return { quota: quota, used: used };
 }
-async function recordBackup(env, host, scope, size) {
+async function recordBackup(env: Env, host: string, scope: string, size: number): Promise<void> {
   try {
     const { base: base, headers: headers } = sb(env);
     await fetch(`${base}/rest/v1/foyer_backups`, {
@@ -77,19 +86,19 @@ async function recordBackup(env, host, scope, size) {
     });
   } catch (e) {}
 }
-let _bkKeyCache = null,
+let _bkKeyCache: string | null = null,
   _bkKeyAt = 0;
-async function backupSecret(env) {
-  if (env.BACKUP_KEY) return env.BACKUP_KEY;
+async function backupSecret(env: Env): Promise<string | null> {
+  if (env.BACKUP_KEY) return env.BACKUP_KEY as string;
   if (_bkKeyCache && Date.now() - _bkKeyAt < 3e5) return _bkKeyCache;
   const { base: base, headers: headers } = sb(env);
   try {
     const r = await fetch(`${base}/rest/v1/foyer_meta?key=eq.backup_key&select=value`, {
       headers: headers,
       cf: { cacheTtl: 300, cacheEverything: true },
-    });
+    } as RequestInit);
     if (r.ok) {
-      const rows = await r.json();
+      const rows = (await r.json()) as Array<{ value?: string }>;
       const v = Array.isArray(rows) && rows[0] && rows[0].value;
       if (v) {
         _bkKeyCache = v;
@@ -101,39 +110,54 @@ async function backupSecret(env) {
   return null;
 }
 const _MAGIC = [70, 79, 89, 82, 69, 78, 67, 50];
-async function _gzip(u8) {
+async function _gzip(u8: Uint8Array): Promise<Uint8Array> {
   const cs = new CompressionStream("gzip");
   const w = cs.writable.getWriter();
-  w.write(u8);
+  w.write(u8 as any);
   w.close();
   return new Uint8Array(await new Response(cs.readable).arrayBuffer());
 }
-async function _gunzip(u8) {
+async function _gunzip(u8: Uint8Array): Promise<Uint8Array> {
   const ds = new DecompressionStream("gzip");
   const w = ds.writable.getWriter();
-  w.write(u8);
+  w.write(u8 as any);
   w.close();
   return new Uint8Array(await new Response(ds.readable).arrayBuffer());
 }
-async function sealBinary(obj, secret) {
+async function sealBinary(obj: unknown, secret: string): Promise<Uint8Array> {
   const key = await _aesKey(secret);
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const gz = await _gzip(new TextEncoder().encode(JSON.stringify(obj)));
-  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, gz));
+  const ct = new Uint8Array(
+    await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv as any }, key, gz as any)
+  );
   const out = new Uint8Array(20 + ct.length);
   out.set(_MAGIC, 0);
   out.set(iv, 8);
   out.set(ct, 20);
   return out;
 }
-async function openBinary(u8, secret) {
+async function openBinary(u8: Uint8Array, secret: string): Promise<unknown> {
   const key = await _aesKey(secret);
   const gz = new Uint8Array(
-    await crypto.subtle.decrypt({ name: "AES-GCM", iv: u8.subarray(8, 20) }, key, u8.subarray(20))
+    await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: u8.subarray(8, 20) as any },
+      key,
+      u8.subarray(20) as any
+    )
   );
   return JSON.parse(new TextDecoder().decode(await _gunzip(gz)));
 }
-export async function handleBackup(ctx) {
+
+interface PageRow {
+  title: string;
+  slug: string;
+  page_json: string | null | undefined;
+  is_published: unknown;
+  sort_order: unknown;
+}
+
+export async function handleBackup(ctx: Ctx): Promise<Response | null> {
   const {
     route: route,
     method: method,
@@ -159,8 +183,8 @@ export async function handleBackup(ctx) {
   const ensureAll = async () => {
     for (const d of DDL) await env.DB.prepare(d).run();
   };
-  const refIds = (str, kind) => {
-    const set = new Set();
+  const refIds = (str: string | null | undefined, kind: string): Set<number> => {
+    const set = new Set<number>();
     if (!str) return set;
     const re = new RegExp("/api/" + kind + "/(\\d+)", "g");
     let m;
@@ -182,16 +206,22 @@ export async function handleBackup(ctx) {
         },
         403
       );
-    const out = {
+    const out: {
+      foyer_backup: number;
+      created: string;
+      scope: string;
+      site: { domain: string };
+      data: Record<string, unknown>;
+    } = {
       foyer_backup: 1,
       created: new Date().toISOString(),
       scope: scope,
       site: { domain: host },
       data: {},
     };
-    const imgIds = new Set(),
-      fileIds = new Set();
-    const addRefs = (s) => {
+    const imgIds = new Set<number>(),
+      fileIds = new Set<number>();
+    const addRefs = (s: string | null | undefined) => {
       for (const id of refIds(s, "images")) imgIds.add(id);
       for (const id of refIds(s, "files")) fileIds.add(id);
     };
@@ -201,7 +231,7 @@ export async function handleBackup(ctx) {
         "SELECT title, slug, page_json, is_published, sort_order FROM pages WHERE slug = ?"
       )
         .bind(slug)
-        .first();
+        .first<PageRow>();
       if (!p) return respond({ error: "page not found" }, 404);
       p.page_json = await decompressJson(p.page_json);
       addRefs(p.page_json);
@@ -209,7 +239,7 @@ export async function handleBackup(ctx) {
     } else {
       const { results: results } = await env.DB.prepare(
         "SELECT title, slug, page_json, is_published, sort_order FROM pages ORDER BY sort_order ASC, id ASC"
-      ).all();
+      ).all<PageRow>();
       out.data.pages = await Promise.all(
         (results || []).map(async (r) => {
           r.page_json = await decompressJson(r.page_json);
@@ -219,22 +249,34 @@ export async function handleBackup(ctx) {
       );
     }
     if (scope === "site") {
-      const st = await env.DB.prepare("SELECT key, value FROM site_settings").all();
-      out.data.settings = {};
+      const st = await env.DB.prepare("SELECT key, value FROM site_settings").all<{
+        key: string;
+        value: string;
+      }>();
+      const settings: Record<string, string> = {};
       (st.results || []).forEach((r) => {
-        out.data.settings[r.key] = r.value;
+        settings[r.key] = r.value;
       });
+      out.data.settings = settings;
       const cols = await env.DB.prepare(
         "SELECT id, name, slug FROM collections ORDER BY id ASC"
-      ).all();
+      ).all<{ id: number; name: string; slug: string }>();
       out.data.collections = (cols.results || []).map((c) => ({ name: c.name, slug: c.slug }));
-      const idToSlug = {};
+      const idToSlug: Record<number, string> = {};
       (cols.results || []).forEach((c) => {
         idToSlug[c.id] = c.slug;
       });
       const items = await env.DB.prepare(
         "SELECT collection_id, title, slug, description, content, cover_image, sort_order FROM collection_items ORDER BY collection_id ASC, sort_order ASC"
-      ).all();
+      ).all<{
+        collection_id: number;
+        title: string;
+        slug: string;
+        description: string;
+        content: string;
+        cover_image: string;
+        sort_order: unknown;
+      }>();
       out.data.collection_items = (items.results || []).map((it) => {
         addRefs(it.content);
         addRefs(it.cover_image);
@@ -250,7 +292,13 @@ export async function handleBackup(ctx) {
       });
       const tut = await env.DB.prepare(
         "SELECT title, slug, description, content, cover_image FROM tutorials ORDER BY id ASC"
-      ).all();
+      ).all<{
+        title: string;
+        slug: string;
+        description: string;
+        content: string;
+        cover_image: string;
+      }>();
       out.data.tutorials = (tut.results || []).map((t) => {
         addRefs(t.content);
         addRefs(t.cover_image);
@@ -258,7 +306,14 @@ export async function handleBackup(ctx) {
       });
       const rev = await env.DB.prepare(
         "SELECT title, slug, description, content, cover_image, rating FROM reviews ORDER BY id ASC"
-      ).all();
+      ).all<{
+        title: string;
+        slug: string;
+        description: string;
+        content: string;
+        cover_image: string;
+        rating: unknown;
+      }>();
       out.data.reviews = (rev.results || []).map((t) => {
         addRefs(t.content);
         addRefs(t.cover_image);
@@ -292,7 +347,7 @@ export async function handleBackup(ctx) {
     if (bkKey) {
       const bytes = await sealBinary(out, bkKey);
       await recordBackup(env, host, scope, bytes.length);
-      return new Response(bytes, {
+      return new Response(bytes as any, {
         status: 200,
         headers: { "Content-Type": "application/octet-stream", "Access-Control-Allow-Origin": "*" },
       });
@@ -302,7 +357,7 @@ export async function handleBackup(ctx) {
   }
   if (route === "backup/restore" && method === "POST") {
     const raw = new Uint8Array(await request.arrayBuffer());
-    let bundle = null;
+    let bundle: any = null;
     if (raw.length > 20 && _MAGIC.every((c, i) => raw[i] === c)) {
       const bkKey = await backupSecret(env);
       if (!bkKey)
@@ -343,7 +398,7 @@ export async function handleBackup(ctx) {
       return respond({ error: "not a valid .foyer backup" }, 400);
     await ensureAll();
     const data = bundle.data;
-    const counts = {
+    const counts: Record<string, number> = {
       images: 0,
       files: 0,
       pages: 0,
@@ -353,14 +408,22 @@ export async function handleBackup(ctx) {
       reviews: 0,
       settings: 0,
     };
-    const insertAssets = async (rows, table, defMime) => {
-      const map = {};
-      const existing = await env.DB.prepare(`SELECT id, name, size FROM ${table}`).all();
-      const sig = {};
+    const insertAssets = async (
+      rows: any[] | undefined,
+      table: string,
+      defMime: string
+    ): Promise<{ map: Record<string, number>; added: number }> => {
+      const map: Record<string, number> = {};
+      const existing = await env.DB.prepare(`SELECT id, name, size FROM ${table}`).all<{
+        id: number;
+        name: string;
+        size: unknown;
+      }>();
+      const sig: Record<string, number> = {};
       (existing.results || []).forEach((r) => {
         sig[(r.name || "") + "|" + (r.size || 0)] = r.id;
       });
-      const toInsert = [];
+      const toInsert: any[] = [];
       for (const a of rows || []) {
         const key = (a.name || "") + "|" + (a.size || 0);
         if (sig[key] != null) {
@@ -381,8 +444,8 @@ export async function handleBackup(ctx) {
         const res = await env.DB.batch(stmts);
         res.forEach((r, i) => {
           const nid = r.meta?.last_row_id;
-          map[toInsert[i].id] = nid;
-          sig[(toInsert[i].name || "") + "|" + (toInsert[i].size || 0)] = nid;
+          map[toInsert[i].id] = nid as number;
+          sig[(toInsert[i].name || "") + "|" + (toInsert[i].size || 0)] = nid as number;
         });
       }
       return { map: map, added: toInsert.length };
@@ -393,7 +456,7 @@ export async function handleBackup(ctx) {
     counts.files = fil.added;
     const imgMap = img.map,
       fileMap = fil.map;
-    const remap = (s) => {
+    const remap = (s: string | null | undefined): string | null | undefined => {
       if (!s) return s;
       return String(s)
         .replace(/\/api\/images\/(\d+)/g, (m, id) =>
@@ -406,7 +469,7 @@ export async function handleBackup(ctx) {
     if (Array.isArray(data.pages) && data.pages.length) {
       const stmts = [];
       for (const p of data.pages) {
-        const pj = await compressJson(remap(p.page_json || ""));
+        const pj = await compressJson(remap(p.page_json || "") as string);
         stmts.push(
           env.DB.prepare(
             "INSERT INTO pages (title, slug, page_json, is_published, sort_order) VALUES (?,?,?,?,?) ON CONFLICT(slug) DO UPDATE SET title=excluded.title, page_json=excluded.page_json, is_published=excluded.is_published, sort_order=excluded.sort_order"
@@ -424,7 +487,7 @@ export async function handleBackup(ctx) {
     }
     if (Array.isArray(data.collections) && data.collections.length) {
       await env.DB.batch(
-        data.collections.map((c) =>
+        data.collections.map((c: any) =>
           env.DB.prepare(
             "INSERT INTO collections (name, slug) VALUES (?,?) ON CONFLICT(slug) DO UPDATE SET name=excluded.name"
           ).bind(c.name || "", c.slug)
@@ -433,8 +496,11 @@ export async function handleBackup(ctx) {
       counts.collections = data.collections.length;
     }
     if (Array.isArray(data.collection_items) && data.collection_items.length) {
-      const cols = await env.DB.prepare("SELECT id, slug FROM collections").all();
-      const cid = {};
+      const cols = await env.DB.prepare("SELECT id, slug FROM collections").all<{
+        id: number;
+        slug: string;
+      }>();
+      const cid: Record<string, number> = {};
       (cols.results || []).forEach((c) => {
         cid[c.slug] = c.id;
       });
@@ -461,7 +527,7 @@ export async function handleBackup(ctx) {
     }
     if (Array.isArray(data.tutorials) && data.tutorials.length) {
       await env.DB.batch(
-        data.tutorials.map((t) =>
+        data.tutorials.map((t: any) =>
           env.DB.prepare(
             "INSERT INTO tutorials (title, slug, description, content, cover_image) VALUES (?,?,?,?,?) ON CONFLICT(slug) DO UPDATE SET title=excluded.title, description=excluded.description, content=excluded.content, cover_image=excluded.cover_image, updated_at=datetime('now')"
           ).bind(
@@ -477,7 +543,7 @@ export async function handleBackup(ctx) {
     }
     if (Array.isArray(data.reviews) && data.reviews.length) {
       await env.DB.batch(
-        data.reviews.map((t) =>
+        data.reviews.map((t: any) =>
           env.DB.prepare(
             "INSERT INTO reviews (title, slug, description, content, cover_image, rating) VALUES (?,?,?,?,?,?) ON CONFLICT(slug) DO UPDATE SET title=excluded.title, description=excluded.description, content=excluded.content, cover_image=excluded.cover_image, rating=excluded.rating, updated_at=datetime('now')"
           ).bind(

@@ -1,6 +1,6 @@
 {
   "name": "foyer",
-  "version": "237.0.0",
+  "version": "238.0.0",
   "private": true,
   "type": "module",
   "description": "Foyer — a config-driven personal-site framework on Cloudflare Pages + D1 (gated entry, magic-link/OAuth auth, block page builder, admin CMS). Made by zo0p.dev.",
@@ -14,6 +14,7 @@
     "typecheck": "tsc"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260716.1",
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.1.1",
     "esbuild": "^0.24.0",

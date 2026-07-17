@@ -2,7 +2,9 @@ import { canonHost } from "./site-config.js";
 import { isPro } from "./plan.js";
 import { notifyOwner } from "./routes-push.js";
 import { rateLimit, clientIp } from "./rate-limit.js";
-function targetUrl(target) {
+import type { Ctx, Env } from "./types.ts";
+
+function targetUrl(target: string): string {
   const i = (target || "").indexOf(":");
   if (i < 0) return "/";
   const kind = target.slice(0, i),
@@ -14,20 +16,20 @@ function targetUrl(target) {
 const CREATE_COMMENTS =
   "CREATE TABLE IF NOT EXISTS comments (id INTEGER PRIMARY KEY AUTOINCREMENT, target TEXT NOT NULL, name TEXT NOT NULL, body TEXT NOT NULL, avatar TEXT, visitor_id INTEGER, created_at TEXT NOT NULL DEFAULT (datetime('now')))";
 let _cReady = false;
-async function ensureComments(env) {
+async function ensureComments(env: Env): Promise<void> {
   if (_cReady) return;
   await env.DB.prepare(CREATE_COMMENTS)
     .run()
     .catch(() => {});
   _cReady = true;
 }
-async function commentsOn(env) {
+async function commentsOn(env: Env): Promise<boolean> {
   const r = await env.DB.prepare("SELECT value FROM site_settings WHERE key='comments_enabled'")
-    .first()
+    .first<{ value: string }>()
     .catch(() => null);
   return !!(r && r.value === "1");
 }
-export async function handleComments(ctx) {
+export async function handleComments(ctx: Ctx): Promise<Response | null> {
   const {
     route: route,
     method: method,
@@ -69,7 +71,7 @@ export async function handleComments(ctx) {
       if (!rl.ok)
         return respond({ error: "You’re commenting too fast — try again in a minute." }, 429);
     }
-    const b = await request.json().catch(() => ({}));
+    const b: Record<string, unknown> = (await request.json().catch(() => ({}))) as any;
     const target = String(b.target || "")
       .slice(0, 160)
       .trim();
